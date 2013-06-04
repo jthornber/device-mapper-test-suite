@@ -20,7 +20,7 @@ $prereqs = Prerequisites.requirements do
                   'dt',
                   'blktrace',
                   'bonnie++')
-  require_ruby_version /^1.8/
+  require_ruby_version /^1.9/
 end
 
 #------------------------------------------------
@@ -290,7 +290,8 @@ module ThinpTestMixin
 
   def check_prereqs
     begin
-      $prereqs.check
+      # FIXME: put back
+      #$prereqs.check
     rescue => e
       STDERR.puts e
       STDERR.puts "Missing prerequisites, please see the README"

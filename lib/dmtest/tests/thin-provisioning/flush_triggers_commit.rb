@@ -1,4 +1,3 @@
-require 'config'
 require 'dmtest/blktrace'
 require 'dmtest/log'
 require 'dmtest/process'

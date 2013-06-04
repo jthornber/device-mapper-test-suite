@@ -1,4 +1,3 @@
-require 'config'
 require 'dmtest/log'
 require 'dmtest/process'
 require 'dmtest/status'

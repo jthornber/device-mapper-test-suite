@@ -1,15 +1,18 @@
 #!/usr/bin/env ruby
 
 require 'erb'
-require 'lib/log'
-require 'lib/report-generators/report_templates'
-require 'lib/report-generators/reports'
-require 'lib/test-outcome'
+require 'dmtest/log'
+require 'dmtest/report-generators/report_templates'
+require 'dmtest/report-generators/reports'
+require 'dmtest/test-outcome'
+require 'dmtest/config'
 require 'pathname'
+
 require 'test/unit/collector/objectspace'
 require 'test/unit/testsuite'
 require 'test/unit/ui/testrunnermediator'
 require 'test/unit/ui/testrunnerutilities'
+
 require 'yaml'
 
 #----------------------------------------------------------------
@@ -287,8 +290,8 @@ if $suite.nil?
   exit(1)
 end
 
-unless $suite =~ /^suites\//
-  $suite = "suites/#{$suite}"
+unless $suite =~ /^dmtest\/suites\//
+  $suite = "dmtest/suites/#{$suite}"
 end
 
 require $suite

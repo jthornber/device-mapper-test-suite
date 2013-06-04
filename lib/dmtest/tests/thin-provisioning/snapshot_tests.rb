@@ -1,4 +1,3 @@
-require 'config'
 require 'dmtest/dataset'
 require 'dmtest/fs'
 require 'dmtest/log'

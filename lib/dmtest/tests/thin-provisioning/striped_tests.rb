@@ -1,4 +1,3 @@
-require 'config'
 require 'dmtest/device_mapper'
 require 'dmtest/dataset'
 require 'dmtest/fs'

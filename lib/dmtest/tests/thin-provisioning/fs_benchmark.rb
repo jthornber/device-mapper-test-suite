@@ -1,6 +1,5 @@
 #!/usr/bin/env ruby
 
-require 'config'
 require 'dmtest/log'
 require 'dmtest/utils'
 require 'dmtest/fs'

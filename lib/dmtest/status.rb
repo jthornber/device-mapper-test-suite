@@ -8,7 +8,7 @@ class PoolStatus
 
   def parse_held_root(txt)
     case txt
-    when '-':
+    when '-' then
         nil
 
     else
@@ -27,16 +27,16 @@ class PoolStatus
     unless m.nil?
       m[2].split.each do |feature|
         case feature
-        when 'skip_block_zeroing':
+        when 'skip_block_zeroing' then
             opts[:block_zeroing] = false
 
-        when 'ignore_discard':
+        when 'ignore_discard' then
             opts[:ignore_discard] = true
 
-        when 'no_discard_passdown':
+        when 'no_discard_passdown' then
             opts[:discard_passdown] = false
 
-        when 'read_only':
+        when 'read_only' then
             opts[:read_only] = true
 
         else
