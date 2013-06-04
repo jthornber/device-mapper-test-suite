@@ -1,0 +1,32 @@
+<table width="95%" cellspacing="2" cellpadding="5" border="0" class="stripes">
+  <tr><th>Tests passed</th><th>Tests failed</th></tr>
+  <tr><td class="pass"><%= total_passed %></td><td <%= total_failed == 0 ? "" : "class=\"fail\""%>><%= total_failed %></td></tr>
+</table>
+
+<table width="95%" cellspacing="2" cellpadding="5" border="0" class="stripes">
+<tr><th>Suite</th><th>Pass</th><th>Fail</th></tr>
+<% suites.sort.each do |k, s| %>
+<% pass_rate = s.inject(0) {|tot, t| tot + (t.pass? ? 1 : 0)} %>
+<% fail_rate = s.length - pass_rate %>
+<tr><td><a href="#<%= k %>"><%= k %></a></td><td class="pass"><%= pass_rate %></td><td <%= fail_rate > 0 ? 'class="fail"' : 'class="pass"' %>><%= fail_rate %></td></tr>
+<% end %>
+</table>
+
+<table width="95%" cellspacing="2" cellpadding="5" border="0" class="stripes">
+<% suites.sort.each do |k, s| %>
+<tr><th><a name="<%= k %>"><%= k %></a></th><th>Result</th><th>Execution Time</th></tr>
+<% s.each do |t| %>
+<tr>
+  <td>
+  <a href="<%= k %>__<%= mangle(t.name) %>.html"><%= t.name %></a>
+  </td>
+  <% if t.pass? %>
+  <td class="pass">pass</td>
+  <% else %>
+  <td class="fail">fail</td>
+  <% end %>
+  <td><%= t.time %></td>
+</tr>
+<% end %>
+<% end %>
+</table>

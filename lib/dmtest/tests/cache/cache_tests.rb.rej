@@ -1,0 +1,188 @@
+--- tests/cache/cache_tests.rb
++++ tests/cache/cache_tests.rb
+@@ -187,88 +188,132 @@
+     end
+   end
+ 
+-  def _ten_to_str(num_to_str, n)
+-    r = []
++  def sql_create_table
++    "CREATE TABLE t1(a INTEGER, b INTEGER, c VARCHAR(100));\n"
++  end
++
++  def sql_drop_table
++    "DROP TABLE t1;\n"
++  end
++
++  def sql_begin
++    "BEGIN;"
++  end
++
++  def sql_commit
++    "COMMIT;"
++  end
++
++  def sql_transaction(count = nil, &block)
++    sql = sql_begin
++    sql += yield
++    sql += sql_commit
++    sql
++  end
++
++  def sql_create_inserts(count = nil, start = nil)
++    count = 12500 if count.nil?
++    start = 0 if start.nil?
++    sql = ""
+ 
+-    if (n <= 20)
+-      r << num_to_str[n] + " "
+-    else
+-      ten = n / 10 * 10
+-      one = n - ten
+-      r << num_to_str[one] + " " if one > 0
+-      r << num_to_str[ten] + " "
++    for i in start..count
++      v = rand(999999999).to_i
++      s = number_to_string(v)
++      sql += "INSERT INTO t1 VALUES(#{i},#{v},\'#{s}');\n"
+     end
+ 
+-    r.reverse
+-  end
+-
+-  def _sqlite_num_to_string(v)
+-    mill = 0
+-    r = []
+-    num_to_str = {}
+-    %w|zero one two three four five six seven eight nine ten eleven
+-       twelve thirteen fourteen fifteen sixteen seventeen eighteen
+-       nineteen|.each_with_index{ |word, i| num_to_str[i] = word }
+-    %w|zero ten twenty thirty forty fifty sixty seventy eighty
+-       ninety|.each_with_index{ |word, i| num_to_str[i*10] = word }
+-    num_to_str[100] = 'hundred'
+-    %w|one thousand million billion
+-       trillion|.each_with_index{ |word, i| num_to_str[10**(i*3)] = word }
+-
+-    while v > 0
+-      tenth = (" " + v.to_s)[-2..-1].to_i
+-      hundreds = ("  " + v.to_s)[-3..-3].to_i
+-      r << num_to_str[10 ** (mill * 3)] + " " if mill > 0 && tenth + hundreds > 0
+-      r << _ten_to_str(num_to_str, tenth) if tenth > 0
+-      ( r << num_to_str[100] + " "; r << num_to_str[hundreds] + " ") if hundreds > 0
+-      v /= 1000
+-      mill += 1
++    sql
++  end
++
++  def sql_inserts_no_transaction(count = nil)
++    sql_create_table +  sql_create_inserts(count)
++  end
++
++  def sql_inserts_global_transaction(count = nil)
++    sql = sql_transaction do
++      sql_create_table +  sql_create_inserts(count) + sql_drop_table
+     end
+ 
+-    r.reverse.to_s.chop
++    sql
+   end
+ 
+-  def _sql_create_insert_script(count = 12500)
+-    sql = "CREATE TABLE t1(a INTEGER, b INTEGER, c VARCHAR(100));\n"
++  def sql_inserts_multiple_transaction(count = nil, fraction = nil)
++    count = 12500 if count.nil?
++    fraction = count / 1000 if fraction.nil?
+ 
+-    for i in 0..count
+-      v = rand(33333).to_i
+-      s = _sqlite_num_to_string(v)
+-      sql += "INSERT INTO t1 VALUES(#{i},#{v},\'#{s}');\n"
++    return "" if count / fraction < 2
++
++    sql = sql_begin + sql_create_table
++
++    i = 0
++    while i < count do
++      sql += sql_transaction { sql_create_inserts(count, fraction) }
++      sql += sql_commit + sql_begin
++      i += fraction
+     end
+ 
++    sql += sql_commit
+     sql
+   end
+ 
+   def do_sqlite_exec(sql_script)
+-puts "Here...\n"
+-      ProcessControl.run("echo #{sql_script} > /tmp/pipi");
+-      ProcessControl.run("time sqlite3 test.db < /tmp/pipi")
+-puts "There...\n"
++      STDERR.puts "Running sql script..."
++      Utils::with_temp_file('.sql_script') do |sql_file|
++        sql_file << sql_script
++        sql_file.flush
++        sql_file.close
++
++ProcessControl.run("cp #{sql_file.path} /tmp/run_test.sql")
++        ProcessControl.run("time sqlite3 test.db < #{sql_file.path}")
++        ProcessControl.run("rm -fr test.db")
++      end
+   end
+ 
+-  def do_sqlite_prepare(dev, fs_type, &block)
+-    fs_type = :ext4
++  def with_sqlite_prepare(dev, fs_type = nil, &block)
++    fs_type = :ext4 if fs_type.nil?
+ 
+     fs = FS::file_system(fs_type, dev)
+     STDERR.puts "formatting ..."
+     fs.format
+ 
+     STDERR.puts "mounting ..."
+-    fs.with_mount('./sql_tests', :discard => true) do
+-      Dir.chdir('./sql_tests') do
+-        STDERR.puts "Running sql script..."
++    fs.with_mount('./.sql_tests', :discard => true) do
++      Dir.chdir('./.sql_tests') do
+ 	yield
+       end
+     end
+   end
+ 
+-  def test_sqlite_insert
+-    with_standard_cache(:format => true, :policy => 'mq') do |cache|
+-      do_sqlite_prepare(cache, :ext4) do
+-        do_sqlite_exec(_sql_create_insert_script(33))
++  def with_sqlite(policy = nil, records = nil, &block)
++    policy = 'mq' if policy.nil?
++
++    with_standard_cache(:format => true, :policy => policy) do |cache|
++      with_sqlite_prepare(cache, :ext4) do
++        STDERR.puts "\'#{policy}\' policy\n"
++        report_time("#{block} with \'#{policy}\' policy...") do
++	  sql = yield(records)
++          do_sqlite_exec(sql)
++        end
+       end
+     end
+   end
+ 
++  def test_sqlite_insert_12k_global_transaction
++    @cache_policies.each do |policy|
++      with_sqlite(policy, nil) { sql_inserts_global_transaction }
++    end
++  end
++
++  def test_sqlite_insert_12k_multiple_transaction
++    @cache_policies.each do |policy|
++      with_sqlite(policy, nil) { sql_inserts_multiple_transaction }
++    end
++  end
++
++  def test_sqlite_insert_12k_no_transaction
++    @cache_policies.each do |policy|
++      with_sqlite(policy, nil) { sql_inserts_no_transaction }
++    end
++  end
++
+ end

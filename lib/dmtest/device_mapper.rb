@@ -1,0 +1,5 @@
+require 'dmtest/device-mapper/dev'
+require 'dmtest/device-mapper/event_tracker'
+require 'dmtest/device-mapper/targets'
+require 'dmtest/device-mapper/table'
+require 'dmtest/device-mapper/interface'

@@ -1,0 +1,12 @@
+[randrw]
+rw=randrw
+rwmixread=80
+size=1g
+fadvise_hint=0
+blocksize=8k
+direct=1
+numjobs=8
+nrfiles=1
+runtime=30
+ioengine=libaio
+time_based

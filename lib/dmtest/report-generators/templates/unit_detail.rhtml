@@ -1,0 +1,19 @@
+<table width="95%" cellspacing="2" cellpadding="5" border="0" class="stripes">
+<tr><th>Test</th><th>Result</th></tr>
+<tr>
+  <td>
+  <%= t.name %>
+  </td>
+  <% if t.pass? %>
+  <td class="pass">pass</td>
+  <% else %>
+  <td class="fail">fail</td>
+  <% end %>
+</tr>
+</table>
+
+<table width="95%" cellspacing="1" cellpadding="1" border="0" class="stripes">
+<tr><th>Level</th><th>Time</th><th>Message</th></tr>
+<% File.open(t.log_path) do |file| %><% file.each_message do |msg| %><%= expand_message(msg) %><% end %><% end %>
+</table>
+

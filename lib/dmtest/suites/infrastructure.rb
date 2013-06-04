@@ -1,0 +1,7 @@
+require 'tests/infrastructure/prelude_tests'
+require 'tests/infrastructure/process_tests'
+require 'tests/infrastructure/segment_tests'
+require 'tests/infrastructure/tvm_tests'
+require 'tests/infrastructure/xml_format_tests'
+require 'tests/infrastructure/metadata_tests'
+require 'tests/infrastructure/ll_instr_tests'
