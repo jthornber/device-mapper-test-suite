@@ -124,10 +124,19 @@ module ThinpTestMixin
   include ProcessControl
   include TinyVolumeManager
 
+  # A little shim to convert to the new config
+  def get_config
+    p = $profile                # blech
+    {
+      :metadata_dev => p.metadata_dev,
+      :data_dev => p.data_dev
+    }
+  end
+
   def setup
     check_prereqs
 
-    config = Config.get_config
+    config = get_config
     @metadata_dev = config[:metadata_dev]
     @data_dev = config[:data_dev]
 

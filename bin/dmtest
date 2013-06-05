@@ -201,6 +201,10 @@ DMTestCommandLine = CommandLine::Parser.new do
     str
   end
 
+  value_type :symbol do |str|
+    str.intern
+  end
+
   FILTER_PATTERN = %r{\A/(.*)/\Z}
 
   value_type :filter do |str|
@@ -219,7 +223,7 @@ DMTestCommandLine = CommandLine::Parser.new do
 
   simple_switch :help, '-h', '--help'
   value_switch :name, :filter, '-n', '--name'
-  value_switch :profile, :string, '--profile'
+  value_switch :profile, :symbol, '--profile'
   value_switch :suite, :string, '--suite'
   value_switch :testcase, :filter, '-t'
 
@@ -247,7 +251,8 @@ class Dispatcher
   end
 
   def run(opts, args)
-    $profile = opts.fetch(:profile, nil)
+    setup_profile(opts.fetch(:profile, nil))
+
     $suite = "dmtest/suites/#{opts.fetch(:suite, nil)}"
 
     $filters = []
@@ -278,6 +283,24 @@ class Dispatcher
 
     runner = Test::Unit::UI::ThinTestRunner.new(suite, Test::Unit::UI::VERBOSE)
     runner.start
+  end
+
+  private
+  CONFIG = "#{ENV['HOME']}/.dmtest/config"
+
+  def setup_profile(sym = nil)
+    cfg = get_config
+    sym ||= cfg.default_profile
+    $profile = cfg.profiles[sym]
+  end
+
+  def get_config
+    txt = File.read(CONFIG)
+    c = DMTest::Config.new do
+      eval(txt)
+    end
+
+    c
   end
 end
 
@@ -336,3 +359,19 @@ end
 # `./generate_reports`
 
 #----------------------------------------------------------------
+
+
+#   def Config.get_config
+#     host = `hostname --fqdn`.chomp
+
+#     if $profile
+#       host = "#{host}:#{$profile}"
+#     end
+
+#     if CONFIGS.has_key?(host)
+#       CONFIGS[host]
+#     else
+#       raise RuntimeError, "unknown host '#{host}', set up your config in config.rb"
+#     end
+#   end
+# end
