@@ -8,6 +8,8 @@ require 'dmtest/test-outcome'
 require 'dmtest/config'
 require 'pathname'
 
+require 'ejt_command_line'
+
 require 'test/unit/collector/objectspace'
 require 'test/unit/testsuite'
 require 'test/unit/ui/testrunnermediator'
@@ -194,115 +196,143 @@ end
 
 #----------------------------------------------------------------
 
-def options
-  @options ||= OptionParser.new do |o|
-    o.banner = "Thin Provisioning unit test runner."
-    o.banner << "\nUsage: #{$0} [options] [-- untouched arguments]"
+DMTestCommandLine = CommandLine::Parser.new do
+  value_type :string do |str|
+    str
+  end
 
-    o.on
+  FILTER_PATTERN = %r{\A/(.*)/\Z}
 
-    o.on('-n', '--name=NAME', String,
-         "Runs tests matching NAME (patterns may be used).") do |n|
-      n = (%r{\A/(.*)/\Z} =~ n ? Regexp.new($1) : n)
-      case n
-      when Regexp
-        $filters << proc{|t| n =~ t.method_name ? true : nil}
-      else
-        $filters << proc{|t| n == t.method_name ? true : nil}
+  value_type :filter do |str|
+    m = FILTER_PATTERN.match(str)
+    if m
+      pattern = Regexp.new(m[1])
+      lambda do |name|
+        pattern =~ name ? true : nil
+      end
+    else
+      lambda do |name|
+        str == name ? true : nil
       end
     end
+  end
 
-    o.on('-p', '--profile=NAME', String,
-         "Selects a config profile.") do |p|
-      $profile = p
-    end
+  simple_switch :help, '-h', '--help'
+  value_switch :name, :filter, '-n', '--name'
+  value_switch :profile, :string, '--profile'
+  value_switch :suite, :string, '--suite'
+  value_switch :testcase, :filter, '-t'
 
-    o.on('-s', '--suite=TEST_SUITE', String,
-         "Selects a test suite.") do |s|
-      $suite = s
-    end
+  command :run do
+    switches :name, :profile, :suite, :testcase
+  end
 
-    o.on('-t', '--testcase=TESTCASE', String,
-         "Runs tests in TestCases matching TESTCASE (patterns may be used).") do |n|
-      n = (%r{\A/(.*)/\Z} =~ n ? Regexp.new($1) : n)
-      case n
-      when Regexp
-        $filters << proc {|t| n =~ t.class.name ? true : nil}
-      else
-        $filters << proc {|t| n == t.class.name ? true : nil}
-      end
-    end
+  command :serve do
+  end
 
-    o.on('-T', '--tags=TAG', String,
-         "Runs tests tagged with TAG (patterns may be used).") do |n|
-      n = (%r{\A/(.*)/\Z} =~ n ? Regexp.new($1) : n)
-      case n
-      when Regexp
-        $filters << lambda do |t|
-          begin
-            tags = t.class.get_tags(t.method_name.to_sym)
-            tags.any? do |tag|
-              n =~ tag.to_s
-            end ? true : nil
-          rescue
-            nil
-          end
-        end
-      else
-        $filters << lambda do |t|
-          begin
-            tags = t.class.get_tags(t.method_name.to_sym)
-            tags.any? do |tag|
-              n == tag.to_s
-            end ? true : nil
-          rescue
-            nil
-          end
-        end
-      end
-    end
+  global do
+    switches :help
   end
 end
 
 #----------------------------------------------------------------
 
-$filters = []
-$profile = nil
-$suite = nil
+class Dispatcher
+  def testcase_filter(filter)
+    lambda {|t| filter.call(t.class.name)}
+  end
 
-def process_args(args = ARGV)
-  begin
-    options.order!(args) {|arg|}
-  rescue OptionParser::ParseError => e
-    puts e
-    puts options
-    $! = nil
-    abort
-  else
-    $filters << proc {false} unless($filters.empty?)
+  def name_filter(filter)
+    lambda {|t| filter.call(t.method_name)}
+  end
+
+  def run(opts, args)
+    $profile = opts.fetch(:profile, nil)
+    $suite = "dmtest/suites/#{opts.fetch(:suite, nil)}"
+
+    $filters = []
+    if opts.member? :testcase
+      $filters << testcase_filter(opts[:testcase])
+    end
+
+    if opts.member? :name
+      $filters << name_filter(opts[:name])
+    end
+
+    $filters << proc {|t| false}
+
+    if $suite.nil?
+      STDERR.puts "please specify a test suite, eg, '--suite suites/infrastructure'"
+      exit(1)
+    end
+
+    STDERR.puts "suite = '#{$suite}'"
+
+    require $suite
+
+    c = Test::Unit::Collector::ObjectSpace.new
+    if $filters.size
+      c.filter = $filters
+    end
+    suite = c.collect('dmtest')
+
+    runner = Test::Unit::UI::ThinTestRunner.new(suite, Test::Unit::UI::VERBOSE)
+    runner.start
   end
 end
 
-process_args
+#----------------------------------------------------------------
 
-if $suite.nil?
-  STDERR.puts "please specify a test suite, eg, '--suite suites/infrastructure'"
-  exit(1)
+def top_level_handler(&block)
+  begin
+    block.call
+  rescue => e
+    STDERR.puts e.message
+    exit 1
+  end
+
+  exit 0
 end
 
-unless $suite =~ /^dmtest\/suites\//
-  $suite = "dmtest/suites/#{$suite}"
+#----------------------------------------------------------------
+
+top_level_handler do
+  dispatcher = Dispatcher.new
+  DMTestCommandLine.parse(dispatcher, *ARGV)
 end
 
-require $suite
+#----------------------------------------------------------------
+#     o.on('-T', '--tags=TAG', String,
+#          "Runs tests tagged with TAG (patterns may be used).") do |n|
+#       n = (%r{\A/(.*)/\Z} =~ n ? Regexp.new($1) : n)
+#       case n
+#       when Regexp
+#         $filters << lambda do |t|
+#           begin
+#             tags = t.class.get_tags(t.method_name.to_sym)
+#             tags.any? do |tag|
+#               n =~ tag.to_s
+#             end ? true : nil
+#           rescue
+#             nil
+#           end
+#         end
+#       else
+#         $filters << lambda do |t|
+#           begin
+#             tags = t.class.get_tags(t.method_name.to_sym)
+#             tags.any? do |tag|
+#               n == tag.to_s
+#             end ? true : nil
+#           rescue
+#             nil
+#           end
+#         end
+#       end
+#     end
+#   end
+# end
 
-c = Test::Unit::Collector::ObjectSpace.new
-c.filter = $filters
-suite = c.collect($0.sub(/\.rb\Z/, ''))
-
-runner = Test::Unit::UI::ThinTestRunner.new(suite, Test::Unit::UI::VERBOSE)
-runner.start
-
-`./generate_reports`
+# `./generate_reports`
 
 #----------------------------------------------------------------
