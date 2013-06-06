@@ -231,6 +231,10 @@ DMTestCommandLine = CommandLine::Parser.new do
     switches :name, :profile, :suite, :testcase
   end
 
+  command :list do
+    switches :name, :suite, :testcase
+  end
+
   command :serve do
   end
 
@@ -252,35 +256,7 @@ class Dispatcher
 
   def run(opts, args)
     setup_profile(opts.fetch(:profile, nil))
-
-    $suite = "dmtest/suites/#{opts.fetch(:suite, nil)}"
-
-    $filters = []
-    if opts.member? :testcase
-      $filters << testcase_filter(opts[:testcase])
-    end
-
-    if opts.member? :name
-      $filters << name_filter(opts[:name])
-    end
-
-    $filters << proc {|t| false}
-
-    if $suite.nil?
-      STDERR.puts "please specify a test suite, eg, '--suite suites/infrastructure'"
-      exit(1)
-    end
-
-    STDERR.puts "suite = '#{$suite}'"
-
-    require $suite
-
-    c = Test::Unit::Collector::ObjectSpace.new
-    if $filters.size
-      c.filter = $filters
-    end
-    suite = c.collect('dmtest')
-
+    suite = select_tests(opts)
     runner = Test::Unit::UI::ThinTestRunner.new(suite, Test::Unit::UI::VERBOSE)
     runner.start
   end
@@ -301,6 +277,36 @@ class Dispatcher
     end
 
     c
+  end
+
+  def select_tests(opts)
+    suite = "dmtest/suites/#{opts.fetch(:suite, nil)}"
+
+    $filters = []
+    if opts.member? :testcase
+      $filters << testcase_filter(opts[:testcase])
+    end
+
+    if opts.member? :name
+      $filters << name_filter(opts[:name])
+    end
+
+    $filters << proc {|t| false}
+
+    if suite.nil?
+      # FIXME: usage
+      STDERR.puts "please specify a test suite, eg, '--suite suites/infrastructure'"
+      exit(1)
+    end
+
+    require suite
+
+    c = Test::Unit::Collector::ObjectSpace.new
+    if $filters.size
+      c.filter = $filters
+    end
+
+    c.collect('dmtest')
   end
 end
 
