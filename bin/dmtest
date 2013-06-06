@@ -15,6 +15,7 @@ require 'test/unit/testsuite'
 require 'test/unit/ui/testrunnermediator'
 require 'test/unit/ui/testrunnerutilities'
 
+require 'webrick'
 require 'yaml'
 
 #----------------------------------------------------------------
@@ -205,6 +206,10 @@ DMTestCommandLine = CommandLine::Parser.new do
     str.intern
   end
 
+  value_type :int do |str|
+    Integer(str)
+  end
+
   FILTER_PATTERN = %r{\A/(.*)/\Z}
 
   value_type :filter do |str|
@@ -226,6 +231,7 @@ DMTestCommandLine = CommandLine::Parser.new do
   value_switch :profile, :symbol, '--profile'
   value_switch :suite, :string, '--suite'
   value_switch :testcase, :filter, '-t'
+  value_switch :port, :int, '--port'
 
   command :run do
     switches :name, :profile, :suite, :testcase
@@ -236,6 +242,7 @@ DMTestCommandLine = CommandLine::Parser.new do
   end
 
   command :serve do
+    switches :port
   end
 
   global do
@@ -263,19 +270,24 @@ class Dispatcher
     runner.start
   end
 
-  def print_suite(prefix, suite)
-    if  suite.respond_to? :tests
-      puts "#{prefix}#{suite}"
-      prefix += '  '
-      suite.tests.each {|t| print_suite(prefix, t)}
-    else
-      puts "#{prefix}#{trim_prefix('test_', suite.method_name.to_s)}"
-    end
-  end
-
   def list(opts, args)
     suite = select_tests(opts)
     print_suite('', suite)
+  end
+
+  def serve(opts, args)
+    config = {
+      :Port => opts.fetch(:port, 8080),
+      :DocumentRoot => './reports'
+    }
+
+    server = WEBrick::HTTPServer.new(config)
+
+    ['INT', 'TERM'].each do |signal|
+      trap(signal){ server.shutdown} 
+    end
+
+    server.start
   end
 
   private
@@ -325,6 +337,16 @@ class Dispatcher
 
   def trim_prefix(prefix, str)
     str.gsub(/^#{prefix}/, '')
+  end
+
+  def print_suite(prefix, suite)
+    if  suite.respond_to? :tests
+      puts "#{prefix}#{suite}"
+      prefix += '  '
+      suite.tests.each {|t| print_suite(prefix, t)}
+    else
+      puts "#{prefix}#{trim_prefix('test_', suite.method_name.to_s)}"
+    end
   end
 end
 

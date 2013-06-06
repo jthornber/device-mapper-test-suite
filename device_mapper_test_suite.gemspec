@@ -22,6 +22,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "ejt_command_line"
   spec.add_dependency "thinp_xml"
   spec.add_dependency "rspec"
+  spec.add_dependency "webrick"
 
   spec.add_development_dependency "bundler", "~> 1.3"
   spec.add_development_dependency "rake"
