@@ -247,11 +247,13 @@ end
 
 class Dispatcher
   def testcase_filter(filter)
-    lambda {|t| filter.call(t.class.name)}
+    lambda {|t| filter.call(t.class.name.to_s)}
   end
 
   def name_filter(filter)
-    lambda {|t| filter.call(t.method_name)}
+    lambda do |t|
+      filter.call(trim_prefix('test_', t.method_name.to_s))
+    end
   end
 
   def run(opts, args)
@@ -264,10 +266,10 @@ class Dispatcher
   def print_suite(prefix, suite)
     if  suite.respond_to? :tests
       puts "#{prefix}#{suite}"
-      prefix += '    '
+      prefix += '  '
       suite.tests.each {|t| print_suite(prefix, t)}
     else
-      puts "#{prefix}#{suite.method_name}"
+      puts "#{prefix}#{trim_prefix('test_', suite.method_name.to_s)}"
     end
   end
 
@@ -319,6 +321,10 @@ class Dispatcher
     c = Test::Unit::Collector::ObjectSpace.new
     c.filter = $filters
     c.collect(opts[:suite])
+  end
+
+  def trim_prefix(prefix, str)
+    str.gsub(/^#{prefix}/, '')
   end
 end
 
