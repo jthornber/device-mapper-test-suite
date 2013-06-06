@@ -306,7 +306,7 @@ class Dispatcher
       $filters << name_filter(opts[:name])
     end
 
-    $filters << proc {|t| false}
+    $filters << proc {|t| false} unless($filters.empty?)
 
     if suite.nil?
       # FIXME: usage
@@ -317,10 +317,7 @@ class Dispatcher
     require suite
 
     c = Test::Unit::Collector::ObjectSpace.new
-    if $filters.size
-      c.filter = $filters
-    end
-
+    c.filter = $filters
     c.collect(opts[:suite])
   end
 end
@@ -379,20 +376,3 @@ end
 
 # `./generate_reports`
 
-#----------------------------------------------------------------
-
-
-#   def Config.get_config
-#     host = `hostname --fqdn`.chomp
-
-#     if $profile
-#       host = "#{host}:#{$profile}"
-#     end
-
-#     if CONFIGS.has_key?(host)
-#       CONFIGS[host]
-#     else
-#       raise RuntimeError, "unknown host '#{host}', set up your config in config.rb"
-#     end
-#   end
-# end
