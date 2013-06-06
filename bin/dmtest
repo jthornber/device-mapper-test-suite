@@ -261,6 +261,21 @@ class Dispatcher
     runner.start
   end
 
+  def print_suite(prefix, suite)
+    if  suite.respond_to? :tests
+      puts "#{prefix}#{suite}"
+      prefix += '    '
+      suite.tests.each {|t| print_suite(prefix, t)}
+    else
+      puts "#{prefix}#{suite.method_name}"
+    end
+  end
+
+  def list(opts, args)
+    suite = select_tests(opts)
+    print_suite('', suite)
+  end
+
   private
   CONFIG = "#{ENV['HOME']}/.dmtest/config"
 
@@ -306,7 +321,7 @@ class Dispatcher
       c.filter = $filters
     end
 
-    c.collect('dmtest')
+    c.collect(opts[:suite])
   end
 end
 
