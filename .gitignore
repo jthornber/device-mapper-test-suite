@@ -19,3 +19,4 @@ tmp
 *.orig
 *.log
 *.yaml
+reports/*.html

@@ -3,7 +3,6 @@
 require 'erb'
 require 'dmtest/log'
 require 'dmtest/report-generators/report_templates'
-require 'dmtest/report-generators/reports'
 require 'dmtest/test-outcome'
 require 'dmtest/config'
 require 'pathname'
@@ -17,6 +16,48 @@ require 'test/unit/ui/testrunnerutilities'
 
 require 'webrick'
 require 'yaml'
+
+#----------------------------------------------------------------
+
+Message = Struct.new(:level, :time, :txt)
+
+class File
+  def each_message
+    msg = nil
+    in_message = false
+
+    each_line do |line|
+      if in_message
+        m = /([DIWE]), (\[.*\])[^:]*: (.*)/.match(line)
+        if m
+          yield(msg)
+          msg = Message.new(m[1], trim_time(m[2]), m[3])
+        else
+          msg.txt.concat line
+        end
+      else
+        m = /([DIWE]), (\[.*\])[^:]*: (.*)/.match(line)
+        if !m
+          raise RuntimeError, "bad log line: '#{line}'"
+        end
+
+        msg = Message.new(m[1], trim_time(m[2]), m[3])
+        in_message = true
+      end
+    end
+
+    if in_message
+      yield(msg)
+    end
+  end
+
+  private
+  def trim_time(txt)
+    # [2011-10-19T15:02:36.011520 #1065]
+    m = /T(\S+)/.match(txt)
+    m ? m[1] : 'arf'
+  end
+end
 
 #----------------------------------------------------------------
 
@@ -245,6 +286,9 @@ DMTestCommandLine = CommandLine::Parser.new do
     switches :port
   end
 
+  command :generate do
+  end
+
   global do
     switches :help
   end
@@ -268,6 +312,8 @@ class Dispatcher
     suite = select_tests(opts)
     runner = Test::Unit::UI::ThinTestRunner.new(suite, Test::Unit::UI::VERBOSE)
     runner.start
+
+    generate({}, [])
   end
 
   def list(opts, args)
@@ -288,6 +334,20 @@ class Dispatcher
     end
 
     server.start
+  end
+
+  def generate(opts, args)
+    generator = DMTest::ReportGenerator.new('./reports')
+    all_tests = Array.new
+
+    Dir::glob('reports/*.yaml') do |yaml_file|
+      t = YAML::load_file(yaml_file)
+      generator.unit_detail(t)
+      all_tests << t
+    end
+
+    generator.unit_summary(all_tests)
+    generator.index
   end
 
   private

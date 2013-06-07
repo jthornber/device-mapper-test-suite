@@ -133,5 +133,4 @@ module Utils
 
     r.reverse.to_s.chop
   end
-
 end

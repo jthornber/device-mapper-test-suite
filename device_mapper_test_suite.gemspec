@@ -5,7 +5,7 @@ require 'dmtest/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "device_mapper_test_suite"
-  spec.version       = DeviceMapperTestSuite::VERSION
+  spec.version       = DMTest::VERSION
   spec.authors       = ["Joe Thornber"]
   spec.email         = ["ejt@redhat.com"]
   spec.description   = %q{Functional tests for device-mapper targets}
