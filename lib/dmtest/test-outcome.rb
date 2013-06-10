@@ -5,12 +5,12 @@ def mangle(txt)
 end
 
 class TestOutcome
-  attr_accessor :suite, :name, :log_path, :time
+  attr_accessor :suite, :name, :log_file, :time
 
   def initialize(s, n, t = nil)
     @suite = s
     @name = n
-    @log_path = "reports/#{mangle(s)}_#{mangle(n)}.log"
+    @log_file = "#{mangle(s)}_#{mangle(n)}.log"
     @time = t || Time.now
     @pass = true
   end
