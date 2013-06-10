@@ -337,7 +337,7 @@ class Dispatcher
   end
 
   def generate(opts, args)
-    generator = DMTest::ReportGenerator.new('./reports')
+    generator = DMTest::ReportGenerator.new(report_dir)
     all_tests = Array.new
 
     Dir::glob('reports/*.yaml') do |yaml_file|
@@ -351,8 +351,6 @@ class Dispatcher
   end
 
   private
-  CONFIG = "#{ENV['HOME']}/.dmtest/config"
-
   def setup_profile(sym = nil)
     cfg = get_config
     sym ||= cfg.default_profile
@@ -360,7 +358,7 @@ class Dispatcher
   end
 
   def get_config
-    txt = File.read(CONFIG)
+    txt = File.read(config_file)
     c = DMTest::Config.new do
       eval(txt)
     end
@@ -407,6 +405,72 @@ class Dispatcher
     else
       puts "#{prefix}#{trim_prefix('test_', suite.method_name.to_s)}"
     end
+  end
+
+  #--------------------------------
+  # dot dir stuff
+  DOT_DIR = "#{ENV['HOME']}/.dmtest"
+
+  def dot_dir
+    unless File.directory?(DOT_DIR)
+      setup_dot_dir
+    end
+
+    DOT_DIR
+  end
+
+  def report_dir_
+    "#{DOT_DIR}/reports"
+  end
+
+  def config_file_
+    "#{DOT_DIR}/config"
+  end
+
+  def setup_dot_dir
+    puts "creating #{DOT_DIR}"
+    Dir.mkdir(DOT_DIR)
+
+    puts "creating reports directory (#{report_dir_})"
+    Dir.mkdir(report_dir_)
+
+    puts "writing example config file (#{config_file_}), please fill it in"
+    File.open(config_file_, "w") do |f|
+      f.write <<EOF
+# profile :ssd do
+#   metadata_dev '/dev/vdb'
+#   data_dev '/dev/vdc'
+# end
+#
+# profile :spindle do
+#   metadata_dev '/dev/vdd'
+#   data_dev '/dev/vde'
+# end
+#
+# profile :mix do
+#   metadata_dev '/dev/vdb'
+#   data_dev '/dev/vde'
+# end
+#
+# default_profile :ssd
+EOF
+    end
+  end
+
+  def check_dot_dir
+    unless File.directory? DOT_DIR
+      setup_dot_dir
+    end
+  end
+
+  def report_dir
+    check_dot_dir
+    report_dir_
+  end
+
+  def config_file
+    check_dot_dir
+    config_file_
   end
 end
 
