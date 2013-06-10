@@ -31,6 +31,10 @@ body {
     color:#000000;
 }
 
+table {
+  padding-bottom: 1cm;
+}
+
 table tr td, table tr th {
   font-size: 75%;
 }
