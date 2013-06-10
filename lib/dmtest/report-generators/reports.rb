@@ -13,7 +13,7 @@ require 'dmtest/log'
 require 'pathname'
 
 module Reports
-  Report = Struct.new(:short_desc, :desc, :path, :template)
+  Report = Struct.new(:short_desc, :desc, :template)
 
   class ReportRegister
     attr_reader :reports
@@ -30,26 +30,17 @@ module Reports
       add_report(:unit_test,
                  "Unit Tests",
                  "unit tests",
-                 Pathname.new("reports/unit.html"),
                  Pathname.new("unit_test.rhtml"))
-
-      add_report(:memcheck,
-                 "Memory Tests",
-                 "unit tests with valgrind memory checking",
-                 Pathname.new("reports/memcheck.html"),
-                 Pathname.new("memcheck.rhtml"))
 
       add_report(:unit_detail,
                  "Unit Test Detail",
                  "unit test detail",
-                 Pathname.new("reports/unit_detail.html"), # FIXME replace this with a lambda
                  Pathname.new("unit_detail.rhtml"))
 
-      add_report(:index,
-                 "Index",
-                 "Reports index",
-                 Pathname.new("reports/index.html"),
-                 Pathname.new("index.rhtml"))
+      add_report(:stylesheet,
+                 "CSS Stylesheet",
+                 "CSS Stylesheet",
+                 Pathname.new("stylesheet.rcss"))
     end
 
     def get_report(sym)

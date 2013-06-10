@@ -39,16 +39,17 @@ module DMTest
       total_passed = all_tests.inject(0) {|tot, t| tot + (t.pass? ? 1 : 0)}
       total_failed = all_tests.length - total_passed
 
-      generate_report(:unit_test, binding)
+      generate_report(:unit_test, binding,
+                      Pathname.new("#{@output_dir}/index.html"))
     end
 
-    def index()
-      reports = ReportRegister.new
-      generate_report(:index, binding)
+    def stylesheet
+      generate_report(:stylesheet, binding,
+                      Pathname.new("#{@output_dir}/stylsheet.css"))
     end
 
     private
-    def generate_report(report, bs, dest_path = nil)
+    def generate_report(report, bs, dest_path)
       reports = ReportRegister.new
       template_store = TemplateStringStore.new
       report = reports.get_report(report)
@@ -59,7 +60,6 @@ module DMTest
       erb = ERB.new(template_store.lookup("boiler_plate.rhtml"))
       txt = erb.result(binding)
 
-      dest_path = dest_path.nil? ? report.path : dest_path
       dest_path.open("w") do |out|
         out.puts txt
       end

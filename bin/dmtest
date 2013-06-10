@@ -347,7 +347,7 @@ class Dispatcher
     end
 
     generator.unit_summary(all_tests)
-    generator.index
+    generator.stylesheet
   end
 
   private
