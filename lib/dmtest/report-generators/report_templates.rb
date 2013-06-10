@@ -45,7 +45,7 @@ module DMTest
 
     def stylesheet
       generate_report(:stylesheet, binding,
-                      Pathname.new("#{@output_dir}/stylsheet.css"))
+                      Pathname.new("#{@output_dir}/stylesheet.css"))
     end
 
     private

@@ -14,6 +14,6 @@
 
 <table width="95%" cellspacing="1" cellpadding="1" border="0" class="stripes">
 <tr><th>Level</th><th>Time</th><th>Message</th></tr>
-<% File.open(t.log_path) do |file| %><% file.each_message do |msg| %><%= expand_message(msg) %><% end %><% end %>
+<% File.open("#{@output_dir}/#{t.log_file}") do |file| %><% file.each_message do |msg| %><%= expand_message(msg) %><% end %><% end %>
 </table>
 

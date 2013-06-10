@@ -76,8 +76,9 @@ module Test
         # failures, and the final result. io specifies
         # where runner output should go to; defaults to
         # STDOUT.
-        def initialize(suite, output_level=NORMAL, io=STDOUT)
+        def initialize(suite, output_dir, output_level=NORMAL, io=STDOUT)
           @suite = suite
+          @output_dir = output_dir
           @output_level = output_level
           @io = io
           @already_outputted = false
@@ -160,22 +161,22 @@ module Test
         end
 
         def result_file(name)
-          "./reports/#{mangle(name)}.result"
+          "#{@output_dir}/#{mangle(name)}.result"
         end
 
         def log_file(name)
-          "./reports/#{mangle(name)}.result"
+          "#{@output_dir}/#{mangle(name)}.result"
         end
 
         def yaml_file(name)
           s, n = decompose_name(name)
-          "./reports/#{mangle(s)}_#{mangle(n)}.yaml"
+          "#{@output_dir}/#{mangle(s)}_#{mangle(n)}.yaml"
         end
 
         def test_started(name)
           suite, n = decompose_name(name)
           t = TestOutcome.new(suite, n)
-          @current_log = File.open(t.log_path, 'w')
+          @current_log = File.open("#{@output_dir}/#{t.log_file}", 'w')
           set_log(@current_log)
           @current_test = t
           @suites[suite] << t
@@ -310,7 +311,7 @@ class Dispatcher
   def run(opts, args)
     setup_profile(opts.fetch(:profile, nil))
     suite = select_tests(opts)
-    runner = Test::Unit::UI::ThinTestRunner.new(suite, Test::Unit::UI::VERBOSE)
+    runner = Test::Unit::UI::ThinTestRunner.new(suite, report_dir, Test::Unit::UI::VERBOSE)
     runner.start
 
     generate({}, [])
@@ -324,7 +325,7 @@ class Dispatcher
   def serve(opts, args)
     config = {
       :Port => opts.fetch(:port, 8080),
-      :DocumentRoot => './reports'
+      :DocumentRoot => report_dir
     }
 
     server = WEBrick::HTTPServer.new(config)
@@ -340,7 +341,8 @@ class Dispatcher
     generator = DMTest::ReportGenerator.new(report_dir)
     all_tests = Array.new
 
-    Dir::glob('reports/*.yaml') do |yaml_file|
+    Dir::glob("#{report_dir}/*.yaml") do |yaml_file|
+      "found yaml file: #{yaml_file}"
       t = YAML::load_file(yaml_file)
       generator.unit_detail(t)
       all_tests << t
@@ -526,5 +528,4 @@ end
 #   end
 # end
 
-# `./generate_reports`
 

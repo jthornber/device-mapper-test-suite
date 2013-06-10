@@ -4,7 +4,7 @@
 </table>
 
 <table width="95%" cellspacing="2" cellpadding="5" border="0" class="stripes">
-<tr><th>Suite</th><th>Pass</th><th>Fail</th></tr>
+<tr><th>Test Class</th><th>Pass</th><th>Fail</th></tr>
 <% suites.sort.each do |k, s| %>
 <% pass_rate = s.inject(0) {|tot, t| tot + (t.pass? ? 1 : 0)} %>
 <% fail_rate = s.length - pass_rate %>
@@ -12,8 +12,8 @@
 <% end %>
 </table>
 
-<table width="95%" cellspacing="2" cellpadding="5" border="0" class="stripes">
 <% suites.sort.each do |k, s| %>
+<table width="95%" cellspacing="2" cellpadding="5" border="0" class="stripes">
 <tr><th><a name="<%= k %>"><%= k %></a></th><th>Result</th><th>Execution Time</th></tr>
 <% s.each do |t| %>
 <tr>
@@ -28,5 +28,5 @@
   <td><%= t.time %></td>
 </tr>
 <% end %>
-<% end %>
 </table>
+<% end %>
