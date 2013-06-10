@@ -175,8 +175,8 @@ module Test
 
         def test_started(name)
           suite, n = decompose_name(name)
-          t = TestOutcome.new(suite, n)
-          @current_log = File.open("#{@output_dir}/#{t.log_file}", 'w')
+          t = TestOutcome.new(suite, n, @output_dir)
+          @current_log = File.open(t.log_path, 'w')
           set_log(@current_log)
           @current_test = t
           @suites[suite] << t
@@ -311,7 +311,7 @@ class Dispatcher
   def run(opts, args)
     setup_profile(opts.fetch(:profile, nil))
     suite = select_tests(opts)
-    runner = Test::Unit::UI::ThinTestRunner.new(suite, report_dir, Test::Unit::UI::VERBOSE)
+    runner = Test::Unit::UI::ThinTestRunner.new(suite, log_dir, Test::Unit::UI::VERBOSE)
     runner.start
 
     generate({}, [])
@@ -341,7 +341,7 @@ class Dispatcher
     generator = DMTest::ReportGenerator.new(report_dir)
     all_tests = Array.new
 
-    Dir::glob("#{report_dir}/*.yaml") do |yaml_file|
+    Dir::glob("#{log_dir}/*.yaml") do |yaml_file|
       "found yaml file: #{yaml_file}"
       t = YAML::load_file(yaml_file)
       generator.unit_detail(t)
@@ -425,6 +425,10 @@ class Dispatcher
     "#{DOT_DIR}/reports"
   end
 
+  def log_dir_
+    "#{DOT_DIR}/log"
+  end
+
   def config_file_
     "#{DOT_DIR}/config"
   end
@@ -435,6 +439,9 @@ class Dispatcher
 
     puts "creating reports directory (#{report_dir_})"
     Dir.mkdir(report_dir_)
+
+    puts "creating log directory (#{log_dir_})"
+    Dir.mkdir(log_dir_)
 
     puts "writing example config file (#{config_file_}), please fill it in"
     File.open(config_file_, "w") do |f|
@@ -468,6 +475,11 @@ EOF
   def report_dir
     check_dot_dir
     report_dir_
+  end
+
+  def log_dir
+    check_dot_dir
+    log_dir_
   end
 
   def config_file
