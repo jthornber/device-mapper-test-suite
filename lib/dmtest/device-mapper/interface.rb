@@ -48,7 +48,7 @@ module DM
     end
 
     def status(path, *args)
-      ProcessControl.run("dmsetup status #{args} #{strip(path)}")
+      ProcessControl.run("dmsetup status #{args.join(' ')} #{strip(path)}")
     end
 
     def table(path)
