@@ -6,6 +6,7 @@ require 'dmtest/status'
 require 'dmtest/tags'
 require 'dmtest/thinp-test'
 require 'dmtest/disk-units'
+require 'rspec'
 
 require 'pp'
 
@@ -29,8 +30,9 @@ class MetadataResizeTests < ThinpTestCase
   tag :thinp_target
 
   def test_resize_metadata_no_io
+    md_size = meg(1)
     data_size = meg(100)
-    @tvm.add_volume(linear_vol('metadata', meg(1)))
+    @tvm.add_volume(linear_vol('metadata', md_size))
     @tvm.add_volume(linear_vol('data', data_size))
 
     with_devs(@tvm.table('metadata'),
@@ -39,19 +41,23 @@ class MetadataResizeTests < ThinpTestCase
 
       table = Table.new(ThinPoolTarget.new(data_size, md, data, @data_block_size, @low_water_mark))
       with_dev(table) do |pool|
-        status1 = PoolStatus.new(pool)
 
-        @tvm.resize('metadata', meg(2))
-        pool.pause do
-          md.pause do
-            table = @tvm.table('metadata')
-            md.load(table)
+        [1, 3, 7, 31, 67, 511, 1023].map {|s| meg(s)}.each do |step|
+          status = PoolStatus.new(pool)
+          status.total_metadata_blocks.should == md_size / 8
+
+          @tvm.resize('metadata', md_size + step)
+          pool.pause do
+            md.pause do
+              table = @tvm.table('metadata')
+              md.load(table)
+            end
           end
+
+          status = PoolStatus.new(pool)
+          status.total_metadata_blocks.should == (md_size + step) / 8
+          md_size += step
         end
-
-        status2 = PoolStatus.new(pool)
-
-        assert_equal(status1.total_metadata_blocks * 2, status2.total_metadata_blocks)
       end
     end
   end
