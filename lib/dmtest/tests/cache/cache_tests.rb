@@ -1,4 +1,3 @@
-require 'config'
 require 'dmtest/git'
 require 'dmtest/log'
 require 'dmtest/utils'
@@ -9,9 +8,9 @@ require 'dmtest/cache-status'
 require 'dmtest/disk-units'
 require 'dmtest/test-utils'
 require 'dmtest/tvm.rb'
-require 'tests/cache/cache_stack'
-require 'tests/cache/policy'
-require 'tests/cache/fio_subvolume_scenario'
+require 'dmtest/tests/cache/cache_stack'
+require 'dmtest/tests/cache/policy'
+require 'dmtest/tests/cache/fio_subvolume_scenario'
 
 require 'pp'
 
