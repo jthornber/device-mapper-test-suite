@@ -215,6 +215,16 @@ module ThinpTestMixin
     stack.activate(&block)
   end
 
+  def with_error_pool(size, opts = Hash.new, &block)
+    opts[:data_size] = size
+    
+    error_table = Table.new(ErrorTarget.new(size))
+    with_dev(error_table) do |error_dev|
+      stack = PoolStack.new(@dm, error_dev, @metadata_dev, opts)
+      stack.activate(&block)
+    end
+  end
+
   def with_custom_data_pool(data_dev, size, opts = Hash.new, &block)
     opts[:data_size] = size
     stack = PoolStack.new(@dm, data_dev, @metadata_dev, opts)

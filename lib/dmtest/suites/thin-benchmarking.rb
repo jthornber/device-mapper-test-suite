@@ -1,1 +1,1 @@
-require 'tests/thin-benchmarking/upgrade-debian'
+require 'dmtest/tests/thin-benchmarking/remove-thin'
