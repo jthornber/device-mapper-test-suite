@@ -5,6 +5,10 @@ module DiskUnits
     n
   end
 
+  def k(n)
+    n * 2
+  end
+
   def meg(n)
     n * sectors(2048)
   end
