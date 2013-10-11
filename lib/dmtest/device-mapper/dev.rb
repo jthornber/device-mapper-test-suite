@@ -89,7 +89,7 @@ module DM
     # FIXME: the rest of these methods should go elsewhere
     def post_remove_check
       @active_table.targets.each do |target|
-        if target.public_methods.member?('post_remove_check')
+        if target.public_methods.member?(:post_remove_check)
           target.post_remove_check
         end
       end
