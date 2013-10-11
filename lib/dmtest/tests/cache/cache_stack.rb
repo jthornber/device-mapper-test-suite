@@ -46,6 +46,26 @@ class CacheStack
     @data_tvm.add_volume(linear_vol('origin', origin_size))
   end
 
+  def activate_support_devs(&block)
+    with_devs(@tvm.table('md'),
+              @tvm.table('ssd'),
+              @data_tvm.table('origin')) do |md, ssd, origin|
+      @md = md
+      @ssd = ssd
+      @origin = origin
+
+      wipe_device(md, 8) if @opts.fetch(:format, true)
+      block.call(self)
+    end
+  end
+
+  def activate_top_level(&block)
+      with_dev(cache_table) do |cache|
+        @cache = cache
+        block.call(self)
+      end
+  end
+
   def activate(&block)
     with_devs(@tvm.table('md'),
               @tvm.table('ssd'),
