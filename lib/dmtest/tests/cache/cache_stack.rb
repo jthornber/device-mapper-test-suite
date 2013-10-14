@@ -55,15 +55,15 @@ class CacheStack
       @origin = origin
 
       wipe_device(md, 8) if @opts.fetch(:format, true)
-      block.call(self)
+      ensure_elapsed_time(1, self, &block)
     end
   end
 
   def activate_top_level(&block)
-      with_dev(cache_table) do |cache|
-        @cache = cache
-        block.call(self)
-      end
+    with_dev(cache_table) do |cache|
+      @cache = cache
+      ensure_elapsed_time(1, self, &block)
+    end
   end
 
   def activate(&block)
@@ -78,7 +78,7 @@ class CacheStack
 
       with_dev(cache_table) do |cache|
         @cache = cache
-        block.call(self)
+        ensure_elapsed_time(1, self, &block)
       end
     end
   end
@@ -132,6 +132,20 @@ class CacheStack
   private
   def migration_threshold
     @opts[:migration_threshold] ? [ "migration_threshold", opts[:migration_threshold].to_s ] : []
+  end
+
+  # udev sometimes dives in and holds a device open whilst we're
+  # trying to remove it.  This is only a problem when we don't do much
+  # with an activated stack.  This method calls a block, ensuring a
+  # certain amount of time elapses before it completes.
+  def ensure_elapsed_time(seconds, *args, &block)
+    t = Thread.new(seconds) do |seconds|
+      sleep seconds
+    end
+
+    block.call(*args)
+
+    t.join
   end
 end
 

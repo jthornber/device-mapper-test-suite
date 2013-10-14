@@ -31,7 +31,6 @@ class ToolsTests < ThinpTestCase
 
   def test_formatting_in_kernel_works
     with_standard_cache(:format => true, :data_size => gig(1)) do |cache|
-      sleep 1                   # FIXME: needed to avoid udev fiddling
     end
   end
 
@@ -43,7 +42,6 @@ class ToolsTests < ThinpTestCase
 
     stack.activate_support_devs do |stack|
       stack.activate_top_level do |stack|
-        sleep 1
       end
 
       ProcessControl.run("cache_dump -o dump.xml #{stack.md}")
