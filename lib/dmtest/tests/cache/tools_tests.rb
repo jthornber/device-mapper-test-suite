@@ -11,7 +11,7 @@ require 'dmtest/tests/cache/policy'
 
 #----------------------------------------------------------------
 
-class CorrectnessTests < ThinpTestCase
+class ToolsTests < ThinpTestCase
   include Tags
   include Utils
   include DiskUnits
@@ -36,6 +36,8 @@ class CorrectnessTests < ThinpTestCase
   end
 
   def test_can_dump_kernel_metadata
+    ProcessControl.run("which cache_check")
+
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
                            :format => true, :data_size => gig(1))
 
@@ -45,6 +47,26 @@ class CorrectnessTests < ThinpTestCase
       end
 
       ProcessControl.run("cache_dump -o dump.xml #{stack.md}")
+    end
+  end
+
+  def test_can_restore_from_xml
+    # generate some xml metadata
+    xml_file = 'metadata.xml'
+    ProcessControl.run("cache_xml create --nr-cache-blocks uniform[100..500] --nr-mappings uniform[50..100] > #{xml_file}")
+
+    #bring up the metadata device
+    stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
+                           :format => true, :data_size => gig(1))
+    stack.activate_support_devs do |stack|
+      # restore from xml
+      ProcessControl.run("cache_restore -i #{xml_file} -o #{stack.md}")
+
+      # Bring up the kernel cache target to validate the metadata
+      stack.activate_top_level do |stack|
+        # wipe the cached device, to exercise the metadata
+        wipe_device(stack.cache)
+      end
     end
   end
 end
