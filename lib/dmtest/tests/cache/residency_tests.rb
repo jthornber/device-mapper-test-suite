@@ -24,20 +24,20 @@ class ResidencyTests < ThinpTestCase
 
   def standard_stack
     CacheStack.new(@dm, @metadata_dev, @data_dev,
-                   :block_size => k(64),
+                   :block_size => k(32),
                    :format => true, :data_size => meg(128),
                    :policy => Policy.new('mq'))
   end
 
-  def prepare_populated_cache()
+  # FIXME: non deterministic, depends on tick intervals
+  def prepare_populated_cache_via_kernel()
     status = nil
 
     stack = standard_stack()
     stack.activate do |stack|
-      20.times {wipe_device(stack.cache, 1)}
+      50.times {wipe_device(stack.cache, 640)}
       status = CacheStatus.new(stack.cache)
-      pp status
-      assert(status.residency > 0) # FIXME: failing
+      assert(status.residency > 0)
     end
 
     status
@@ -46,7 +46,7 @@ class ResidencyTests < ThinpTestCase
   #--------------------------------
 
   def test_residency_is_persisted
-    s1 = prepare_populated_cache()
+    s1 = prepare_populated_cache_via_kernel()
 
     stack = standard_stack()
     stack.opts[:format] = false
