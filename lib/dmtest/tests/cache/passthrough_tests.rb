@@ -21,42 +21,46 @@ class PassthroughTests < ThinpTestCase
 
   def setup
     super
-    @data_block_size = meg(1)
+    @data_block_size = k(32)
+    @cache_blocks = 1024
+  end
+
+  def make_stack(overrides = Hash.new)
+    opts = {
+      :cache_size => @cache_blocks * @data_block_size,
+      :block_size => @data_block_size,
+      :format => true,
+      :data_size => meg(128),
+      :policy => Policy.new('mq')
+    }
+
+    CacheStack.new(@dm, @metadata_dev, @data_dev, opts.merge(overrides))
   end
 
   def prepare_populated_cache()
     xml_file = 'metadata.xml'
-    cache_blocks = 1024
-    ProcessControl.run("cache_xml create --nr-cache-blocks #{cache_blocks} --nr-mappings #{cache_blocks} > #{xml_file}")
+    ProcessControl.run("cache_xml create --nr-cache-blocks #{@cache_blocks} --nr-mappings #{@cache_blocks} > #{xml_file}")
 
-    stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
-                           :cache_size => cache_blocks * 64,
-                           :block_size => 64,
-                           :format => true, :data_size => meg(128),
-                           :policy => Policy.new('mq'))
-    stack.activate_support_devs do |stack|
-      ProcessControl.run("cache_restore -i #{xml_file} -o #{stack.md}")
-      ProcessControl.run("cache_dump #{stack.md} > metadata2.xml")
-      stack.activate_top_level do |stack|
-        status = CacheStatus.new(stack.cache)
-        assert_equal(cache_blocks, status.residency)
+    s = make_stack
+    s.activate_support_devs do
+      ProcessControl.run("cache_restore -i #{xml_file} -o #{s.md}")
+
+      s.activate_top_level do
+        status = CacheStatus.new(s.cache)
+        assert_equal(@cache_blocks, status.residency)
       end
-
-      ProcessControl.run("cache_dump #{stack.md} > metadata3.xml")
     end
   end
 
   #--------------------------------
 
   def test_passthrough_never_promotes
-    stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
-                           :format => true, :data_size => gig(1),
-                           :policy => Policy.new('mq'),
-                           :io_mode => :passthrough)
-    stack.activate do |stack|
-      100.times {wipe_device(stack.cache, 640)}
+    s = make_stack(:data_size => gig(1),
+                   :io_mode => :passthrough)
+    s.activate do
+      100.times {wipe_device(s.cache, 640)}
 
-      status = CacheStatus.new(stack.cache)
+      status = CacheStatus.new(s.cache)
       assert_equal(0, status.promotions)
       assert_equal(0, status.residency)
     end
@@ -65,40 +69,26 @@ class PassthroughTests < ThinpTestCase
   def test_passthrough_demotes_writes
     prepare_populated_cache()
 
-    stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
-                           :block_size => 64,
-                           :cache_size => 1024 * 64,
-                           :format => false, :data_size => meg(128),
-                           :policy => Policy.new('mq'),
-                           :io_mode => :passthrough)
-    stack.activate_support_devs do |stack|
-      stack.activate_top_level do |stack|
-        wipe_device(stack.cache)
+    s = make_stack(:format => false,
+                   :io_mode => :passthrough)
+    s.activate do
+      wipe_device(s.cache)
 
-        status = CacheStatus.new(stack.cache)
-        assert_equal(0, status.residency)
-      end
+      status = CacheStatus.new(s.cache)
+      assert_equal(0, status.residency)
     end
   end
 
   def test_passthrough_does_not_demote_reads
     prepare_populated_cache()
 
-    stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
-                           :block_size => 64,
-                           :cache_size => 1024 * 64,
-                           :format => false,
-                           :data_size => meg(128),
-                           :policy => Policy.new('mq'),
-                           :io_mode => :passthrough)
+    s = make_stack(:format => false,
+                   :io_mode => :passthrough)
+    s.activate do
+      read_device_to_null(s.cache)
 
-    stack.activate_support_devs do |stack|
-      stack.activate_top_level do |stack|
-        read_device_to_null(stack.cache)
-
-        status = CacheStatus.new(stack.cache)
-        assert_equal(1024, status.residency)
-      end
+      status = CacheStatus.new(s.cache)
+      assert_equal(@cache_blocks, status.residency)
     end
   end
 end
