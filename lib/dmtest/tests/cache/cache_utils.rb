@@ -26,12 +26,15 @@ module CacheUtils
     md = nil
 
     nr_blocks = overrides.fetch(:cache_blocks, @cache_blocks)
+
     dirty_percentage = overrides.fetch(:dirty_percentage, 0)
+    dirty_flag = "--dirty-percent #{dirty_percentage}"
+
     clean_shutdown = overrides.fetch(:clean_shutdown, true)
     omit_shutdown_flag = clean_shutdown ? '' : "--omit-clean-shutdown"
 
     xml_file = 'metadata.xml'
-    ProcessControl.run("cache_xml create --nr-cache-blocks #{nr_blocks} --nr-mappings #{nr_blocks} > #{xml_file}")
+    ProcessControl.run("cache_xml create --nr-cache-blocks #{nr_blocks} --nr-mappings #{nr_blocks} #{dirty_flag} > #{xml_file}")
 
     s = make_stack(overrides)
     s.activate_support_devs do
