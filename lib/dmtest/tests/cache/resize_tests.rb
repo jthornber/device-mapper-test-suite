@@ -63,6 +63,21 @@ class ResizeTests < ThinpTestCase
       end
     end
   end
+
+  def test_metadata_can_grow
+    [23, 513, 1023, 4095].each do |nr_blocks|
+      md1 = prepare_populated_cache(:cache_blocks => nr_blocks)
+
+      s = make_stack(:format => false,
+                     :cache_blocks => nr_blocks + 5678)
+      s.activate_support_devs do
+        s.activate_top_level {}
+
+        md2 = dump_metadata(s.md)
+        assert_equal(md1.mappings, md2.mappings)
+      end
+    end
+  end
 end
 
 #----------------------------------------------------------------
