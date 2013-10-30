@@ -23,6 +23,8 @@ module CacheUtils
   end
 
   def prepare_populated_cache(overrides = Hash.new)
+    md = nil
+
     nr_blocks = overrides.fetch(:cache_blocks, @cache_blocks)
     dirty_percentage = overrides.fetch(:dirty_percentage, 0)
     clean_shutdown = overrides.fetch(:clean_shutdown, true)
@@ -34,14 +36,10 @@ module CacheUtils
     s = make_stack(overrides)
     s.activate_support_devs do
       ProcessControl.run("cache_restore #{omit_shutdown_flag} -i #{xml_file} -o #{s.md}")
-
-      s.activate_top_level do
-        status = CacheStatus.new(s.cache)
-        assert_equal(nr_blocks, status.residency)
-      end
-
-      ProcessControl.run("cache_dump #{s.md} > metadata1.xml")
+      md = dump_metadata(s.md)
     end
+
+    md
   end
 
   def dump_metadata(dev)
