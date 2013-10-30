@@ -78,6 +78,21 @@ class ResizeTests < ThinpTestCase
       end
     end
   end
+
+  def test_metadata_can_shrink
+    [23, 345, 513, 876, 1023, 2345, 4095].each do |nr_blocks|
+      md1 = prepare_populated_cache(:cache_blocks => nr_blocks)
+
+      s = make_stack(:format => false,
+                     :cache_blocks => nr_blocks / 2)
+      s.activate_support_devs do
+        s.activate_top_level {}
+
+        md2 = dump_metadata(s.md)
+        assert_equal(md1.mappings[0..nr_blocks / 2 - 1], md2.mappings)
+      end
+    end
+  end
 end
 
 #----------------------------------------------------------------
