@@ -26,6 +26,10 @@ class ResizeTests < ThinpTestCase
     @cache_blocks = 1024
   end
 
+  def make_mappings_dirty(mappings)
+    mappings.map! {|m| m.dirty = true; m}
+  end
+
   #--------------------------------
 
   def test_no_resize_retains_mappings_all_clean
@@ -59,7 +63,10 @@ class ResizeTests < ThinpTestCase
         end
 
         md2 = dump_metadata(s.md)
-        assert_equal(md1.mappings, md2.mappings)
+
+        # some mappings may now be clean since there's a background
+        # writeback task.  So we force them all to be dirty
+        assert_equal(md1.mappings, make_mappings_dirty(md2.mappings))
       end
     end
   end
