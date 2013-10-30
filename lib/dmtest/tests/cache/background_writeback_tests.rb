@@ -49,7 +49,8 @@ class BackgroundWritebackTests < ThinpTestCase
 
   def test_dirty_data_always_gets_written_back
     nr_blocks = 1234
-    md1 = prepare_populated_cache(:cache_blocks => nr_blocks)
+    md1 = prepare_populated_cache(:cache_blocks => nr_blocks,
+                                  :dirty_percentage => 100)
     
     s = make_stack(:format => false,
                    :cache_blocks => nr_blocks)
@@ -60,10 +61,14 @@ class BackgroundWritebackTests < ThinpTestCase
         end
       end
 
-      assert_equal(nr_blocks, traces[0].size)
+      assert_equal(nr_blocks, filter_writes(traces[0]).size)
     end
   end
 
+  private
+  def filter_writes(events)
+    events.select {|e| e.code.member?(:write)}
+  end
 end
 
 #----------------------------------------------------------------
