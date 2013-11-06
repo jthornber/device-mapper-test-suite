@@ -107,7 +107,7 @@ class InvalidationTests < ThinpTestCase
 
         s.activate do |stack|
           cache_stomper = origin_stomper.fork(stack.cache.path)
-          cache_stomper.verify(1)
+          cache_stomper.verify(0)
 
           stack.cache.pause do
             stack.cache.message(0, "increment_era_counter 1")
@@ -115,18 +115,18 @@ class InvalidationTests < ThinpTestCase
           end
 
           cache_stomper.stamp(10)
-          cache_stomper.verify(0, 2)
+          cache_stomper.verify(0, 1)
 
           stack.with_io_mode(:passthrough) do
-            cache_stomper.verify(2)
+            cache_stomper.verify(1)
 
             stack.cache.pause do
               external_storage.rollback(0)
-              stack.cache.message(0, "unmap_blocks_from_this_era_and_later 1")
+              stack.cache.message(0, "unmap_blocks_from_this_era_and_later 2")
             end
           end
 
-          cache_stomper.verify(0, 1)
+          cache_stomper.verify(0)
         end
       end
     end
