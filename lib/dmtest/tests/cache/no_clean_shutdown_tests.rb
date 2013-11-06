@@ -41,7 +41,7 @@ class NoCleanShutdownTests < ThinpTestCase
         s.activate_top_level {}
 
         md2 = dump_metadata(s.md)
-        assert_equal(md1.mappings, md2.mappings)
+        assert_equal(md1.mappings, make_mappings_clean(md2.mappings))
       end
     end
   end
