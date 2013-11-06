@@ -123,10 +123,17 @@ class CacheStack
     @opts[:io_mode] ? [ @opts[:io_mode] ] : []
   end
 
-  def cache_table
+  def cache_table(mode = io_mode)
     Table.new(CacheTarget.new(origin_size, @md, @ssd, @origin,
-                              block_size, io_mode + migration_threshold,
+                              block_size, mode + migration_threshold,
                               policy.name, policy.opts))
+  end
+
+  def with_io_mode(mode, &block)
+    tmp_table = cache_table([mode])
+    @cache.load(tmp_table)
+    block.call
+    @cache.load(cache_table)
   end
 
   private
