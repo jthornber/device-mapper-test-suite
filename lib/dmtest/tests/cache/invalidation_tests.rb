@@ -96,7 +96,8 @@ class InvalidationTests < ThinpTestCase
       external_storage = SanStack.new(@dm, @data_dev, thin_md, @data_block_size, @nr_blocks)
       external_storage.activate do |vol|
         origin_stomper = PatternStomper.new(vol.path, @data_block_size, :needs_zero => false)
-        origin_stomper.verify(0)
+        origin_stomper.stamp(20)
+        origin_stomper.verify(0, 1)
 
         s = CacheStack.new(@dm, cache_md, vol,
                            :format => true,
@@ -107,7 +108,7 @@ class InvalidationTests < ThinpTestCase
 
         s.activate do |stack|
           cache_stomper = origin_stomper.fork(stack.cache.path)
-          cache_stomper.verify(0)
+          cache_stomper.verify(0, 1)
 
           stack.cache.pause do
             stack.cache.message(0, "increment_era_counter 1")
@@ -115,10 +116,10 @@ class InvalidationTests < ThinpTestCase
           end
 
           cache_stomper.stamp(10)
-          cache_stomper.verify(0, 1)
+          cache_stomper.verify(0, 2)
 
           stack.with_io_mode(:passthrough) do
-            cache_stomper.verify(1)
+            cache_stomper.verify(2)
 
             stack.cache.pause do
               external_storage.rollback(0)
@@ -126,7 +127,7 @@ class InvalidationTests < ThinpTestCase
             end
           end
 
-          cache_stomper.verify(0)
+          cache_stomper.verify(0, 1)
         end
       end
     end
