@@ -26,10 +26,6 @@ class ResizeTests < ThinpTestCase
     @cache_blocks = 1024
   end
 
-  def make_mappings_dirty(mappings)
-    mappings.map! {|m| m.dirty = true; m}
-  end
-
   #--------------------------------
 
   def test_no_resize_retains_mappings_all_clean

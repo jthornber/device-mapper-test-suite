@@ -49,6 +49,14 @@ module CacheUtils
     output = ProcessControl.run("cache_dump #{dev}")
     read_xml(StringIO.new(output))
   end
+
+  def make_mappings_dirty(mappings)
+    mappings.map! {|m| m.dirty = true; m}
+  end
+
+  def make_mappings_clean(mappings)
+    mappings.map! {|m| m.dirty = false; m}
+  end
 end
 
 #----------------------------------------------------------------
