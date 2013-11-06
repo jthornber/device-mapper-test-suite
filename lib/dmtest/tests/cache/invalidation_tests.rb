@@ -96,7 +96,7 @@ class InvalidationTests < ThinpTestCase
       external_storage = SanStack.new(@dm, @data_dev, thin_md, @data_block_size, @nr_blocks)
       external_storage.activate do |vol|
         origin_stomper = PatternStomper.new(vol.path, @data_block_size, :needs_zero => false)
-        origin_stomper.verify(0, 1)
+        origin_stomper.verify(0)
 
         s = CacheStack.new(@dm, cache_md, vol,
                            :format => true,
@@ -124,12 +124,37 @@ class InvalidationTests < ThinpTestCase
               external_storage.rollback(0)
               stack.cache.message(0, "unmap_blocks_from_this_era_and_later 1")
             end
-
-            cache_stomper.verify(0, 1)
           end
 
           cache_stomper.verify(0, 1)
         end
+      end
+    end
+  end
+
+  def test_external_storage_snap_and_rollback
+    # reserve a bit of the metadata device for the thin pool metadata
+    tvm = TinyVolumeManager::VM.new
+    tvm.add_allocation_volume(@metadata_dev, 0, dev_size(@metadata_dev))
+    tvm.add_volume(linear_vol('thin_metadata', meg(128)))
+    tvm.add_volume(linear_vol('cache_metadata', meg(512)))
+
+    with_dev(tvm.table('thin_metadata')) do |thin_md|
+
+      external_storage = SanStack.new(@dm, @data_dev, thin_md, @data_block_size, @nr_blocks)
+      external_storage.activate do |vol|
+        stomper = PatternStomper.new(vol.path, @data_block_size, :needs_zero => false)
+
+        external_storage.take_snapshot
+        stomper.stamp(10)
+        stomper.verify(0, 1)
+        external_storage.take_snapshot
+        stomper.stamp(20)
+        stomper.verify(0, 2)
+        external_storage.rollback(1)
+        stomper.verify(0, 1)
+        external_storage.rollback(0)
+        stomper.verify(0)
       end
     end
   end
