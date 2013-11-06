@@ -32,7 +32,7 @@ class PoolStack
 
   attr_reader :dm, :data_dev, :metadata_dev, :opts
 
-  def initialize(dm, data_dev, metadata_dev, opts)
+  def initialize(dm, data_dev, metadata_dev, opts = {})
     @dm, @data_dev, @metadata_dev, @opts = [dm, data_dev, metadata_dev, opts]
   end
 
