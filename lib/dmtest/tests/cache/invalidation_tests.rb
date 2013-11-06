@@ -101,6 +101,7 @@ class InvalidationTests < ThinpTestCase
         s = CacheStack.new(@dm, cache_md, vol,
                            :format => true,
                            :cache_size => meg(256),
+                           :block_size => @data_block_size,
                            :io_mode => :writethrough,
                            :policy => Policy.new('era+mq'))
 
@@ -109,7 +110,7 @@ class InvalidationTests < ThinpTestCase
           cache_stomper.verify(1)
 
           stack.cache.pause do
-            stack.cache.message(0, "increment_era_counter 0")
+            stack.cache.message(0, "increment_era_counter 1")
             external_storage.take_snapshot
           end
 
