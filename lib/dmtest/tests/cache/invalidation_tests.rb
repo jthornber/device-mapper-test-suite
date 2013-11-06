@@ -29,24 +29,39 @@ class SanStack
     @data_block_size = data_block_size
     @nr_blocks = nr_blocks
     @metadata_dev = metadata_dev
-    @snaps = []
+    @nr_snaps = 0
   end
 
   def activate(&block)
     s = PoolStack.new(@dm, @data_dev, @metadata_dev, :data_block_size => @data_block_size)
     s.activate do |pool|
       @pool = pool
-      with_new_thin(pool, @nr_blocks * @data_block_size, 0, &block)
+      with_new_thin(pool, thin_size, 0) do |thin|
+        @thin = thin
+        block.call(thin)
+      end
     end
+  end
+
+  def thin_size
+    @nr_blocks * @data_block_size
   end
 
   # must be activated
   def take_snapshot
-    @pool
+    @thin.pause do
+      @pool.message(0, "create_snap #{@nr_snaps + 1} #{@nr_snaps}")
+      @nr_snaps += 1
+      @thin.load(thin_table(@pool, thin_size, @nr_snaps))
+    end
   end
 
   def rollback(snap_index)
-    raise "not implemented"
+    raise "unknown snap index" unless snap_index < @nr_snaps
+
+    @thin.pause do
+      @thin.load(thin_table(@pool, thin_size, snap_index))
+    end
   end
 end
 
@@ -87,22 +102,32 @@ class InvalidationTests < ThinpTestCase
                            :format => true,
                            :cache_size => meg(256),
                            :io_mode => :writethrough,
-                           :policy => Policy.new("era+mq"))
+                           :policy => Policy.new('era+mq'))
 
         s.activate do |stack|
           cache_stomper = origin_stomper.fork(stack.cache.path)
           cache_stomper.verify(1)
 
-          #external_storage.take_snapshot
+          stack.cache.pause do
+            stack.cache.message(0, "increment_era_counter 0")
+            external_storage.take_snapshot
+          end
 
           cache_stomper.stamp(10)
           cache_stomper.verify(0, 2)
 
           stack.with_io_mode(:passthrough) do
             cache_stomper.verify(2)
-            #external_storage.rollback(0)
-            #invalidate(:blah)
+
+            stack.cache.pause do
+              external_storage.rollback(0)
+              stack.cache.message(0, "unmap_blocks_from_this_era_and_later 1")
+            end
+
+            cache_stomper.verify(0, 1)
           end
+
+          cache_stomper.verify(0, 1)
         end
       end
     end
