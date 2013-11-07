@@ -111,7 +111,7 @@ class InvalidationTests < ThinpTestCase
           cache_stomper.verify(0, 1)
 
           stack.cache.pause do
-            stack.cache.message(0, "increment_era_counter 1")
+            stack.cache.message(0, "increment_era 0")
             external_storage.take_snapshot
           end
 
@@ -135,7 +135,7 @@ class InvalidationTests < ThinpTestCase
               #  cache_stomper.verify(0, 1)
               #end.to raise_error
 
-              stack.cache.message(0, "unmap_blocks_from_this_era_and_later 2")
+              stack.cache.message(0, "unmap_blocks_from_this_era_and_later 1")
             end
           end
 
