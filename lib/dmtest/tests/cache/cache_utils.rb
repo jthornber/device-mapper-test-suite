@@ -1,3 +1,5 @@
+require 'thinp_xml/cache_xml'
+
 #----------------------------------------------------------------
 
 module CacheUtils
