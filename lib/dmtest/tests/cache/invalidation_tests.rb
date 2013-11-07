@@ -194,7 +194,7 @@ class InvalidationTests < ThinpTestCase
 
         stomper.verify(0, 4)
 
-        # FIXME: this should wait until clean
+        stack.wait_for_clean_cache
         stack.with_io_mode(:passthrough) do
           stomper.verify(4)
           stomper.stamp(20)
