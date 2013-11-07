@@ -136,6 +136,13 @@ class CacheStack
     @cache.load(cache_table)
   end
 
+  def wait_for_clean_cache
+    cache.event_tracker.wait(cache) do |cache|
+      status = CacheStatus.new(cache)
+      status.nr_dirty == 0
+    end
+  end
+
   private
   def migration_threshold
     @opts[:migration_threshold] ? [ "migration_threshold", opts[:migration_threshold].to_s ] : []
