@@ -8,7 +8,10 @@ require 'dmtest/disk-units'
 require 'dmtest/test-utils'
 require 'dmtest/tvm.rb'
 require 'dmtest/tests/cache/cache_stack'
+require 'dmtest/tests/cache/cache_utils'
 require 'dmtest/tests/cache/policy'
+
+require 'rspec/expectations'
 
 #----------------------------------------------------------------
 
@@ -17,39 +20,13 @@ class PassthroughTests < ThinpTestCase
   include Tags
   include Utils
   include DiskUnits
+  include CacheUtils
   extend TestUtils
 
   def setup
     super
     @data_block_size = k(32)
     @cache_blocks = 1024
-  end
-
-  def make_stack(overrides = Hash.new)
-    opts = {
-      :cache_size => @cache_blocks * @data_block_size,
-      :block_size => @data_block_size,
-      :format => true,
-      :data_size => meg(128),
-      :policy => Policy.new('mq')
-    }
-
-    CacheStack.new(@dm, @metadata_dev, @data_dev, opts.merge(overrides))
-  end
-
-  def prepare_populated_cache()
-    xml_file = 'metadata.xml'
-    ProcessControl.run("cache_xml create --nr-cache-blocks #{@cache_blocks} --nr-mappings #{@cache_blocks} > #{xml_file}")
-
-    s = make_stack
-    s.activate_support_devs do
-      ProcessControl.run("cache_restore -i #{xml_file} -o #{s.md}")
-
-      s.activate_top_level do
-        status = CacheStatus.new(s.cache)
-        assert_equal(@cache_blocks, status.residency)
-      end
-    end
   end
 
   #--------------------------------
@@ -90,6 +67,16 @@ class PassthroughTests < ThinpTestCase
       status = CacheStatus.new(s.cache)
       assert_equal(@cache_blocks, status.residency)
     end
+  end
+
+  def test_passthrough_fails_with_dirty_blocks
+    prepare_populated_cache(:dirty_percentage => 100)
+
+    s = make_stack(:format => false,
+                   :io_mode => :passthrough)
+    expect do
+      s.activate
+    end.to raise_error
   end
 end
 
