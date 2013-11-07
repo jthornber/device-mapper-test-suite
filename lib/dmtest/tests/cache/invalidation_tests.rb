@@ -161,39 +161,46 @@ class InvalidationTests < ThinpTestCase
   end
 
   def test_with_io_mode
-    s = CacheStack.new(@dm, @metadata_dev, @data_dev,
-                       :format => true,
-                       :cache_size => meg(256),
-                       :block_size => @data_block_size,
-                       :io_mode => :writethrough,
-                       :policy => Policy.new('mq'))
+    tvm = TinyVolumeManager::VM.new
+    tvm.add_allocation_volume(@data_dev, 0, dev_size(@data_dev))
+    tvm.add_volume(linear_vol('little_data', @nr_blocks * @data_block_size))
 
-    s.activate do |stack|
-      stomper = PatternStomper.new(stack.cache.path, @data_block_size, :needs_zero => true)
-      stomper.verify(0, 1)
+    with_dev(tvm.table('little_data')) do |little_data|
+      s = CacheStack.new(@dm, @metadata_dev, little_data,
+                         :format => true,
+                         :cache_size => @cache_blocks * @data_block_size,
+                         :block_size => @data_block_size,
+                         :io_mode => :writethrough,
+                         :policy => Policy.new('mq'))
 
-      stomper.stamp(10)
-      stomper.verify(0, 2)
+      s.activate do |stack|
+        stomper = PatternStomper.new(stack.cache.path, @data_block_size, :needs_zero => true)
+        stomper.verify(0, 1)
 
-      stack.with_io_mode(:writethrough) do
-        stomper.verify(2)
-        stomper.stamp(20)
-        stomper.verify(3)
+        stomper.stamp(10)
+        stomper.verify(0, 2)
+
+        stack.with_io_mode(:writethrough) do
+          stomper.verify(2)
+          stomper.stamp(20)
+          stomper.verify(3)
+        end
+
+        stack.with_io_mode(:writeback) do
+          stomper.verify(3)
+          stomper.stamp(20)
+          stomper.verify(4)
+        end
+
+        stomper.verify(0, 4)
+
+        # FIXME: this should wait until clean
+        stack.with_io_mode(:passthrough) do
+          stomper.verify(4)
+          stomper.stamp(20)
+          stomper.verify(5)
+        end
       end
-
-      stack.with_io_mode(:writeback) do
-        stomper.verify(3)
-        stomper.stamp(20)
-        stomper.verify(4)
-      end
-
-      stack.with_io_mode(:passthrough) do
-        stomper.verify(4)
-        stomper.stamp(20)
-        stomper.verify(5)
-      end
-
-      stomper.verify(0, 5)
     end
   end
 end
