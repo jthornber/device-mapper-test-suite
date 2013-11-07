@@ -101,7 +101,7 @@ class InvalidationTests < ThinpTestCase
 
         s = CacheStack.new(@dm, cache_md, vol,
                            :format => true,
-                           :cache_size => meg(256),
+                           :cache_size => @cache_blocks * @data_block_size,
                            :block_size => @data_block_size,
                            :io_mode => :writethrough,
                            :policy => Policy.new('era+mq'))
@@ -116,13 +116,25 @@ class InvalidationTests < ThinpTestCase
           end
 
           cache_stomper.stamp(10)
+          100.times do
+            # try and bring some of these changes into the cache
+            cache_stomper.restamp(2)
+          end
           cache_stomper.verify(0, 2)
 
+          stack.wait_for_clean_cache
           stack.with_io_mode(:passthrough) do
             cache_stomper.verify(2)
 
             stack.cache.pause do
               external_storage.rollback(0)
+
+              # To test invalidate we must have some of the relevant data in the cache
+              # FIXME: this hangs, because pause never resumes, some interaction with expect?
+              #expect do
+              #  cache_stomper.verify(0, 1)
+              #end.to raise_error
+
               stack.cache.message(0, "unmap_blocks_from_this_era_and_later 2")
             end
           end
@@ -141,7 +153,6 @@ class InvalidationTests < ThinpTestCase
     tvm.add_volume(linear_vol('cache_metadata', meg(512)))
 
     with_dev(tvm.table('thin_metadata')) do |thin_md|
-
       external_storage = SanStack.new(@dm, @data_dev, thin_md, @data_block_size, @nr_blocks)
       external_storage.activate do |vol|
         stomper = PatternStomper.new(vol.path, @data_block_size, :needs_zero => false)

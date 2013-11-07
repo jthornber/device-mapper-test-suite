@@ -117,6 +117,10 @@ class PatternStomper
     @deltas << delta
   end
 
+  def restamp(delta_index)
+    write_blocks(@deltas[delta_index])
+  end
+
   def verify(delta_begin, delta_end = delta_begin)
     delta = @deltas[delta_begin..delta_end].inject(BlockSet.new) do |result, d|
       result.union(d)
