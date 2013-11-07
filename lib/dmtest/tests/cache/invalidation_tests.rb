@@ -159,6 +159,43 @@ class InvalidationTests < ThinpTestCase
       end
     end
   end
+
+  def test_with_io_mode
+    s = CacheStack.new(@dm, @metadata_dev, @data_dev,
+                       :format => true,
+                       :cache_size => meg(256),
+                       :block_size => @data_block_size,
+                       :io_mode => :writethrough,
+                       :policy => Policy.new('mq'))
+
+    s.activate do |stack|
+      stomper = PatternStomper.new(stack.cache.path, @data_block_size, :needs_zero => true)
+      stomper.verify(0, 1)
+
+      stomper.stamp(10)
+      stomper.verify(0, 2)
+
+      stack.with_io_mode(:writethrough) do
+        stomper.verify(2)
+        stomper.stamp(20)
+        stomper.verify(3)
+      end
+
+      stack.with_io_mode(:writeback) do
+        stomper.verify(3)
+        stomper.stamp(20)
+        stomper.verify(4)
+      end
+
+      stack.with_io_mode(:passthrough) do
+        stomper.verify(4)
+        stomper.stamp(20)
+        stomper.verify(5)
+      end
+
+      stomper.verify(0, 5)
+    end
+  end
 end
 
 #----------------------------------------------------------------
