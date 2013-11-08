@@ -96,7 +96,7 @@ will take longer to run with large volumes.
 
 # Usage
 
-    dmtest <cmd> <switches>*
+    dmtest \<cmd\> \<switches\>*
 
 ## General options
 
@@ -246,7 +246,7 @@ and a character to indicate the outcome of the test:
 Once all the tests have run you'll get some Ruby back traces for the
 failing and erroring tests.
 
-A full log of each test can be found in ~/.dmtest/log/<class>_<test>.log
+A full log of each test can be found in ~/.dmtest/log/\<class\>_\<test\>.log
 
 ## Serving results
 
