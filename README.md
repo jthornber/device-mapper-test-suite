@@ -96,7 +96,7 @@ will take longer to run with large volumes.
 
 # Usage
 
-    dmtest \<cmd\> \<switches\>*
+    dmtest <cmd> <switches>*
 
 ## General options
 
