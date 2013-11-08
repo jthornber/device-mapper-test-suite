@@ -121,7 +121,7 @@ Though only *thin-provisioning* and *cache* are generally used.
 
 Use the list command get an idea of the tests that are available.
 
-dmtest list --thin-provisioning
+dmtest list --suite thin-provisioning
 
     thin-provisioning
       BasicTests
@@ -153,7 +153,7 @@ suite/class/test.
 
 You can specify an exact match for the class:
 
-    dmtest list --thin-provisioning -t SnapshotTests
+    dmtest list --suite thin-provisioning -t SnapshotTests
     
     thin-provisioning
       SnapshotTests
