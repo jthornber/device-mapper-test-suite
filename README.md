@@ -2,21 +2,19 @@
 
 Tests device mapper kernel targets for Linux.
 
-This test suite replaces the [thinp-test-suite package][thinp-test-suite].
+This test suite replaces the [thinp-test-suite package](https://github.com/jthornber/thinp-test-suite).
 It switches to using Ruby 1.9, has an improved user interface and
 configuration file, and tests more than just the thin provisioning
 target.
-
-[thinp-test-suite]: https://github.com/jthornber/thinp-test-suite Obsolete
 
 # Installation
 
 ## RVM
 
-I recommend you use [RVM][rvm] to manage your Ruby installation.  It
-allows you to install many versions of Ruby concurrently, and
-automatically switch between them depending on the contents of a
-_.ruby-version_ file in your project's root directory.
+I recommend you use [RVM](https://rvm.io/rvm/install) to manage your
+Ruby installation.  It allows you to install many versions of Ruby
+concurrently, and automatically switch between them depending on the
+contents of a _.ruby-version_ file in your project's root directory.
 
 The above link gives more details, but here's a quickstart:
 
@@ -32,7 +30,7 @@ Now we need to install Ruby 1.9.3
 ## Gems
 
 Now we need to make sure the gem catalogue is up to date.
-[Gems][rubygem] are packaged Ruby libraries.
+[Gems](http://rubygems.org/) are packaged Ruby libraries.
 
     gem update
 
@@ -47,9 +45,6 @@ In the device-mapper-test-suite directory:
     bundle update
 
 This should install all the ruby libraries we need.
-
-[rvm]: https://rvm.io/rvm/install RVM installation instructions
-[rubygem]: http://rubygems.org/ RubyGems.org
 
 ## Other requirements
 
@@ -267,6 +262,9 @@ Then point your browser at http://localhost:1234
 The default port is 8080.  These reports summarise which tests have
 passed or failed, when the tests were last run, and gives access to
 markedup versions of the logs.
+
+Generally I run the server all the time in the background; it will
+automatically pick up any newly generated reports.
 
 ## Generating reports
 
