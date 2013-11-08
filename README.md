@@ -100,6 +100,8 @@ will take longer to run with large volumes.
 
 ## General options
 
+### --suite
+
 The tests are divided up into *suites*, which are specific to a
 particular target.  Use the --suite switch to specify this:
 
@@ -116,6 +118,12 @@ Options are:
 * thin-provisioning
 
 Though only *thin-provisioning* and *cache* are generally used.
+
+### --profile
+
+You can select the configuration profile using --profile.
+
+    dmtest run --suite thin-provisioning --profile spindle -t /Creation/
 
 ## Listing tests
 
