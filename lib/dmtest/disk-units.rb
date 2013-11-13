@@ -14,7 +14,11 @@ module DiskUnits
   end
 
   def gig(n)
-    n * meg(1) * 1024
+    meg(n) * 1024
+  end
+
+  def tera(n)
+    gig(n) * 1024
   end
 end
 
