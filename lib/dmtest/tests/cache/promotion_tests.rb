@@ -71,24 +71,28 @@ class PromotionTests < ThinpTestCase
   end
 
   def test_promotions_to_a_warm_cache_occur
+    nr_promotions = 100
+    cache_len = nr_promotions * k(32)
+
     s = make_stack(:data_size => gig(1),
                    :block_size => k(32),
-                   :cache_blocks => 100,
+                   :cache_blocks => nr_promotions,
                    :io_mode => :writeback,
                    :policy => Policy.new('mq', :migration_threshold => gig(1)))
 
-    s.activate_support_devs do
-      s.prepare_populated_cache
-      s.activate do
-        nr_promotions = 100
-
-        10.times do
-          wipe_device(s.cache, k(32) * nr_promotions)
-        end
-
-        status = CacheStatus.new(s.cache)
-        status.promotions.should >= (nr_promotions - 10)
+    s.activate do
+      10.times do
+        ProcessControl.run("dd seek=#{cache_len} if=/dev/zero of=#{s.cache.path} bs=512 count=#{100}")
       end
+    end
+
+    s.activate do
+      10.times do
+        wipe_device(s.cache, k(32) * nr_promotions)
+      end
+
+      status = CacheStatus.new(s.cache)
+      status.promotions.should >= (nr_promotions - 10)
     end
   end
 end
