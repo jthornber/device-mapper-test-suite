@@ -15,7 +15,7 @@ require 'rspec/expectations'
 
 #----------------------------------------------------------------
 
-class PromotionTests < ThinpTestCase
+class PromotionsBase < ThinpTestCase
   include GitExtract
   include Tags
   include Utils
@@ -33,119 +33,183 @@ class PromotionTests < ThinpTestCase
 
   # A discarded device should send writes straight to the cache.  No
   # need to hit a block multiple times.
-  def test_promotions_to_a_discarded_device_occur
+  def check_promotions_to_a_discarded_device_occur(nr_blocks, expected_promotions)
     s = make_stack(:data_size => gig(1),
                    :block_size => k(32),
-                   :cache_blocks => 100,
+                   :cache_blocks => nr_blocks,
                    :io_mode => :writeback,
                    :policy => Policy.new('mq', :migration_threshold => gig(1)))
 
     s.activate do
       s.cache.discard(0, dev_size(s.cache))
-
-      nr_promotions = 100
-      wipe_device(s.cache, k(32) * nr_promotions)
+      wipe_device(s.cache, k(32) * nr_blocks)
 
       status = CacheStatus.new(s.cache)
-      status.promotions.should == nr_promotions
+      status.promotions.should == expected_promotions
     end
+  end
+
+  def check_promotions_to_a_cold_cache_occur_writes(nr_blocks, expected_promotions)
+    s = make_stack(:data_size => gig(1),
+                   :block_size => k(32),
+                   :cache_blocks => nr_blocks,
+                   :io_mode => :writeback,
+                   :policy => Policy.new('mq', :migration_threshold => gig(1)))
+
+    s.activate do
+      50.times do
+        wipe_device(s.cache, k(32) * nr_blocks)
+      end
+
+      status = CacheStatus.new(s.cache)
+      status.promotions.should >= expected_promotions
+    end
+  end
+
+  def check_promotions_to_a_cold_cache_occur_reads(nr_blocks, expected_promotions)
+    s = make_stack(:data_size => gig(1),
+                   :block_size => k(32),
+                   :cache_blocks => nr_blocks,
+                   :io_mode => :writeback,
+                   :policy => Policy.new('mq', :migration_threshold => gig(1)))
+
+    s.activate do
+      50.times do
+        read_device_to_null(s.cache, k(32) * nr_blocks)
+      end
+
+      status = CacheStatus.new(s.cache)
+      status.promotions.should == expected_promotions
+    end
+  end
+
+
+  def check_promotions_to_a_warm_cache_occur_writes(nr_blocks, expected_promotions)
+    cache_len = nr_blocks * k(32)
+
+    s = make_stack(:data_size => gig(1),
+                   :block_size => k(32),
+                   :cache_blocks => nr_blocks,
+                   :io_mode => :writeback,
+                   :policy => Policy.new('mq', :migration_threshold => gig(1)))
+
+    # warm the cache
+    s.activate do
+      50.times do
+        ProcessControl.run("dd seek=#{cache_len} if=/dev/zero of=#{s.cache.path} bs=512 count=#{cache_len}")
+      end
+    end
+
+    # try and trigger some promotions
+    s.activate do
+      50.times do
+        wipe_device(s.cache, k(32) * nr_blocks)
+      end
+
+      status = CacheStatus.new(s.cache)
+      status.promotions.should >= expected_promotions
+    end
+  end
+
+  def check_promotions_to_a_warm_cache_occur_reads(nr_blocks, expected_promotions)
+    cache_len = nr_blocks * k(32)
+
+    s = make_stack(:data_size => gig(1),
+                   :block_size => k(32),
+                   :cache_blocks => nr_blocks,
+                   :io_mode => :writeback,
+                   :policy => Policy.new('mq', :migration_threshold => gig(1)))
+
+    # warm the cache
+    s.activate do
+      50.times do
+        ProcessControl.run("dd seek=#{cache_len} if=/dev/zero of=#{s.cache.path} bs=512 count=#{cache_len}")
+      end
+    end
+
+    # try and trigger some promotions
+    s.activate do
+      50.times do
+        read_device_to_null(s.cache, k(32) * nr_blocks)
+      end
+
+      status = CacheStatus.new(s.cache)
+      status.promotions.should >= expected_promotions
+    end
+  end
+end
+
+#----------------------------------------------------------------
+
+class SingleBlockPromotionTests < PromotionsBase
+  include GitExtract
+  include Tags
+  include Utils
+  include DiskUnits
+  include CacheUtils
+  extend TestUtils
+
+  # A discarded device should send writes straight to the cache.  No
+  # need to hit a block multiple times.
+  def test_promotions_to_a_discarded_device_occur
+    check_promotions_to_a_discarded_device_occur(1, 1)
   end
 
   def test_promotions_to_a_cold_cache_occur_writes
-    s = make_stack(:data_size => gig(1),
-                   :block_size => k(32),
-                   :cache_blocks => 100,
-                   :io_mode => :writeback,
-                   :policy => Policy.new('mq', :migration_threshold => gig(1)))
-
-    s.activate do
-      nr_promotions = 100
-
-      10.times do
-        wipe_device(s.cache, k(32) * nr_promotions)
-      end
-
-      status = CacheStatus.new(s.cache)
-      status.promotions.should >= (nr_promotions / 4)
-    end
+    check_promotions_to_a_cold_cache_occur_writes(1, 1)
   end
 
   def test_promotions_to_a_cold_cache_occur_reads
-    s = make_stack(:data_size => gig(1),
-                   :block_size => k(32),
-                   :cache_blocks => 100,
-                   :io_mode => :writeback,
-                   :policy => Policy.new('mq', :migration_threshold => gig(1)))
-
-    s.activate do
-      nr_promotions = 100
-
-      50.times do
-        read_device_to_null(s.cache, k(32) * nr_promotions)
-      end
-
-      status = CacheStatus.new(s.cache)
-      status.promotions.should >= (nr_promotions - 10)
-    end
+    check_promotions_to_a_cold_cache_occur_reads(1, 1)
   end
 
 
   def test_promotions_to_a_warm_cache_occur_writes
-    nr_promotions = 100
-    cache_len = nr_promotions * k(32)
-
-    s = make_stack(:data_size => gig(1),
-                   :block_size => k(32),
-                   :cache_blocks => nr_promotions,
-                   :io_mode => :writeback,
-                   :policy => Policy.new('mq', :migration_threshold => gig(1)))
-
-    # warm the cache
-    s.activate do
-      10.times do
-        ProcessControl.run("dd seek=#{cache_len} if=/dev/zero of=#{s.cache.path} bs=512 count=#{100}")
-      end
-    end
-
-    # try and trigger some promotions
-    s.activate do
-      10.times do
-        wipe_device(s.cache, k(32) * nr_promotions)
-      end
-
-      status = CacheStatus.new(s.cache)
-      status.promotions.should >= (nr_promotions / 4)
-    end
+    check_promotions_to_a_warm_cache_occur_writes(1, 1)
   end
 
   def test_promotions_to_a_warm_cache_occur_reads
-    nr_promotions = 100
-    cache_len = nr_promotions * k(32)
+    check_promotions_to_a_warm_cache_occur_reads(1, 1)
+  end
+end
 
-    s = make_stack(:data_size => gig(1),
-                   :block_size => k(32),
-                   :cache_blocks => nr_promotions,
-                   :io_mode => :writeback,
-                   :policy => Policy.new('mq', :migration_threshold => gig(1)))
+#----------------------------------------------------------------
 
-    # warm the cache
-    s.activate do
-      10.times do
-        ProcessControl.run("dd seek=#{cache_len} if=/dev/zero of=#{s.cache.path} bs=512 count=#{100}")
-      end
-    end
+class MultiBlockPromotionTests < PromotionsBase
+  include GitExtract
+  include Tags
+  include Utils
+  include DiskUnits
+  include CacheUtils
+  extend TestUtils
 
-    # try and trigger some promotions
-    s.activate do
-      50.times do
-        read_device_to_null(s.cache, k(32) * nr_promotions)
-      end
-
-      status = CacheStatus.new(s.cache)
-      status.promotions.should >= (nr_promotions - 10)
-    end
+  def setup
+    super
+    @nr_blocks = 100
   end
 
+  # A discarded device should send writes straight to the cache.  No
+  # need to hit a block multiple times.
+  def test_promotions_to_a_discarded_device_occur
+    check_promotions_to_a_discarded_device_occur(@nr_blocks, @nr_blocks)
+  end
+
+  def test_promotions_to_a_cold_cache_occur_writes
+    check_promotions_to_a_cold_cache_occur_writes(@nr_blocks, @nr_blocks)
+  end
+
+  def test_promotions_to_a_cold_cache_occur_reads
+    check_promotions_to_a_cold_cache_occur_reads(@nr_blocks, @nr_blocks)
+  end
+
+
+  def test_promotions_to_a_warm_cache_occur_writes
+    check_promotions_to_a_warm_cache_occur_writes(@nr_blocks, @nr_blocks)
+  end
+
+  def test_promotions_to_a_warm_cache_occur_reads
+    check_promotions_to_a_warm_cache_occur_reads(@nr_blocks, @nr_blocks)
+  end
 end
 
 #----------------------------------------------------------------
