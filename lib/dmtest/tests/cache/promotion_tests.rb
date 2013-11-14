@@ -66,11 +66,11 @@ class PromotionTests < ThinpTestCase
       end
 
       status = CacheStatus.new(s.cache)
-      status.promotions.should >= (nr_promotions - 10)
+      status.promotions.should >= (nr_promotions / 4)
     end
   end
 
-  def test_promotions_to_a_warm_cache_occur
+  def test_promotions_to_a_warm_cache_occur_writes
     nr_promotions = 100
     cache_len = nr_promotions * k(32)
 
@@ -80,21 +80,52 @@ class PromotionTests < ThinpTestCase
                    :io_mode => :writeback,
                    :policy => Policy.new('mq', :migration_threshold => gig(1)))
 
+    # warm the cache
     s.activate do
       10.times do
         ProcessControl.run("dd seek=#{cache_len} if=/dev/zero of=#{s.cache.path} bs=512 count=#{100}")
       end
     end
 
+    # try and trigger some promotions
     s.activate do
       10.times do
         wipe_device(s.cache, k(32) * nr_promotions)
       end
 
       status = CacheStatus.new(s.cache)
+      status.promotions.should >= (nr_promotions / 4)
+    end
+  end
+
+  def test_promotions_to_a_warm_cache_occur_reads
+    nr_promotions = 100
+    cache_len = nr_promotions * k(32)
+
+    s = make_stack(:data_size => gig(1),
+                   :block_size => k(32),
+                   :cache_blocks => nr_promotions,
+                   :io_mode => :writeback,
+                   :policy => Policy.new('mq', :migration_threshold => gig(1)))
+
+    # warm the cache
+    s.activate do
+      10.times do
+        ProcessControl.run("dd seek=#{cache_len} if=/dev/zero of=#{s.cache.path} bs=512 count=#{100}")
+      end
+    end
+
+    # try and trigger some promotions
+    s.activate do
+      50.times do
+        read_device_to_null(s.cache, k(32) * nr_promotions)
+      end
+
+      status = CacheStatus.new(s.cache)
       status.promotions.should >= (nr_promotions - 10)
     end
   end
+
 end
 
 #----------------------------------------------------------------
