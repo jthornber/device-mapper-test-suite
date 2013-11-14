@@ -44,39 +44,43 @@ class PassthroughTests < ThinpTestCase
   end
 
   def test_passthrough_demotes_writes
-    prepare_populated_cache()
-
     s = make_stack(:format => false,
                    :io_mode => :passthrough)
-    s.activate do
-      wipe_device(s.cache)
+    s.activate_support_devs do
+      s.prepare_populated_cache()
 
-      status = CacheStatus.new(s.cache)
-      assert_equal(0, status.residency)
+      s.activate do
+        wipe_device(s.cache)
+
+        status = CacheStatus.new(s.cache)
+        assert_equal(0, status.residency)
+      end
     end
   end
 
   def test_passthrough_does_not_demote_reads
-    prepare_populated_cache()
-
     s = make_stack(:format => false,
                    :io_mode => :passthrough)
-    s.activate do
-      read_device_to_null(s.cache)
+    s.activate_support_devs do
+      s.prepare_populated_cache()
+      s.activate do
+        read_device_to_null(s.cache)
 
-      status = CacheStatus.new(s.cache)
-      assert_equal(@cache_blocks, status.residency)
+        status = CacheStatus.new(s.cache)
+        assert_equal(@cache_blocks, status.residency)
+      end
     end
   end
 
   def test_passthrough_fails_with_dirty_blocks
-    prepare_populated_cache(:dirty_percentage => 100)
-
     s = make_stack(:format => false,
                    :io_mode => :passthrough)
-    expect do
-      s.activate
-    end.to raise_error
+    s.activate_support_devs do
+      s.prepare_populated_cache(:dirty_percentage => 100)
+      expect do
+        s.activate
+      end.to raise_error
+    end
   end
 end
 

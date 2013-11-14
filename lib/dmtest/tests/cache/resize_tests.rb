@@ -30,11 +30,10 @@ class ResizeTests < ThinpTestCase
 
   def test_no_resize_retains_mappings_all_clean
     [23, 513, 1023, 4095].each do |nr_blocks|
-      prepare_populated_cache(:cache_blocks => nr_blocks)
-
       s = make_stack(:format => false,
                      :cache_blocks => nr_blocks)
       s.activate_support_devs do
+        s.prepare_populated_cache()
         md1 = dump_metadata(s.md)
 
         s.activate_top_level {}
@@ -47,12 +46,10 @@ class ResizeTests < ThinpTestCase
 
   def test_no_resize_retains_mappings_all_dirty
     [23, 513, 1023, 4095].each do |nr_blocks|
-      prepare_populated_cache(:cache_blocks => nr_blocks,
-                              :dirty_percentage => 100)
-
       s = make_stack(:format => false,
                      :cache_blocks => nr_blocks)
       s.activate_support_devs do
+        s.prepare_populated_cache(:dirty_percentage => 100)
         md1 = dump_metadata(s.md)
 
         s.activate_top_level do
@@ -69,11 +66,12 @@ class ResizeTests < ThinpTestCase
 
   def test_metadata_can_grow
     [23, 513, 1023, 4095].each do |nr_blocks|
-      md1 = prepare_populated_cache(:cache_blocks => nr_blocks)
-
       s = make_stack(:format => false,
                      :cache_blocks => nr_blocks + 5678)
       s.activate_support_devs do
+        s.prepare_populated_cache
+        md1 = dump_metadata(s.md)
+
         s.activate_top_level {}
 
         md2 = dump_metadata(s.md)
@@ -84,11 +82,12 @@ class ResizeTests < ThinpTestCase
 
   def test_metadata_can_shrink
     [23, 345, 513, 876, 1023, 2345, 4095].each do |nr_blocks|
-      md1 = prepare_populated_cache(:cache_blocks => nr_blocks)
-
       s = make_stack(:format => false,
                      :cache_blocks => nr_blocks / 2)
       s.activate_support_devs do
+        s.prepare_populated_cache
+        md1 = dump_metadata(s.md)
+
         s.activate_top_level {}
 
         md2 = dump_metadata(s.md)

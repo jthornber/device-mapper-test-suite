@@ -32,11 +32,11 @@ class BackgroundWritebackTests < ThinpTestCase
 
   def test_clean_data_never_gets_written_back
     nr_blocks = 1234
-    md1 = prepare_populated_cache(:cache_blocks => nr_blocks)
-    
     s = make_stack(:format => false,
                    :cache_blocks => nr_blocks)
     s.activate_support_devs do
+      s.prepare_populated_cache()
+
       traces, _ = blktrace(s.origin) do
         s.activate_top_level do
           sleep 15
@@ -49,12 +49,10 @@ class BackgroundWritebackTests < ThinpTestCase
 
   def test_dirty_data_always_gets_written_back
     nr_blocks = 1234
-    md1 = prepare_populated_cache(:cache_blocks => nr_blocks,
-                                  :dirty_percentage => 100)
-    
     s = make_stack(:format => false,
                    :cache_blocks => nr_blocks)
     s.activate_support_devs do
+      s.prepare_populated_cache(:dirty_percentage => 100)
       traces, _ = blktrace(s.origin) do
         s.activate_top_level do
           sleep 15

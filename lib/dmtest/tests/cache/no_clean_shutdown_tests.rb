@@ -30,12 +30,10 @@ class NoCleanShutdownTests < ThinpTestCase
 
   def test_no_resize_retains_mappings_all_clean
     [23, 513, 1023, 4095].each do |nr_blocks|
-      prepare_populated_cache(:cache_blocks => nr_blocks,
-                              :clean_shutdown => false)
-
       s = make_stack(:format => false,
                      :cache_blocks => nr_blocks)
       s.activate_support_devs do
+        s.prepare_populated_cache(:clean_shutdown => false)
         md1 = dump_metadata(s.md)
 
         s.activate_top_level {}

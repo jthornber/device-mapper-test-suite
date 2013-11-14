@@ -81,7 +81,7 @@ class InvalidateCBlocksTests < ThinpTestCase
   def bad_range(str)
     s = make_stack(:format => false,
                    :block_size => @data_block_size,
-                   :cache_size => @nr_blocks * @data_block_size,
+                   :cache_blocks => @nr_blocks,
                    :io_mode => :passthrough)
     expect do
       s.activate do
@@ -93,7 +93,7 @@ class InvalidateCBlocksTests < ThinpTestCase
   def cant_be_in_io_mode(mode)
     s = make_stack(:format => true,
                    :block_size => @data_block_size,
-                   :cache_size => @nr_blocks * @data_block_size,
+                   :cache_blocks => @nr_blocks,
                    :io_mode => mode)
     s.activate do
       expect do
@@ -112,7 +112,7 @@ class InvalidateCBlocksTests < ThinpTestCase
   def test_invalidating_all_cblocks_in_an_empty_cache
     s = make_stack(:format => true,
                    :block_size => @data_block_size,
-                   :cache_size => @nr_blocks * @data_block_size,
+                   :cache_blocks => @nr_blocks,
                    :io_mode => :passthrough)
     s.activate_support_devs do
       s.activate_top_level do
@@ -125,14 +125,13 @@ class InvalidateCBlocksTests < ThinpTestCase
   end
 
   def test_invalidating_all_cblocks_in_a_full_cache
-    prepare_populated_cache(:dirty_percentage => 0,
-                            :cache_blocks => @nr_blocks)
-
     s = make_stack(:format => false,
                    :block_size => @data_block_size,
-                   :cache_size => @nr_blocks * @data_block_size,
+                   :cache_blocks => @nr_blocks,
                    :io_mode => :passthrough)
     s.activate_support_devs do
+      s.prepare_populated_cache(:dirty_percentage => 0);
+
       s.activate_top_level do
         s.cache.message(0, "invalidate_cblocks 0..#{@nr_blocks}")
       end
@@ -143,14 +142,12 @@ class InvalidateCBlocksTests < ThinpTestCase
   end
 
   def test_invalidating_multiple_args
-    prepare_populated_cache(:dirty_percentage => 0,
-                            :cache_blocks => @nr_blocks)
-
     s = make_stack(:format => false,
                    :block_size => @data_block_size,
-                   :cache_size => @nr_blocks * @data_block_size,
+                   :cache_blocks => @nr_blocks,
                    :io_mode => :passthrough)
     s.activate_support_devs do
+      s.prepare_populated_cache(:dirty_percentage => 0)
       s.activate_top_level do
         s.cache.message(0, "invalidate_cblocks 0 5 11 50..60 91..99")
       end
@@ -164,7 +161,7 @@ class InvalidateCBlocksTests < ThinpTestCase
   def test_out_of_bounds_range
     s = make_stack(:format => false,
                    :block_size => @data_block_size,
-                   :cache_size => @nr_blocks * @data_block_size,
+                   :cache_blocks => @nr_blocks,
                    :io_mode => :passthrough)
     expect do
       s.activate do

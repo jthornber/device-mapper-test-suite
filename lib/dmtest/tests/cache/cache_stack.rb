@@ -38,12 +38,23 @@ class CacheStack
     @tvm.add_allocation_volume(ssd_dev, 0, dev_size(ssd_dev))
     @tvm.add_volume(linear_vol('md', meg(4)))
 
-    cache_size = opts.fetch(:cache_size, gig(1))
     @tvm.add_volume(linear_vol('ssd', cache_size))
 
     @data_tvm = TinyVolumeManager::VM.new
     @data_tvm.add_allocation_volume(spindle_dev, 0, dev_size(spindle_dev))
     @data_tvm.add_volume(linear_vol('origin', origin_size))
+  end
+
+  def cache_size
+    opts.fetch(:cache_size, gig(1))
+  end
+
+  def cache_blocks
+    cache_size / block_size
+  end
+
+  def block_size
+    opts.fetch(:block_size, k(32))
   end
 
   def activate_support_devs(&block)
@@ -141,6 +152,21 @@ class CacheStack
       status = CacheStatus.new(cache)
       status.nr_dirty == 0
     end
+  end
+
+  def prepare_populated_cache(overrides = Hash.new)
+    raise "metadata device not active" if @md.nil?
+
+    dirty_percentage = overrides.fetch(:dirty_percentage, 0)
+    dirty_flag = "--dirty-percent #{dirty_percentage}"
+
+    clean_shutdown = overrides.fetch(:clean_shutdown, true)
+    omit_shutdown_flag = clean_shutdown ? '' : "--omit-clean-shutdown"
+
+    xml_file = 'metadata.xml'
+    ProcessControl.run("cache_xml create --nr-cache-blocks #{cache_blocks} --nr-mappings #{cache_blocks} #{dirty_flag} > #{xml_file}")
+
+    ProcessControl.run("cache_restore #{omit_shutdown_flag} -i #{xml_file} -o #{@md}")
   end
 
   private
