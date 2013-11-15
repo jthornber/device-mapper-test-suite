@@ -45,7 +45,7 @@ module DM
     end
 
     def message(sector, *args)
-      @interface.message(path, sector, *args)
+      @interface.message(path, sector, '--', *args)
     end
 
     def status
