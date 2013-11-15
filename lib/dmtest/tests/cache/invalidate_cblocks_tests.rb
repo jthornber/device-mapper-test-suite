@@ -97,7 +97,7 @@ class InvalidateCBlocksTests < ThinpTestCase
                    :io_mode => mode)
     s.activate do
       expect do
-        s.cache.message(0, "invalidate_cblocks 0..#{@nr_blocks}")
+        s.cache.message(0, "invalidate_cblocks 0-#{@nr_blocks}")
       end.to raise_error
     end
   end
@@ -116,7 +116,7 @@ class InvalidateCBlocksTests < ThinpTestCase
                    :io_mode => :passthrough)
     s.activate_support_devs do
       s.activate_top_level do
-        s.cache.message(0, "invalidate_cblocks 0..#{@nr_blocks}")
+        s.cache.message(0, "invalidate_cblocks 0-#{@nr_blocks}")
       end
 
       md = dump_metadata(s.md)
@@ -133,7 +133,7 @@ class InvalidateCBlocksTests < ThinpTestCase
       s.prepare_populated_cache(:dirty_percentage => 0);
 
       s.activate_top_level do
-        s.cache.message(0, "invalidate_cblocks 0..#{@nr_blocks}")
+        s.cache.message(0, "invalidate_cblocks 0-#{@nr_blocks}")
       end
 
       md = dump_metadata(s.md)
@@ -149,7 +149,7 @@ class InvalidateCBlocksTests < ThinpTestCase
     s.activate_support_devs do
       s.prepare_populated_cache(:dirty_percentage => 0)
       s.activate_top_level do
-        s.cache.message(0, "invalidate_cblocks 0 5 11 50..60 91..99")
+        s.cache.message(0, "invalidate_cblocks 0 5 11 50-60 91-99")
       end
 
       md = dump_metadata(s.md)
@@ -165,15 +165,16 @@ class InvalidateCBlocksTests < ThinpTestCase
                    :io_mode => :passthrough)
     expect do
       s.activate do
-        s.cache.message(0, "invalidate_cblocks 50..500")
+        s.cache.message(0, "invalidate_cblocks 50-500")
       end
     end.to raise_error
   end
 
   def test_badly_formed_range
-    bad_range('50...60')
-    bad_range('..60')
-    bad_range('50..')
+    bad_range('50..60')
+    bad_range('50--60')
+    bad_range('-60')
+    bad_range('50-')
     bad_range('fred')
   end
 end
