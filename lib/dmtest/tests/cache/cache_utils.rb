@@ -11,11 +11,12 @@ module CacheUtils
 
   # This function _is_ a mixin 
   def make_stack(overrides = Hash.new)
-    cache_size = overrides.fetch(:cache_blocks, @cache_blocks) * @data_block_size
+    block_size = overrides.fetch(:block_size, @data_block_size)
+    cache_size = overrides.fetch(:cache_blocks, @cache_blocks) * block_size
 
     opts = {
       :cache_size => cache_size,
-      :block_size => @data_block_size,
+      :block_size => block_size,
       :format => true,
       :data_size => meg(128),
       :policy => Policy.new('mq')
