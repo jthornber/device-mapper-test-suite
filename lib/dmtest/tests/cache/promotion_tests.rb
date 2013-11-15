@@ -15,6 +15,15 @@ require 'rspec/expectations'
 
 #----------------------------------------------------------------
 
+#
+# These tests aren't reliable for a couple of reasons:
+#
+# i)  mq's sequential io logic thwarts dd for large io
+# ii) when issuing a read of a single block, block core reads more
+#     than that, *without* setting the READA flag
+#
+# However they're useful for debugging policies, so I'm leaving them in.
+#
 class PromotionsBase < ThinpTestCase
   include GitExtract
   include Tags
@@ -22,6 +31,7 @@ class PromotionsBase < ThinpTestCase
   include DiskUnits
   include CacheUtils
   extend TestUtils
+  include BlkTrace
 
   def setup
     super
@@ -67,18 +77,23 @@ class PromotionsBase < ThinpTestCase
   end
 
   def check_promotions_to_a_cold_cache_occur_reads(nr_blocks, expected_promotions)
+    status = nil
+
     s = make_stack(:data_size => gig(1),
                    :block_size => k(32),
                    :cache_blocks => nr_blocks,
                    :io_mode => :writeback,
                    :policy => Policy.new('mq', :migration_threshold => gig(1)))
 
-    s.activate do
-      50.times do
-        read_device_to_null(s.cache, k(32) * nr_blocks)
+    s.activate_support_devs do
+      s.activate_top_level do
+        50.times do
+          read_device_to_null(s.cache, k(32) * nr_blocks)
+        end
+
+        status = CacheStatus.new(s.cache)
       end
 
-      status = CacheStatus.new(s.cache)
       status.promotions.should == expected_promotions
     end
   end
