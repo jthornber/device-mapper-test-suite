@@ -1,4 +1,4 @@
-require 'config'
+require 'dmtest/config'
 require 'dmtest/git'
 require 'dmtest/log'
 require 'dmtest/utils'
@@ -8,7 +8,7 @@ require 'dmtest/thinp-test'
 require 'dmtest/cache-status'
 require 'dmtest/disk-units'
 require 'dmtest/test-utils'
-require 'tests/cache/fio_subvolume_scenario'
+require 'dmtest/tests/cache/fio_subvolume_scenario'
 
 require 'pp'
 

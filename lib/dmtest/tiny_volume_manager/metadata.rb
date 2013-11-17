@@ -1,11 +1,11 @@
 require 'rubygems'
 require 'active_record'
+require 'logger'
 
 # I'm having trouble with the gem version, so copied file to debug.
 # Possibly because I'm using the Debian packaged version of gem?
 require 'dmtest/acts_as_tree'
 require 'dmtest/device-mapper/dm'
-require 'logger'
 
 #----------------------------------------------------------------
 

@@ -1,1 +1,1 @@
-require 'tests/cache/bcache_tests'
+require 'dmtest/tests/cache/bcache_tests'
