@@ -8,7 +8,8 @@ require 'dmtest/test-utils'
 module DM
   class WriteboostTarget < Target
     def initialize(sector_count, cache_dev, origin_dev)
-      super('writeboost', sector_count, [cache_dev, origin_dev])
+      args = [0, origin_dev, cache_dev]
+      super('writeboost', sector_count, *args)
     end
 
     # writeboost doesn't need to implement post_remove_check
@@ -57,6 +58,18 @@ class WriteboostStack
         ensure_elapsed_time(1, self, &block)
       end
     end
+  end
+
+  # FIXME copied from cache_stack
+  # move to prelude?
+  def ensure_elapsed_time(seconds, *args, &block)
+    t = Thread.new(seconds) do |seconds|
+      sleep seconds
+    end
+
+    block.call(*args)
+
+    t.join
   end
 
   # not used yet

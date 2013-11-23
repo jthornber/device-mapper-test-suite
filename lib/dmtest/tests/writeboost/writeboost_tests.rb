@@ -31,8 +31,7 @@ class WriteboostTests < ThinpTestCase
   end
 
   def test_fio_sub_volume
-    with_standard_cache(@dm, @metadata_dev, @data_dev,
-                        :cache_size => meg(256),
+    with_standard_cache(:cache_size => meg(256),
                         :format => true,
                         :data_size => gig(4)) do |cache|
       wait = lambda {sleep(5)}
@@ -41,8 +40,7 @@ class WriteboostTests < ThinpTestCase
   end
 
   def test_fio_cache
-    with_standard_cache(@dm, @metadata_dev, @data_dev,
-                        :cache_size => meg(512),
+    with_standard_cache(:cache_size => meg(512),
                         :format => true,
                         :data_size => gig(2)) do |cache|
       do_fio(cache, :ext4)
@@ -50,13 +48,12 @@ class WriteboostTests < ThinpTestCase
   end
 
   def test_fio_database_funtime
-    with_standard_cache(@dm, @metadata_dev, @data_dev,
-                        :cache_size => meg(1024),
+    with_standard_cache(:cache_size => meg(1024),
                         :format => true,
                         :data_size => gig(10)) do |cache|
       do_fio(cache, :ext4,
-             :outfile => "../fio_writeboost.out",
-             :cfgfile => "../tests/cache/database-funtime.fio")
+             :outfile => AP("fio_writeboost.out"),
+             :cfgfile => LP("tests/cache/database-funtime.fio"))
     end
   end
 end

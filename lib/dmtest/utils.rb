@@ -1,5 +1,6 @@
 require 'dmtest/process'
 require 'dmtest/math-utils'
+require 'dmtest/libdir'
 require 'tempfile'
 
 # A hodge podge of functions that should probably find a better home.
