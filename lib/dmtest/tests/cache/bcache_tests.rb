@@ -117,8 +117,8 @@ class BcacheTests < ThinpTestCase
                             :data_size => gig(10))
     stack.activate do |cache|
       do_fio(cache, :ext4,
-             :outfile => "../fio_bcache.out",
-             :cfgfile => "../tests/cache/database-funtime.fio")
+             :outfile => AP("fio_bcache.out"),
+             :cfgfile => LP("tests/cache/database-funtime.fio"))
     end
   end
 

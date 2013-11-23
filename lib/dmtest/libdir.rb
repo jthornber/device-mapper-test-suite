@@ -15,3 +15,16 @@ module DMTest
     end
   end
 end
+
+module Utils
+  # Library Path
+  def LP(path)
+    DMTest::Utils.gem_libdir + "/" + path
+  end
+
+  # Absolute Path
+  ROOTDIR = Pathname.new(".").realpath.to_s
+  def AP(path)
+    ROOTDIR + "/" + path
+  end
+end
