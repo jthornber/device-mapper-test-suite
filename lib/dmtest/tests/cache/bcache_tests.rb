@@ -1,4 +1,4 @@
-require 'config'
+require 'dmtest/config'
 require 'dmtest/git'
 require 'dmtest/log'
 require 'dmtest/utils'
@@ -8,7 +8,7 @@ require 'dmtest/thinp-test'
 require 'dmtest/cache-status'
 require 'dmtest/disk-units'
 require 'dmtest/test-utils'
-require 'tests/cache/fio_subvolume_scenario'
+require 'dmtest/tests/cache/fio_subvolume_scenario'
 
 require 'pp'
 
@@ -117,8 +117,8 @@ class BcacheTests < ThinpTestCase
                             :data_size => gig(10))
     stack.activate do |cache|
       do_fio(cache, :ext4,
-             :outfile => "../fio_bcache.out",
-             :cfgfile => "../tests/cache/database-funtime.fio")
+             :outfile => AP("fio_bcache.out"),
+             :cfgfile => LP("tests/cache/database-funtime.fio"))
     end
   end
 

@@ -1,4 +1,4 @@
-require 'config'
+require 'dmtest/config'
 require 'dmtest/git'
 require 'dmtest/log'
 require 'dmtest/utils'

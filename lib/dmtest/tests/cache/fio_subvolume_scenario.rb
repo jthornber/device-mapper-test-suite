@@ -1,7 +1,9 @@
 module FioSubVolumeScenario
+  include Utils
+
   def do_fio(dev, fs_type, opts = Hash.new)
-    outfile = opts.fetch(:outfile, "../fio.out")
-    cfgfile = opts.fetch(:cfgfile, "../tests/cache/fio.config")
+    outfile = opts.fetch(:outfile, AP("fio.out"))
+    cfgfile = opts.fetch(:cfgfile, LP("tests/cache/fio.config"))
     fs = FS::file_system(fs_type, dev)
     fs.format
 
@@ -32,7 +34,7 @@ module FioSubVolumeScenario
     1.upto(subvolume_count) do |n|
       with_dev(tvm.table("linear_#{n}")) do |subvolume|
         report_time("fio across subvolume #{n}", STDERR) do
-          do_fio(subvolume, :ext4, :outfile => "../fio_#{n}.out")
+          do_fio(subvolume, :ext4, :outfile => AP("fio_#{n}.out"))
         end
 
         wait.call

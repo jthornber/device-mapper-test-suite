@@ -94,8 +94,8 @@ class CacheTests < ThinpTestCase
                         :policy => Policy.new('mq')) do |cache|
       cache.message(0, "sequential_threshold 32768") # 16M
       do_fio(cache, :ext4,
-             :outfile => "../fio_dm_cache.out",
-             :cfgfile => "../tests/cache/database-funtime.fio")
+             :outfile => AP("fio_dm_cache.out"),
+             :cfgfile => LP("tests/cache/database-funtime.fio"))
     end
   end
 

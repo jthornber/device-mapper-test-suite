@@ -1,1 +1,1 @@
-require 'tests/fake-discard/fake-discard-tests'
+require 'dmtest/tests/fake-discard/fake-discard-tests'
