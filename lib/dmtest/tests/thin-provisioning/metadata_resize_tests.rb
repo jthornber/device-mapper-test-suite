@@ -6,7 +6,7 @@ require 'dmtest/status'
 require 'dmtest/tags'
 require 'dmtest/thinp-test'
 require 'dmtest/disk-units'
-require 'rspec'
+require 'rspec/expectations'
 
 require 'pp'
 
@@ -97,9 +97,16 @@ class MetadataResizeTests < ThinpTestCase
     end
   end
 
+  #--------------------------------
+
+  def read_only_or_fail_mode(pool)
+    status = PoolStatus.new(pool)
+    status.fail || status.options[:read_only]
+  end
+
   def test_exhausting_metadata_space_causes_fail_mode
     md_blocks = 8
-    md_size = 128 * md_blocks
+    md_size = 64 * md_blocks
     data_size = gig(2)
 
     @tvm.add_volume(linear_vol('metadata', md_size))
@@ -111,16 +118,14 @@ class MetadataResizeTests < ThinpTestCase
 
       table = Table.new(ThinPoolTarget.new(data_size, md, data, @data_block_size, @low_water_mark))
 
-      begin
-        with_dev(table) do |pool|
-          with_new_thin(pool, @volume_size, 0) do |thin|
-            wipe_device(thin)
-          end
+      with_dev(table) do |pool|
+        with_new_thin(pool, @volume_size, 0) do |thin|
+          # We use capture because this doesn't raise ExitErrors
+          _1, _2, err = ProcessControl.capture("dd if=/dev/zero of=#{thin.path} bs=4M")
+          assert(err)
         end
-      ensure
-        # The above test causes thin_check to barf, saving it to see
-        # why.
-        ProcessControl.run("dd if=#{md} of=./bad_metadata.bin")
+
+        assert(read_only_or_fail_mode(pool))
       end
     end
   end
