@@ -23,25 +23,25 @@ class PoolStatus
     opts[:discard_passdown] = true
     opts[:read_only] = false
 
-    m = txt.match(/\s(\d+)\s(.+)/)
-    unless m.nil?
-      m[2].split.each do |feature|
-        case feature
-        when 'skip_block_zeroing' then
-            opts[:block_zeroing] = false
+    txt.strip.split.each do |feature|
+      case feature
+      when 'skip_block_zeroing' then
+        opts[:block_zeroing] = false
 
-        when 'ignore_discard' then
-            opts[:ignore_discard] = true
+      when 'ignore_discard' then
+        opts[:ignore_discard] = true
 
-        when 'no_discard_passdown' then
-            opts[:discard_passdown] = false
+      when 'no_discard_passdown' then
+        opts[:discard_passdown] = false
 
-        when 'read_only' then
-            opts[:read_only] = true
+      when 'ro' then
+        opts[:read_only] = true
 
-        else
-          raise "unknown pool feature '#{feature}'"
-        end
+      when 'rw' then
+        opts[:read_only] = false
+
+      else
+        raise "unknown pool feature '#{feature}'"
       end
     end
 
