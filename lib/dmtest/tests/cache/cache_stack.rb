@@ -156,6 +156,7 @@ class CacheStack
 
   def prepare_populated_cache(overrides = Hash.new)
     raise "metadata device not active" if @md.nil?
+    raise "cache target already active" unless @cache.nil?
 
     dirty_percentage = overrides.fetch(:dirty_percentage, 0)
     dirty_flag = "--dirty-percent #{dirty_percentage}"
@@ -183,9 +184,10 @@ class CacheStack
       sleep seconds
     end
 
-    block.call(*args)
+    r = block.call(*args)
 
     t.join
+    r
   end
 end
 
