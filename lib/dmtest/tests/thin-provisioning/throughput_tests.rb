@@ -29,7 +29,7 @@ class ThroughputTests < ThinpTestCase
 
     with_standard_pool(@size, :zero => false, :block_size => block_size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
-        ProcessControl.run("dd if=/dev/zero of=#{thin} bs=#{io_size * 512} count=#{dev_size(thin) / io_size}")
+        ProcessControl.run("dd oflag=direct if=/dev/zero of=#{thin} bs=#{io_size * 512} count=#{dev_size(thin) / io_size}")
       end
     end
   end
