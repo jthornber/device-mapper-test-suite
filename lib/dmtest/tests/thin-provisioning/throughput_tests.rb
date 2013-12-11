@@ -20,9 +20,15 @@ class ThroughputTests < ThinpTestCase
 
   #--------------------------------
 
+  def across_various_io_sizes(&block)
+    [k(64), k(128), k(256), k(512)].each do |io_size|
+      block.call(io_size)
+    end
+  end
+
   def across_various_block_and_io_sizes(&block)
     [k(64), k(128), k(256), k(512)].each do |block_size|
-      [k(64), k(128), k(256), k(512)].each do |io_size|
+      across_various_io_sizes do |io_size|
         block.call(block_size, io_size)
       end
     end
@@ -90,6 +96,14 @@ class ThroughputTests < ThinpTestCase
     end
   end
 
+  def throughput_linear(io_size)
+    with_standard_linear(:data_size => gig(1)) do |linear|
+      report_time("volume size = 1G, io_size = #{io_size}", STDERR) do
+        ProcessControl.run("dd oflag=direct if=/dev/zero of=#{linear} bs=#{io_size * 512} count=#{dev_size(linear) / io_size}")
+      end
+    end
+  end
+
   def test_provisioning_throughput
     across_various_block_and_io_sizes do |block_size, io_size|
       throughput_unprovisioned(block_size, io_size)
@@ -105,6 +119,12 @@ class ThroughputTests < ThinpTestCase
   def test_snap_already_broken_throughput
     across_various_block_and_io_sizes do |block_size, io_size|
       throughput_snap_broken(block_size, io_size)
+    end
+  end
+
+  def test_linear_throughput
+    across_various_io_sizes do |io_size|
+      throughput_linear(io_size)
     end
   end
 end
