@@ -483,7 +483,7 @@ class DiscardSlowTests < ThinpTestCase
     fs = FS::file_system(fs_type, dev)
     fs.format
     fs.with_mount("./mnt1", :discard => true) do
-      ds = Dataset.read('compile-bench-datasets/dataset-unpatched')
+      ds = Dataset.read(LP('compile-bench-datasets/dataset-unpatched'))
       Dir.chdir('mnt1') do
         Dir.mkdir('linux')
         Dir.chdir('linux') do

@@ -116,9 +116,9 @@ class MetadataResizeTests < ThinpTestCase
               @tvm.table('data')) do |md, data|
       wipe_device(md, 8)
 
-      table = Table.new(ThinPoolTarget.new(data_size, md, data, @data_block_size, @low_water_mark))
-
-      with_dev(table) do |pool|
+      stack = PoolStack.new(@dm, data, md, :data_size => data_size, :block_size => @data_block_size,
+                            :low_water_mark => @low_water_mark, :error_if_no_space => true)
+      stack.activate do |pool|
         with_new_thin(pool, @volume_size, 0) do |thin|
           # We use capture because this doesn't raise ExitErrors
           _1, _2, err = ProcessControl.capture("dd if=/dev/zero of=#{thin.path} bs=4M")

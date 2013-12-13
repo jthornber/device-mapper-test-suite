@@ -26,13 +26,13 @@ class SnapshotTests < ThinpTestCase
         thin_fs = FS::file_system(fs_type, thin)
         thin_fs.format
         thin_fs.with_mount("./mnt1") do
-          ds = Dataset.read('compile-bench-datasets/dataset-unpatched')
+          ds = Dataset.read(LP('compile-bench-datasets/dataset-unpatched'))
           Dir.chdir('mnt1') { ds.apply(1000) }
 
           with_new_snap(pool, @volume_size, 1, 0, thin) do |snap|
             snap_fs = FS::file_system(fs_type, snap)
             snap_fs.with_mount("./mnt2") do
-              ds = Dataset.read('compile-bench-datasets/dataset-unpatched-compiled')
+              ds = Dataset.read(LP('compile-bench-datasets/dataset-unpatched-compiled'))
               Dir.chdir('mnt2') { ds.apply(1000) }
             end
           end
@@ -49,7 +49,7 @@ class SnapshotTests < ThinpTestCase
 
 	report_time("writing first dataset") do
           thin_fs.with_mount("./mnt1") do
-            ds = Dataset.read('compile-bench-datasets/dataset-unpatched')
+            ds = Dataset.read(LP('compile-bench-datasets/dataset-unpatched'))
             Dir.chdir('mnt1') { ds.apply(1000) }
           end
         end
@@ -59,7 +59,7 @@ class SnapshotTests < ThinpTestCase
         snap_fs = FS::file_system(fs_type, snap)
 	report_time("wrting second dataset") do
           snap_fs.with_mount("./mnt2") do
-            ds = Dataset.read('compile-bench-datasets/dataset-unpatched-compiled')
+            ds = Dataset.read(LP('compile-bench-datasets/dataset-unpatched-compiled'))
             Dir.chdir('mnt2') { ds.apply(1000) }
           end
         end
@@ -73,7 +73,7 @@ class SnapshotTests < ThinpTestCase
         thin_fs = FS::file_system(fs_type, thin)
 	report_time("formatting") {thin_fs.format}
 
-        ds = Dataset.read('compile-bench-datasets/dataset-unpatched')
+        ds = Dataset.read(LP('compile-bench-datasets/dataset-unpatched'))
 	report_time("writing first dataset") do
           thin_fs.with_mount("./mnt1") do
             Dir.chdir('mnt1') { ds.apply(1000) }

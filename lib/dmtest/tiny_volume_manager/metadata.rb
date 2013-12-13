@@ -61,6 +61,7 @@ module Metadata
           t.column :block_zeroing, :bool
           t.column :discard, :bool
           t.column :discard_passdown, :bool
+          t.column :error_if_no_space, :bool
         end
 
         create_table :thin_targets do |t|
@@ -164,7 +165,8 @@ module Metadata
                              low_water_mark,
                              block_zeroing,
                              discard,
-                             discard_passdown)
+                             discard_passdown,
+                             error_if_no_space)
     end
   end
 

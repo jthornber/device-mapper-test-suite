@@ -22,6 +22,7 @@ class PoolStatus
     opts[:ignore_discard] = false
     opts[:discard_passdown] = true
     opts[:read_only] = false
+    opts[:error_if_no_space] = false
 
     txt.strip.split.each do |feature|
       case feature
@@ -34,11 +35,20 @@ class PoolStatus
       when 'no_discard_passdown' then
         opts[:discard_passdown] = false
 
+      when 'discard_passdown' then
+        opts[:discard_passdown] = true
+
       when 'ro' then
         opts[:read_only] = true
 
       when 'rw' then
         opts[:read_only] = false
+
+      when 'error_if_no_space' then
+        opts[:error_if_no_space] = true
+
+      when 'queue_if_no_space' then
+        opts[:error_if_no_space] = false
 
       else
         raise "unknown pool feature '#{feature}'"
