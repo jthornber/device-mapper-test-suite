@@ -79,6 +79,17 @@ module DM
     end
   end
 
+  class EraTarget < Target
+    def initialize(sector_count, metadata_dev, origin_dev, block_size)
+      super('era', sector_count, metadata_dev, origin_dev, block_size)
+      @metadata_dev
+    end
+
+    def post_remove_check
+      ProcessControl.run("era_check #{@metadata_dev}")
+    end
+  end
+
   class FakeDiscardTarget < Target
     def initialize(sector_count, dev, offset, granularity, max_discard,
                    no_discard_support = false, discard_zeroes = false)
