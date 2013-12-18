@@ -86,7 +86,7 @@ module DM
     end
 
     def post_remove_check
-      ProcessControl.run("era_check #{@metadata_dev}")
+      #ProcessControl.run("era_check #{@metadata_dev}")
     end
   end
 

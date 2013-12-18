@@ -1,4 +1,5 @@
 require 'dmtest/utils'
+require 'dmtest/ensure_elapsed'
 require 'dmtest/thinp-test'
 require 'dmtest/disk-units'
 require 'dmtest/test-utils'
@@ -6,6 +7,7 @@ require 'dmtest/test-utils'
 #----------------------------------------------------------------
 
 class CacheStack
+  include EnsureElapsed
   include DiskUnits
   include ThinpTestMixin
   include Utils
@@ -173,21 +175,6 @@ class CacheStack
   private
   def migration_threshold
     @opts[:migration_threshold] ? [ "migration_threshold", opts[:migration_threshold].to_s ] : []
-  end
-
-  # udev sometimes dives in and holds a device open whilst we're
-  # trying to remove it.  This is only a problem when we don't do much
-  # with an activated stack.  This method calls a block, ensuring a
-  # certain amount of time elapses before it completes.
-  def ensure_elapsed_time(seconds, *args, &block)
-    t = Thread.new(seconds) do |seconds|
-      sleep seconds
-    end
-
-    r = block.call(*args)
-
-    t.join
-    r
   end
 end
 
