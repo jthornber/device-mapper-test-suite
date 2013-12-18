@@ -56,6 +56,21 @@ class LinearPropertyTests < ThinpTestCase
     end
   end
 
+  def test_prepare_era_then_check_after_reload
+    ps = nil
+
+    s = make_stack(:format => true)
+    s.activate do
+      ps = PatternStomper.new(s.era.path, k(32), :need_zero => true)
+      ps.stamp(20)
+    end
+
+    s.activate do
+      ps2 = ps.fork(s.era.path)
+      ps2.verify(0, 1)
+    end
+  end
+
   def test_dt_a_new_era_device
     s = EraStack.new(@dm, @metadata_dev, @data_dev, :format => true)
     s.activate do
@@ -65,4 +80,3 @@ class LinearPropertyTests < ThinpTestCase
 end
 
 #----------------------------------------------------------------
-
