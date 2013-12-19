@@ -38,13 +38,16 @@ class CacheStack
 
     @tvm = TinyVolumeManager::VM.new
     @tvm.add_allocation_volume(ssd_dev, 0, dev_size(ssd_dev))
-    @tvm.add_volume(linear_vol('md', meg(4)))
-
-    @tvm.add_volume(linear_vol('ssd', cache_size))
+    @tvm.add_volume(linear_vol('md', metadata_size))
+    @tvm.add_volume(linear_vol('ssd', cache_size == :all ? @tvm.free_space : cache_size))
 
     @data_tvm = TinyVolumeManager::VM.new
     @data_tvm.add_allocation_volume(spindle_dev, 0, dev_size(spindle_dev))
-    @data_tvm.add_volume(linear_vol('origin', origin_size))
+    @data_tvm.add_volume(linear_vol('origin', origin_size = :all ? @data_tvm.free_space : origin_size))
+  end
+
+  def metadata_size
+    opts.fetch(:metadata_size, meg(4))
   end
 
   def cache_size
@@ -137,7 +140,7 @@ class CacheStack
   end
 
   def cache_table(mode = io_mode)
-    Table.new(CacheTarget.new(origin_size, @md, @ssd, @origin,
+    Table.new(CacheTarget.new(dev_size(@origin), @md, @ssd, @origin,
                               block_size, mode + migration_threshold,
                               policy.name, policy.opts))
   end
