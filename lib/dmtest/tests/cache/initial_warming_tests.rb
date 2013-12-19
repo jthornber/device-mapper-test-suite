@@ -41,7 +41,7 @@ class InitialWarmingTests < ThinpTestCase
     s = make_stack(:format => true,
                    :data_size => gig(2),
                    :block_size => @data_block_size,
-                   :cache_blocks => @cache_blocks,
+                   :cache_size => @data_block_size * @cache_blocks,
                    :io_mode => :writeback,
                    :policy => Policy.new('mq', tunables))
     s.activate do
