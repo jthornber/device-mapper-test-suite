@@ -81,6 +81,52 @@ class LargeConfigTests < ThinpTestCase
       pp status
     end
   end
+
+  # Designed to be run on really big systems that really do have the
+  # backing store
+  def test_dt_in_chunks
+    promotions = 0
+
+    s = make_stack(:format => true,
+                   :metadata_size => meg(512), # you may need to increase this (I have only 1G of SSD)
+                   :block_size => meg(4),
+                   :cache_size => :all,
+                   :data_size => :all,
+                   :policy => Policy.new('mq',
+                                         :migration_threshold => 1000000,
+                                         :read_promote_adjustment => 0,
+                                         :write_promote_adjustment => 0,
+                                         :discard_promote_adjustment => 0))
+    s.activate do
+      s.cache.discard(0, dev_size(s.cache))
+
+      step = gig(1)
+      tvm = TinyVolumeManager::VM.new
+      tvm.add_allocation_volume(s.cache, 0, dev_size(s.cache))
+
+      volumes = []
+
+      n = 0
+      while tvm.free_space > 0
+        name = "chunk_#{n}"
+        tvm.add_volume(linear_vol(name, [step, tvm.free_space].min))
+        volumes << name
+        n += 1
+      end
+
+      volumes.each do |vol_name|
+        with_dev(tvm.table(vol_name)) do |linear|
+          report_time("dt #{vol_name}", STDERR) do
+            dt_device(linear)
+          end
+        end
+
+        status = CacheStatus.new(s.cache)
+        promotions = status.promotions - promotions
+        STDERR.puts "residency #{status.residency}, promotions this cycle #{promotions}"
+      end
+    end
+  end
 end
 
 #----------------------------------------------------------------
