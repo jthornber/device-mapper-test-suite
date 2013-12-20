@@ -218,6 +218,30 @@ class DiscardQuickTests < ThinpTestCase
     end
   end
 
+  def test_discard_to_a_previously_shared_block_does_get_passed_down
+    with_standard_pool(@size) do |pool|
+      with_new_thin(pool, @volume_size, 0) do |thin|
+        wipe_device(thin, @data_block_size)
+
+        assert_used_blocks(pool, 1)
+
+        pool.message(0, "create_snap 1 0")
+        pool.message(0, "delete 1")
+
+        traces, _ = blktrace(thin, @data_dev) do
+          thin.discard(0, @data_block_size)
+        end
+
+        thin_trace, data_trace = traces
+        event = Event.new([:discard], 0, @data_block_size)
+        assert(thin_trace.member?(event))
+        assert(data_trace.member?(event))
+
+        assert_used_blocks(pool, 0)
+      end
+    end
+  end
+
   def test_discard_partial_blocks
     with_standard_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
