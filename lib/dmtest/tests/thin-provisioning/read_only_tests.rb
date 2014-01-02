@@ -62,7 +62,7 @@ class ReadOnlyTests < ThinpTestCase
     end
 
     # now we open it read-only
-    with_standard_pool(@size, :read_only => true) do |pool|
+    with_standard_pool(@size, :read_only => true, :error_if_no_space => true) do |pool|
       with_thin(pool, @volume_size, 0) do |thin|
         assert_raise(ExitError) do
           wipe_device(thin)
