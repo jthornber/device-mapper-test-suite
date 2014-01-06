@@ -8,6 +8,7 @@ require 'dmtest/config'
 require 'pathname'
 
 require 'ejt_command_line'
+require 'terminfo'
 
 require 'test/unit/collector/objectspace'
 require 'test/unit/testsuite'
@@ -269,6 +270,7 @@ DMTestCommandLine = CommandLine::Parser.new do
   end
 
   simple_switch :help, '-h', '--help'
+  simple_switch :tags, '--tags'
   value_switch :name, :filter, '-n', '--name'
   value_switch :profile, :symbol, '--profile'
   value_switch :suite, :string, '--suite'
@@ -280,7 +282,7 @@ DMTestCommandLine = CommandLine::Parser.new do
   end
 
   command :list do
-    switches :name, :suite, :testcase
+    switches :name, :suite, :testcase, :tags
   end
 
   command :serve do
@@ -320,7 +322,7 @@ class Dispatcher
   def list(opts, args)
     setup_profile(opts.fetch(:profile, nil))
     suite = select_tests(opts)
-    print_suite('', suite)
+    print_suite('', suite, opts.member?(:tags))
   end
 
   def serve(opts, args)
@@ -400,13 +402,35 @@ class Dispatcher
     str.gsub(/^#{prefix}/, '')
   end
 
-  def print_suite(prefix, suite)
+  def format_tags(tags)
+    if tags.length == 0
+      ''
+    else
+      tags.inject('') do |memo, tag|
+        memo.length == 0 ? tag.to_s : "#{memo}, #{tag.to_s}"
+      end
+    end
+  end
+
+  def print_suite(prefix, suite, want_tags)
     if  suite.respond_to? :tests
       puts "#{prefix}#{suite}"
       prefix += '  '
-      suite.tests.each {|t| print_suite(prefix, t)}
+      suite.tests.each {|t| print_suite(prefix, t, want_tags)}
     else
-      puts "#{prefix}#{trim_prefix('test_', suite.method_name.to_s)}"
+      tags = ''
+      if want_tags && suite.class.respond_to?(:get_tags)
+        tags = format_tags(suite.class.get_tags(suite.method_name))
+      end
+      test = "#{prefix}#{trim_prefix('test_', suite.method_name.to_s)}"
+
+      width = TermInfo.screen_size[1]
+      padding = ' '
+      if test.length + tags.length < width
+        padding = ' ' * (width - test.length - tags.length)
+      end
+
+      puts "#{test}#{padding}#{tags}"
     end
   end
 
