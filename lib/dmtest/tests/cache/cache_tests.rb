@@ -506,8 +506,8 @@ class CacheTests < ThinpTestCase
     stack.activate do |stack|
       status = CacheStatus.new(stack.cache)
 
-      assert(status.core_args.assoc('migration_threshold'), '12345')
-      assert(status.policy_args.assoc('random_threshold'), '4321')
+      # verify that the "default" policy maps to "mq"
+      assert_equal(status.policy_name, 'mq')
 
       pp status
     end
@@ -529,6 +529,7 @@ class CacheTests < ThinpTestCase
       stack.cache.message(0, "random_threshold 4321")
       status = CacheStatus.new(stack.cache)
 
+      # FIXME: these asserts don't work!
       assert(status.core_args.assoc('migration_threshold'), '12345')
       assert(status.policy_args.assoc('random_threshold'), '4321')
     end
