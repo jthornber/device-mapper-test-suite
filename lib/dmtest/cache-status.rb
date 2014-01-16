@@ -5,7 +5,7 @@ require 'dmtest/log'
 class CacheStatus
   attr_accessor :md_block_size, :md_used, :md_total, :cache_block_size, :residency, :cache_total
   attr_accessor :read_hits, :read_misses, :write_hits, :write_misses
-  attr_accessor :demotions, :promotions, :nr_dirty, :features, :core_args, :policy_args
+  attr_accessor :demotions, :promotions, :nr_dirty, :features, :core_args, :policy_name, :policy_args
 
   PATTERN ='\d+\s+\d+\s+cache\s+(.*)'
 
@@ -28,6 +28,7 @@ class CacheStatus
     shift_int :nr_dirty
     shift_features :features
     shift_pairs :core_args
+    shift :policy_name
     shift_pairs :policy_args
   end
 
