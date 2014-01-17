@@ -62,6 +62,7 @@ module Metadata
           t.column :discard, :bool
           t.column :discard_passdown, :bool
           t.column :error_if_no_space, :bool
+          t.column :blocks_per_allocation, :integer
         end
 
         create_table :thin_targets do |t|
@@ -166,7 +167,8 @@ module Metadata
                              block_zeroing,
                              discard,
                              discard_passdown,
-                             error_if_no_space)
+                             error_if_no_space,
+                             blocks_per_allocation)
     end
   end
 
