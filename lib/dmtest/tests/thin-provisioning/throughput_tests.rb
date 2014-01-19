@@ -35,10 +35,11 @@ class ThroughputTests < ThinpTestCase
   end
 
   def across_various_bpa_block_and_io_sizes(&block)
-    [1, 10].each do |blocks_per_allocation|
+    [1, 10, 20].each do |blocks_per_allocation|
       across_various_block_and_io_sizes do |block_size, io_size|
         block.call(block_size, io_size, blocks_per_allocation)
       end
+      STDERR.puts "\n"
     end
   end
 
@@ -154,8 +155,17 @@ class ThroughputTests < ThinpTestCase
     end
   end
 
-  def throughput_multithreaded_layout_reread(block_size, io_size, bpa)
-    # currently assumes underlying striped storage w/ chunk=64K stripe=256K
+  def multithreaded_layout_read(device, block_size, io_size, bpa)
+    report_time("dd write  block_size = #{block_size}, io_size = #{io_size}, blocks_per_allocation = #{bpa}", STDERR) do
+      in_parallel(0, 1, 2, 3) {|offset| ProcessControl.run("dd oflag=direct if=/dev/zero of=#{device} bs=#{io_size * 512} count=#{gig(1) / io_size} seek=#{offset * (gig(1) / io_size)}")}
+    end
+
+    report_time(" dd read  block_size = #{block_size}, io_size = #{io_size}, blocks_per_allocation = #{bpa}", STDERR) do
+      ProcessControl.run("dd iflag=direct if=#{device} of=/dev/null bs=#{io_size * 512} count=#{gig(1) / io_size}")
+    end
+  end
+
+  def throughput_multithreaded_layout_io(block_size, io_size, bpa, desc, &block)
     @volume_size = gig(7)
 
     @blocks_per_dev = div_up(@volume_size, block_size * bpa)
@@ -168,36 +178,55 @@ class ThroughputTests < ThinpTestCase
     with_standard_pool(@size, :zero => false, :block_size => block_size,
                        :blocks_per_allocation => bpa) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
-        multithreaded_layout_reread(thin, block_size, io_size, bpa)
+        block.call(thin, block_size, io_size, bpa)
       end
+
+      pool.suspend
+      dump_metadata(@metadata_dev) do |xml_path|
+        # FIXME: log to unique location
+        ProcessControl.run("cat #{xml_path} > /tmp/testest/#{desc}_bs#{block_size}_io#{io_size}_bpa#{bpa}.txt")
+      end
+      pool.resume
     end
   end
 
-  def throughput_multithreaded_layout_reread_linear(block_size, io_size)
+  def throughput_multithreaded_layout_io_linear(block_size, io_size, &block)
     with_standard_linear(:data_size => gig(7)) do |linear|
-      multithreaded_layout_reread(linear, block_size, io_size, 1)
+      block.call(linear, block_size, io_size, 1)
     end
   end
 
-  def test_multithreaded_layout_reread_throughput
+  def harness_multithreaded_layout_io_throughput(&block)
     # compare: linear vs blocks_per_allocation=1
     STDERR.puts "\nlinear:"
     across_various_block_and_io_sizes do |block_size, io_size|
-      throughput_multithreaded_layout_reread_linear(block_size, io_size)
+      throughput_multithreaded_layout_io_linear(block_size, io_size, &block)
     end
 
     # then compare: use of blocks_per_allocation=10
     STDERR.puts "\nthin w/ varied blocks_per_allocation:"
     across_various_bpa_block_and_io_sizes do |block_size, io_size, bpa|
-      throughput_multithreaded_layout_reread(block_size, io_size, bpa)
+      throughput_multithreaded_layout_io(block_size, io_size, bpa, "thin_varied_bpa", &block)
     end
 
     # versus: native large blocksizes
     STDERR.puts "\nthin w/ native large blocksizes:"
-    [k(640), k(1280), k(2560), k(5120)].each do |block_size|
+    [k(640), k(1280), k(2560), k(5120), k(10240)].each do |block_size|
       across_various_io_sizes do |io_size|
-        throughput_multithreaded_layout_reread(block_size, io_size, 1)
+        throughput_multithreaded_layout_io(block_size, io_size, 1, "thin_large_bs", &block)
       end
+    end
+  end
+
+  def test_multithreaded_layout_reread_throughput
+    harness_multithreaded_layout_io_throughput do |device, block_size, io_size, bpa|
+      multithreaded_layout_reread(device, block_size, io_size, bpa)
+    end
+  end
+
+  def test_multithreaded_layout_read_throughput
+    harness_multithreaded_layout_io_throughput do |device, block_size, io_size, bpa|
+      multithreaded_layout_read(device, block_size, io_size, bpa)
     end
   end
 
