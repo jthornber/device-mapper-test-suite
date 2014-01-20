@@ -159,6 +159,54 @@ class MetadataResizeTests < ThinpTestCase
       end
     end
   end
- end
+
+  #--------------------------------
+
+  # This scenario was reported by Kabi
+  def test_thin_remove_works_after_resize
+    md_size = meg(2)
+    data_size = meg(100)
+    @tvm.add_volume(linear_vol('metadata', md_size))
+    @tvm.add_volume(linear_vol('data', data_size))
+
+    with_devs(@tvm.table('metadata'),
+              @tvm.table('data')) do |md, data|
+      wipe_device(md, 8)
+
+      table = Table.new(ThinPoolTarget.new(data_size, md, data, @data_block_size, @low_water_mark))
+      with_dev(table) do |pool|
+
+        # Create a couple of thin volumes
+        pool.message(0, "create_thin 0")
+        pool.message(0, "create_thin 1")
+
+        new_size = meg(256)
+
+        status = PoolStatus.new(pool)
+        status.total_metadata_blocks.should == md_size / 8
+
+        @tvm.resize('metadata', new_size)
+        pool.pause do
+          md.pause do
+            table = @tvm.table('metadata')
+            md.load(table)
+          end
+        end
+
+        # the first delete was causing the pool to flick into
+        # read_only mode due to a failed commit, ...
+        pool.message(0, "delete 0")
+
+        status = PoolStatus.new(pool)
+
+        status.total_metadata_blocks.should == new_size / 8
+        status.options[:read_only].should be_false
+
+        # ... which then led to the second delete failing
+        pool.message(0, "delete 1")
+      end
+    end
+  end
+end
 
 #----------------------------------------------------------------
