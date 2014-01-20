@@ -27,7 +27,7 @@ class ThroughputTests < ThinpTestCase
   end
 
   def across_various_block_and_io_sizes(&block)
-    [k(64), k(128), k(256), k(512)].each do |block_size|
+    [k(64), k(128), k(256), k(512), k(1024)].each do |block_size|
       across_various_io_sizes do |io_size|
         block.call(block_size, io_size)
       end
@@ -35,7 +35,7 @@ class ThroughputTests < ThinpTestCase
   end
 
   def across_various_bpa_and_io_sizes(&block)
-    [1, 16, 64, 256, 1024].each do |bpa|
+    [1, 8, 16, 64, 256, 1024].each do |bpa|
       across_various_io_sizes do |io_size|
         block.call(bpa, io_size)
       end
@@ -139,7 +139,7 @@ class ThroughputTests < ThinpTestCase
   #----------------------------------------------------------------
 
   extend DiskUnits
-  VOLUME_SIZE = meg(256)
+  VOLUME_SIZE = gig(1)
 
   def iozone_then_dd_read(device, io_size)
     count = (dev_size(device) / 9) / meg(1)
@@ -210,7 +210,7 @@ class ThroughputTests < ThinpTestCase
 
     @blocks_per_dev = div_up(@volume_size, block_size * bpa)
     @volume_size = @blocks_per_dev * block_size * bpa
-    @size = @volume_size
+    @size = @volume_size * 2
 
     # FIXME: add a :format option to with_standard_pool
     wipe_device(@metadata_dev, 8)
@@ -250,6 +250,15 @@ class ThroughputTests < ThinpTestCase
     across_various_bpa_and_io_sizes do |bpa, io_size|
       STDERR.puts "bpa = #{bpa}, io_size = #{io_size}"
       with_bpa_volume(block_size, bpa, "mw_sr_bpa_#{bpa}_io_size_#{io_size}") do |thin|
+        multi_write_single_read(thin, io_size)
+      end
+    end
+  end
+
+  def test_multiple_writers_then_single_reader_thin_various_block_size
+    across_various_block_and_io_sizes do |block_size, io_size|
+      STDERR.puts "block_size = #{block_size}, io_size = #{io_size}"
+      with_bpa_volume(block_size, 1, "mw_sr_block_#{block_size}_io_size_#{io_size}") do |thin|
         multi_write_single_read(thin, io_size)
       end
     end
