@@ -19,12 +19,13 @@ class PoolStack
     read_only = @opts.fetch(:read_only, false)
     error_if_no_space = @opts.fetch(:error_if_no_space, false)
     block_size = @opts.fetch(:block_size, 128)
+    blocks_per_allocation = @opts.fetch(:blocks_per_allocation, 1)
     low_water_mark = @opts.fetch(:low_water_mark, 0)
 
     Table.new(ThinPoolTarget.new(size, @metadata_dev, @data_dev,
                                  block_size, low_water_mark,
                                  zero, discard, discard_pass, read_only,
-                                 error_if_no_space))
+                                 error_if_no_space, blocks_per_allocation))
   end
 
   def activate(&block)

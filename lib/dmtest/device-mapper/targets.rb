@@ -32,7 +32,7 @@ module DM
 
     def initialize(sector_count, metadata_dev, data_dev, block_size, low_water_mark,
                    zero = true, discard = true, discard_pass = true, read_only = false,
-                   error_if_no_space = false)
+                   error_if_no_space = false, blocks_per_allocation = 1)
       extra_opts = Array.new
 
       extra_opts.instance_eval do
@@ -41,6 +41,10 @@ module DM
         push :no_discard_passdown unless discard_pass
         push :read_only if read_only
         push :error_if_no_space if error_if_no_space
+        if blocks_per_allocation > 1
+          push :blocks_per_allocation
+          push blocks_per_allocation
+        end
       end
 
       super('thin-pool', sector_count, metadata_dev, data_dev, block_size, low_water_mark, extra_opts.length, *extra_opts)

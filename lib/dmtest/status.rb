@@ -23,6 +23,7 @@ class PoolStatus
     opts[:discard_passdown] = true
     opts[:read_only] = false
     opts[:error_if_no_space] = false
+    opts[:blocks_per_allocation] = 1
 
     txt.strip.split.each do |feature|
       case feature
@@ -50,8 +51,12 @@ class PoolStatus
       when 'queue_if_no_space' then
         opts[:error_if_no_space] = false
 
+      when 'blocks_per_allocation' then
+        opts[:blocks_per_allocation] = 1 # FIXME: how do I get the next one? iterate manually?
+
       else
-        raise "unknown pool feature '#{feature}'"
+        opts[:blocks_per_allocation] = feature.to_i # FIXME: absolutely awful short-term hack!
+        #raise "unknown pool feature '#{feature}'"
       end
     end
 
