@@ -82,11 +82,11 @@ module DM
   class EraTarget < Target
     def initialize(sector_count, metadata_dev, origin_dev, block_size)
       super('era', sector_count, metadata_dev, origin_dev, block_size)
-      @metadata_dev
+      @metadata_dev = metadata_dev
     end
 
     def post_remove_check
-      #ProcessControl.run("era_check #{@metadata_dev}")
+      ProcessControl.run("era_check #{@metadata_dev}")
     end
   end
 
