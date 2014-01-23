@@ -1,14 +1,16 @@
-require 'dmtest/tests/era/era_stack'
-require 'dmtest/thinp-test'
-require 'dmtest/test-utils'
-require 'dmtest/utils'
 require 'dmtest/pattern_stomper'
+require 'dmtest/test-utils'
+require 'dmtest/tests/era/era_stack'
+require 'dmtest/tests/era/era_utils'
+require 'dmtest/thinp-test'
+require 'dmtest/utils'
 
 require 'rspec/expectations'
 
 #----------------------------------------------------------------
 
 class LinearPropertyTests < ThinpTestCase
+  include EraUtils
   include Utils
   include DiskUnits
   extend TestUtils
@@ -68,6 +70,18 @@ class LinearPropertyTests < ThinpTestCase
     s.activate do
       ps2 = ps.fork(s.era.path)
       ps2.verify(0, 1)
+    end
+  end
+
+  def test_wiped_blocks_have_increasing_eras
+    s = make_stack(:format => true)
+    s.activate_support_devs do
+       s.activate_top_level do
+        wipe_device(s.era)
+      end
+
+      STDERR.puts
+      STDERR.puts dump_metadata(s.md)
     end
   end
 
