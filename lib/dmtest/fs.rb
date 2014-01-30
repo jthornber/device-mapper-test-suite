@@ -33,7 +33,7 @@ module FS
 
     def with_mount(mount_point, opts = Hash.new, &block)
       mount(mount_point, opts)
-      protect_(lambda {umount}, &block)
+      bracket_(lambda {umount}, &block)
     end
 
     def check
