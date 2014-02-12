@@ -73,27 +73,6 @@ class LinearPropertyTests < ThinpTestCase
     end
   end
 
-  # FIXME: move to a different test class
-  def test_wiped_blocks_have_increasing_eras
-    s = make_stack(:format => true)
-    s.activate_support_devs do
-       s.activate_top_level do
-
-        block_size = k(64) * 1024
-        nr_blocks = dev_size(s.era) / block_size
-
-        0.upto(nr_blocks - 1) do |block|
-          STDERR.puts "wiping block #{block}"
-          ProcessControl.run("dd if=/dev/zero of=#{s.era.path} oflag=direct bs=#{block_size * 512} seek=#{block} count=1")
-          s.era.message(0, "checkpoint")
-        end
-      end
-
-      STDERR.puts
-      STDERR.puts dump_metadata(s.md)
-    end
-  end
-
   def test_dt_a_new_era_device
     s = EraStack.new(@dm, @metadata_dev, @data_dev, :format => true)
     s.activate do
