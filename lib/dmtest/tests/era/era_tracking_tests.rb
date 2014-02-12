@@ -27,7 +27,6 @@ class EraTrackingTests < ThinpTestCase
 
   ERA7 = <<EOF
 <blocks>
-  <range begin="6144" end = "7168"/>
   <range begin="8192" end = "9216"/>
   <range begin="10240" end = "11264"/>
   <range begin="12288" end = "13312"/>
@@ -37,7 +36,6 @@ EOF
 
   ERA13 = <<EOF
 <blocks>
-  <range begin="12288" end = "13312"/>
   <range begin="14336" end = "15360"/>
 </blocks>
 EOF
@@ -45,25 +43,78 @@ EOF
   def test_wiped_blocks_have_increasing_eras
     s = make_stack(:format => true)
     s.activate_support_devs do
-       s.activate_top_level do
+      @checkpoints = []
+      s.activate_top_level do
 
         block_size = k(64) * 1024
         nr_blocks = dev_size(s.era) / block_size
 
         0.upto(nr_blocks - 1) do |block|
-          s.era.message(0, "checkpoint")
+          @checkpoints << s.checkpoint
 
           # we only wipe alternating blocks
           if (block.even?)
-            #STDERR.puts "wiping blocks #{1024 * block}..#{1024 * (block + 1)}"
             ProcessControl.run("dd if=/dev/zero of=#{s.era.path} oflag=direct bs=#{block_size * 512} seek=#{block} count=1")
           end
         end
       end
 
-      blocks_changed_since(s.md, 7).should == ERA7.chomp
-      blocks_changed_since(s.md, 13).should == ERA13.chomp
+      blocks_changed_since(s.md, @checkpoints[7]).should == ERA7.chomp
+      blocks_changed_since(s.md, @checkpoints[13]).should == ERA13.chomp
     end
+  end
+
+  def test_pausing_does_not_effect_tracking
+    s = make_stack(:format => true)
+    s.activate_support_devs do
+      @checkpoints = []
+       s.activate_top_level do
+        block_size = k(64) * 1024
+        nr_blocks = dev_size(s.era) / block_size
+
+        0.upto(nr_blocks - 1) do |block|
+          @checkpoints << s.checkpoint
+
+          # we only wipe alternating blocks
+          if (block.even?)
+            ProcessControl.run("dd if=/dev/zero of=#{s.era.path} oflag=direct bs=#{block_size * 512} seek=#{block} count=1")
+
+            s.era.pause do
+              sleep 1
+            end
+          end
+        end
+      end
+
+      blocks_changed_since(s.md, @checkpoints[7]).should == ERA7.chomp
+      blocks_changed_since(s.md, @checkpoints[13]).should == ERA13.chomp
+    end
+  end
+
+  def test_many_eras_does_not_exhaust_metadata
+    s = make_stack(:format => true)
+    s.activate_support_devs do
+       s.activate_top_level do
+        block_size = k(64) * 1024
+        nr_blocks = dev_size(s.era) / block_size
+
+        100.times do
+          0.upto(nr_blocks - 1) do |block|
+            c = s.checkpoint
+
+            status = EraStatus.new(s.era)
+            STDERR.puts "current_era #{c}, metadata #{status.md_used}/#{status.md_total}"
+
+            ProcessControl.run("dd if=/dev/zero of=#{s.era.path} oflag=direct bs=#{block_size * 512} seek=#{block} count=1")
+          end
+        end
+      end
+
+      s.activate_top_level do
+        # just checking
+      end
+    end
+
   end
 end
 
