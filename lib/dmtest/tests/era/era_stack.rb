@@ -1,9 +1,10 @@
-require 'dmtest/ensure_elapsed'
-require 'dmtest/utils'
-require 'dmtest/disk-units'
-require 'dmtest/tvm'
 require 'dmtest/device-mapper/lexical_operators'
 require 'dmtest/device-mapper/table'
+require 'dmtest/disk-units'
+require 'dmtest/ensure_elapsed'
+require 'dmtest/tests/era/era_status'
+require 'dmtest/tvm'
+require 'dmtest/utils'
 
 #----------------------------------------------------------------
 
@@ -74,6 +75,12 @@ class EraStack
     activate_support_devs do
       activate_top_level(&block)
     end
+  end
+
+  def checkpoint
+    @era.message(0, "checkpoint")
+    status = EraStatus.new(@era)
+    status.current_era
   end
 
   def dm_interface
