@@ -18,8 +18,7 @@ class CreationTests < ThinpTestCase
 
   def test_bring_up_an_era_target
     s = EraStack.new(@dm, @metadata_dev, @data_dev, :format => true)
-    s.activate do
-    end
+    s.activate {}
   end
 end
 
