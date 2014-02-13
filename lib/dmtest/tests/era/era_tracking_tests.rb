@@ -1,7 +1,7 @@
 require 'dmtest/pattern_stomper'
 require 'dmtest/test-utils'
-require 'dmtest/tests/era/era_stack'
-require 'dmtest/tests/era/era_utils'
+require 'dmtest/era_stack'
+require 'dmtest/era_utils'
 require 'dmtest/thinp-test'
 require 'dmtest/utils'
 

@@ -1,4 +1,4 @@
-require 'dmtest/tests/era/era_stack'
+require 'dmtest/era_stack'
 require 'dmtest/thinp-test'
 require 'dmtest/test-utils'
 require 'dmtest/utils'

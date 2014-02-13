@@ -2,7 +2,7 @@ require 'dmtest/device-mapper/lexical_operators'
 require 'dmtest/device-mapper/table'
 require 'dmtest/disk-units'
 require 'dmtest/ensure_elapsed'
-require 'dmtest/tests/era/era_status'
+require 'dmtest/era_status'
 require 'dmtest/tvm'
 require 'dmtest/utils'
 
