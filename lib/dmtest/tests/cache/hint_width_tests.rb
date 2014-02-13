@@ -6,8 +6,8 @@ require 'dmtest/cache-status'
 require 'dmtest/disk-units'
 require 'dmtest/test-utils'
 require 'dmtest/tvm.rb'
-require 'dmtest/tests/cache/cache_stack'
-require 'dmtest/tests/cache/policy'
+require 'dmtest/cache_stack'
+require 'dmtest/cache_policy'
 require 'thinp_xml/cache_xml'
 
 #----------------------------------------------------------------
