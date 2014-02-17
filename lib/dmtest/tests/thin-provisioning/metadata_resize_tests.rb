@@ -97,14 +97,14 @@ class MetadataResizeTests < ThinpTestCase
     end
   end
 
-  def min(a, b)
-    [a, b].sort[0]
-  end
-
-  def test_resize_io_metadata
+  def test_resize_metadata_after_exhaust
     n = 10
-    data_size = gig(10)
-    metadata_size = meg(1)
+
+    metadata_reserve = meg(32)
+    data_size = @tvm.free_space - metadata_reserve
+    metadata_size = k(512)
+    metadata_step = k(256)
+
     @tvm.add_volume(linear_vol('data', data_size))
     @tvm.add_volume(linear_vol('metadata', metadata_size))
 
@@ -112,42 +112,39 @@ class MetadataResizeTests < ThinpTestCase
               @tvm.table('data')) do |md, data|
       wipe_device(md, 8)
 
-      table = Table.new(ThinPoolTarget.new(data_size, md, data, @data_block_size, @low_water_mark))
+      # FIXME: :error_if_out_of_space should not be neccessary, bios
+      # that would cause provisioning should _always_ be errored if in
+      # read-only mode.  Kernel bug.
+      table = Table.new(ThinPoolTarget.new(data_size, md, data, @data_block_size, @low_water_mark,
+                                           true, true, true, false, true))
       with_dev(table) do |pool|
         with_new_thin(pool, data_size, 0) do |thin|
-          event_tracker = pool.event_tracker;
+          1.upto(n - 1) do |step|
+            STDERR.puts "metadata_size = #{metadata_size / 2}k"
 
-          fork {wipe_device(thin)}
-
-          2.upto(n) do |i|
-            # kernel manages low water mark for metadata: min of 4M or 1/4 of the total metadata blocks
-            low_water_mark = min(1024, (metadata_size / 8) / 4)
-            STDERR.puts "metadata_size = #{metadata_size / 8}, low_water_mark = #{low_water_mark}"
-
-            # wait until available metadata space exhausted
-            event_tracker.wait do
-              status = PoolStatus.new(pool)
-              # condition must occur _before_ expected event is fired
-              status.used_metadata_blocks >= status.total_metadata_blocks - low_water_mark
+            # There isn't enough metadata to provision the whole
+            # device, so this will fail
+            begin
+              wipe_device(thin)
+            rescue
+              STDERR.puts "wipe_device failed as expected"
             end
 
-            # FIXME: not reliably getting here... resize doesn't fire if we lose race between
-            # low_water_mark and pool actually running of of metadata space.
-            STDERR.puts "resizing..."
+            # Running out of metadata will have triggered read only mode
+            PoolStatus.new(pool).options[:read_only].should == true
 
-            metadata_size = meg(1*i)
+            STDERR.puts "resizing..."
+            metadata_size = metadata_size + metadata_step
             @tvm.resize('metadata', metadata_size)
+
             pool.pause do
               md.pause do
-                table = @tvm.table('metadata')
-                md.load(table)
+                md.load(@tvm.table('metadata'))
               end
-            end
-          end
 
-          Process.wait
-          if $?.exitstatus > 0
-            raise RuntimeError, "wipe sub process failed"
+              # We reload to force the pool out of read-only mode
+              pool.load(table)
+            end
           end
         end
       end
