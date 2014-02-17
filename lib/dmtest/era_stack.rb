@@ -83,6 +83,11 @@ class EraStack
     status.current_era
   end
 
+  def dump_metadata(opts = {})
+    logical_flag = opts.fetch(:logical, false) ? "--logical" : ""
+    ProcessControl.run("era_dump #{logical_flag} #{@md}")
+  end
+
   def dm_interface
     @dm
   end

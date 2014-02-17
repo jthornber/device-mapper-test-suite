@@ -114,7 +114,110 @@ EOF
         # just checking
       end
     end
+  end
 
+  def test_repeated_dumps_are_identical
+    s = make_stack(:format => true)
+    s.activate_support_devs do
+       s.activate_top_level do
+        block_size = k(64) * 1024
+        nr_blocks = dev_size(s.era) / block_size
+
+        0.upto(nr_blocks - 1) do |block|
+          c = s.checkpoint
+
+          status = EraStatus.new(s.era)
+          STDERR.puts "current_era #{c}, metadata #{status.md_used}/#{status.md_total}"
+
+          ProcessControl.run("dd if=/dev/zero of=#{s.era.path} oflag=direct bs=#{block_size * 512} seek=#{block} count=1")
+
+          s.era.pause do
+            output1 = s.dump_metadata(:logical => true)
+            output2 = s.dump_metadata(:logical => true)
+
+            output2.should == output1
+          end
+        end
+      end
+    end
+
+  end
+
+  def test_dumps_do_not_change_without_io
+    s = make_stack(:format => true)
+    s.activate_support_devs do
+       s.activate_top_level do
+        block_size = k(64) * 1024
+        nr_blocks = dev_size(s.era) / block_size
+
+        0.upto(nr_blocks - 1) do |block|
+          output1 = output2 = nil
+          c = s.checkpoint
+
+          status = EraStatus.new(s.era)
+          STDERR.puts "current_era #{c}, metadata #{status.md_used}/#{status.md_total}"
+
+          ProcessControl.run("dd if=/dev/zero of=#{s.era.path} oflag=direct bs=#{block_size * 512} seek=#{block} count=1")
+
+          s.era.pause do
+            output1 = s.dump_metadata(:logical => true)
+          end
+
+          s.era.pause do
+            output2 = s.dump_metadata(:logical => true)
+          end
+
+          output2.should == output1
+        end
+      end
+    end
+  end
+
+  def test_reloads_do_not_change_dumps
+    output1 = output2 = output3 = nil
+
+    s = make_stack(:format => true)
+    s.activate_support_devs do
+      s.activate_top_level do
+        wipe_device(s.era)
+      end
+
+      output1 = s.dump_metadata(:logical => true)
+
+      s.activate_top_level do
+        s.era.pause do
+          output2 = s.dump_metadata(:logical => true)
+        end
+      end
+
+      output3 = s.dump_metadata(:logical => true)
+    end
+
+    output2.should == output1
+    output3.should == output2
+  end
+
+  def test_writes_to_already_written_areas_do_not_change_dumps
+    output1 = output2 = output3 = nil
+
+    s = make_stack(:format => true)
+    s.activate_support_devs do
+      s.activate_top_level do
+        wipe_device(s.era)
+        
+        s.era.pause do
+          output1 = s.dump_metadata(:logical => true)
+        end
+
+        wipe_device(s.era)
+
+        s.era.pause do
+          output2 = s.dump_metadata(:logical => true)
+        end
+      end
+    end
+
+    output2.should == output1
   end
 end
 
