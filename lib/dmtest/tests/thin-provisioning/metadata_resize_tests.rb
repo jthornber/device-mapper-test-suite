@@ -97,6 +97,63 @@ class MetadataResizeTests < ThinpTestCase
     end
   end
 
+  def min(a, b)
+    [a, b].sort[0]
+  end
+
+  def test_resize_io_metadata
+    n = 10
+    data_size = gig(10)
+    metadata_size = meg(1)
+    @tvm.add_volume(linear_vol('data', data_size))
+    @tvm.add_volume(linear_vol('metadata', metadata_size))
+
+    with_devs(@tvm.table('metadata'),
+              @tvm.table('data')) do |md, data|
+      wipe_device(md, 8)
+
+      table = Table.new(ThinPoolTarget.new(data_size, md, data, @data_block_size, @low_water_mark))
+      with_dev(table) do |pool|
+        with_new_thin(pool, data_size, 0) do |thin|
+          event_tracker = pool.event_tracker;
+
+          fork {wipe_device(thin)}
+
+          2.upto(n) do |i|
+            # kernel manages low water mark for metadata: min of 4M or 1/4 of the total metadata blocks
+            low_water_mark = min(1024, (metadata_size / 8) / 4)
+            STDERR.puts "metadata_size = #{metadata_size / 8}, low_water_mark = #{low_water_mark}"
+
+            # wait until available metadata space exhausted
+            event_tracker.wait do
+              status = PoolStatus.new(pool)
+              # condition must occur _before_ expected event is fired
+              status.used_metadata_blocks >= status.total_metadata_blocks - low_water_mark
+            end
+
+            # FIXME: not reliably getting here... resize doesn't fire if we lose race between
+            # low_water_mark and pool actually running of of metadata space.
+            STDERR.puts "resizing..."
+
+            metadata_size = meg(1*i)
+            @tvm.resize('metadata', metadata_size)
+            pool.pause do
+              md.pause do
+                table = @tvm.table('metadata')
+                md.load(table)
+              end
+            end
+          end
+
+          Process.wait
+          if $?.exitstatus > 0
+            raise RuntimeError, "wipe sub process failed"
+          end
+        end
+      end
+    end
+  end
+
   #--------------------------------
 
   def read_only_or_fail_mode(pool)
