@@ -1,3 +1,4 @@
+require 'dmtest/blktrace'
 require 'dmtest/log'
 require 'dmtest/utils'
 require 'dmtest/fs'
@@ -9,6 +10,7 @@ require 'dmtest/thinp-test'
 class BasicTests < ThinpTestCase
   include Tags
   include Utils
+  include BlkTrace
 
   def setup
     super
@@ -75,6 +77,17 @@ class BasicTests < ThinpTestCase
       with_thin(pool, @volume_size, 1) {|snap| wipe_device(snap)}
     end
   end
+
+  def test_pool_without_thin_devices_does_not_commit
+    with_standard_pool(@size) do |pool|
+      traces, _ = blktrace(@metadata_dev) do
+        sleep 10
+      end
+      STDERR.puts traces[0]
+      assert(traces[0].empty?)
+    end
+  end
+
 end
 
 #----------------------------------------------------------------
