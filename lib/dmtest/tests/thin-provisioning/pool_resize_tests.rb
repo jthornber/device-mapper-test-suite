@@ -82,6 +82,16 @@ class PoolResizeTests < ThinpTestCase
           raise RuntimeError, "wipe sub process failed"
         end
       end
+
+      # suspend/resume cycle should _not_ cause read-write -> read-only!
+      pool.suspend
+      pool.resume
+
+      status = PoolStatus.new(pool)
+      status.options[:read_only].should be_false
+
+      # remove the created thin
+      pool.message(0, 'delete 0')
     end
   end
 
