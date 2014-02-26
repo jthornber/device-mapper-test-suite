@@ -31,12 +31,21 @@ module DM
       @interface.suspend(path)
     end
 
+    def suspend_noflush
+      @interface.suspend_noflush(path)
+    end
+
     def resume
       @interface.resume(path)
     end
 
     def pause(&block)
       suspend
+      bracket_(method(:resume), &block)
+    end
+
+    def pause_noflush(&block)
+      suspend_noflush
       bracket_(method(:resume), &block)
     end
 

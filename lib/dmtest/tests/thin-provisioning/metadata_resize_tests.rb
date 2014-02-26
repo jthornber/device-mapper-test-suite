@@ -80,10 +80,12 @@ class MetadataResizeTests < ThinpTestCase
           ProcessControl.sleep 5
 
           @tvm.resize('metadata', meg(2))
-          pool.pause do
-            md.pause do
-              table = @tvm.table('metadata')
-              md.load(table)
+          thin.pause do
+            pool.pause do
+              md.pause do
+                table = @tvm.table('metadata')
+                md.load(table)
+              end
             end
           end
 
@@ -131,19 +133,21 @@ class MetadataResizeTests < ThinpTestCase
             end
 
             # Running out of metadata will have triggered read only mode
-            PoolStatus.new(pool).options[:read_only].should == true
+            PoolStatus.new(pool).options[:mode].should == :read_only
 
             STDERR.puts "resizing..."
             metadata_size = metadata_size + metadata_step
             @tvm.resize('metadata', metadata_size)
 
-            pool.pause do
-              md.pause do
-                md.load(@tvm.table('metadata'))
+            thin.pause do
+              pool.pause do
+                md.pause do
+                  md.load(@tvm.table('metadata'))
+                end
+                
+                # We reload to force the pool out of read-only mode
+                pool.load(table)
               end
-
-              # We reload to force the pool out of read-only mode
-              pool.load(table)
             end
           end
         end
@@ -155,7 +159,7 @@ class MetadataResizeTests < ThinpTestCase
 
   def read_only_or_fail_mode(pool)
     status = PoolStatus.new(pool)
-    status.fail || status.options[:read_only]
+    status.fail || status.options[:mode] == :read_only
   end
 
   def test_exhausting_metadata_space_causes_fail_mode
@@ -254,7 +258,7 @@ class MetadataResizeTests < ThinpTestCase
         status = PoolStatus.new(pool)
 
         status.total_metadata_blocks.should == new_size / 8
-        status.options[:read_only].should be_false
+        status.options[:mode].should == :read_write
 
         # ... which then led to the second delete failing
         pool.message(0, "delete 1")

@@ -21,7 +21,7 @@ class PoolStatus
     opts[:block_zeroing] = true
     opts[:ignore_discard] = false
     opts[:discard_passdown] = true
-    opts[:read_only] = false
+    opts[:mode] = :read_write
     opts[:error_if_no_space] = false
 
     txt.strip.split.each do |feature|
@@ -38,11 +38,14 @@ class PoolStatus
       when 'discard_passdown' then
         opts[:discard_passdown] = true
 
+      when 'out_of_data_space' then
+        opts[:mode] = :out_of_data_space
+
       when 'ro' then
-        opts[:read_only] = true
+        opts[:mode] = :read_only
 
       when 'rw' then
-        opts[:read_only] = false
+        opts[:mode] = :read_write
 
       when 'error_if_no_space' then
         opts[:error_if_no_space] = true

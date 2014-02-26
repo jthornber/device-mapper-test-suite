@@ -30,6 +30,10 @@ module DM
       ProcessControl.run("dmsetup suspend #{strip(path)}")
     end
 
+    def suspend_noflush(path)
+      ProcessControl.run("dmsetup suspend --noflush #{strip(path)}")
+    end
+
     def resume(path)
       ProcessControl.run("dmsetup resume #{strip(path)}")
     end
