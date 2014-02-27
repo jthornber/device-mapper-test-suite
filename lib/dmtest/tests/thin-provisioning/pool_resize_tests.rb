@@ -7,6 +7,125 @@ require 'timeout'
 
 #----------------------------------------------------------------
 
+class PoolAndDataSizeMatchTests < ThinpTestCase
+  include Tags
+  include Utils
+  include TinyVolumeManager
+
+  def setup
+    super
+    @low_water_mark = 0
+    @data_block_size = 128
+
+    @tvm = VM.new
+    @tvm.add_allocation_volume(@data_dev, 0, dev_size(@data_dev))
+
+    @size = @volume_size
+    @tvm.add_volume(linear_vol('data', @size))
+
+    wipe_device(@metadata_dev, 8)
+  end
+
+  def pool_table(size, data)
+    Table.new(ThinPoolTarget.new(size, @metadata_dev, data,
+                                 @data_block_size, @low_water_mark))
+  end
+
+  #--------------------------------
+
+  tag :thinp_target
+
+  def test_data_cannot_be_smaller_than_pool_on_initial_load
+    with_dev(@tvm.table('data')) do |data|
+      table = pool_table(@size * 2, data)
+
+      begin
+        with_dev(table) {}
+      rescue
+        failed = true
+      end
+
+      failed.should be_true
+    end
+  end
+
+  def test_data_cannot_be_smaller_than_pool_on_reload
+    with_dev(@tvm.table('data')) do |data|
+      table = pool_table(@size, data)
+      table2 = pool_table(@size * 2, data)
+
+      with_dev(table) do |pool|
+        failed = false
+
+        begin
+          pool.pause do
+            pool.load(table2)
+          end
+        rescue
+          failed = true
+        end
+
+        failed.should be_true
+        status = PoolStatus.new(pool)
+        status.total_data_blocks.should == @size / @data_block_size
+      end
+    end
+  end
+
+  def test_extra_data_space_must_not_be_used_on_initial_load
+    with_dev(@tvm.table('data')) do |data|
+      table = pool_table(@size / 2, data)
+
+      with_dev(table) do |pool|
+        status = PoolStatus.new(pool)
+        status.total_data_blocks.should == @size / 2 / @data_block_size
+      end
+    end
+  end
+
+  def test_extra_data_space_must_not_be_used_on_suspend
+    with_dev(@tvm.table('data')) do |data|
+      table = pool_table(@size / 2, data)
+
+      with_dev(table) do |pool|
+        @tvm.resize('data', @size)
+
+        pool.pause do
+          data.pause do
+            data.load(@tvm.table('data'))
+          end
+        end
+
+        status = PoolStatus.new(pool)
+        status.total_data_blocks.should == @size / 2 / @data_block_size
+      end
+    end
+  end
+
+  def test_extra_data_space_must_not_be_used_on_reload
+    with_dev(@tvm.table('data')) do |data|
+      table = pool_table(@size / 2, data)
+
+      with_dev(table) do |pool|
+        @tvm.resize('data', @size)
+
+        pool.pause do
+          data.pause do
+            data.load(@tvm.table('data'))
+          end
+
+          pool.load(table)
+        end
+
+        status = PoolStatus.new(pool)
+        status.total_data_blocks.should == @size / 2 / @data_block_size
+      end
+    end
+  end
+end
+
+#----------------------------------------------------------------
+
 class PoolResizeTests < ThinpTestCase
   include Tags
   include Utils
