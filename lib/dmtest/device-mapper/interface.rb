@@ -41,9 +41,7 @@ module DM
     def remove(path)
       # FIXME: lift this retry?
       Utils.retry_if_fails(5.0) do
-        if File.exists?(path)
-          ProcessControl.run("dmsetup remove #{strip(path)}")
-        end
+        ProcessControl.run("dmsetup remove #{strip(path)}")
       end
     end
 
