@@ -381,6 +381,50 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
     end
   end
 
+  def resize_io_many(n)
+    target_step = round_up(@volume_size / n, @data_block_size)
+    with_standard_pool(target_step) do |pool|
+      with_new_thin(pool, @volume_size, 0) do |thin|
+        event_tracker = pool.event_tracker;
+
+        fork {dt_device(thin, "sequential")}
+
+        2.upto(n) do |i|
+          wait_until_out_of_data(pool)
+
+          in_out_of_data_mode(pool).should be_true
+
+          thin.pause_noflush do
+            pool.pause do
+              table = Table.new(ThinPoolTarget.new(i * target_step, @metadata_dev, @data_dev,
+                                                   @data_block_size, @low_water_mark))
+              pool.load(table)
+            end
+          end
+        end
+
+        Process.wait
+        if $?.exitstatus > 0
+          raise RuntimeError, "wipe sub process failed"
+        end
+      end
+
+      # suspend/resume cycle should _not_ cause read-write -> read-only!
+      pool.suspend
+      pool.resume
+
+      status = PoolStatus.new(pool)
+      status.options[:mode].should == :read_write
+
+      # remove the created thin
+      pool.message(0, 'delete 0')
+    end
+  end
+
+  def test_resize_io
+    resize_io_many(8)
+  end
+
   # see BZ #769921
   def _test_ext4_runs_out_of_space
     # we create a pool with a really tiny data volume that wont be
