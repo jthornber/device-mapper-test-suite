@@ -2,6 +2,7 @@ require 'dmtest/log'
 require 'dmtest/process'
 require 'dmtest/utils'
 require 'dmtest/tags'
+require 'dmtest/disk-units'
 require 'dmtest/thinp-test'
 require 'timeout'
 
@@ -183,6 +184,7 @@ class PoolResizeWithSpaceTests < ThinpTestCase
   include Tags
   include Utils
   include TinyVolumeManager
+  include DiskUnits
 
   def setup
     super
@@ -210,6 +212,55 @@ class PoolResizeWithSpaceTests < ThinpTestCase
       end
     end
   end
+
+  def test_commit_failure_sets_needs_check
+    tvm = VM.new
+    tvm.add_allocation_volume(@metadata_dev, 0, dev_size(@metadata_dev))
+    tvm.add_volume(linear_vol('metadata', dev_size(@metadata_dev)))
+
+    volume_size = gig(3)
+
+    with_dev(tvm.table('metadata')) do |metadata|
+      # use higher low water mark, wait for it to trigger, establish flakey target for metadata
+      low_water_mark = (volume_size / 3) / @data_block_size
+      table = Table.new(ThinPoolTarget.new(volume_size, metadata, @data_dev,
+                                           @data_block_size, low_water_mark))
+      with_dev(table) do |pool|
+        with_new_thin(pool, volume_size, 0) do |thin|
+          event_tracker = pool.event_tracker;
+
+          fork {wipe_device(thin)}
+
+          event_tracker.wait do
+            status = PoolStatus.new(pool)
+            status.used_data_blocks >= status.total_data_blocks - low_water_mark
+          end
+
+          up_interval = 3
+          thin.pause_noflush do
+            pool.pause do
+              # establish flakey metadata
+              table = Table.new(FlakeyTarget.new(dev_size(@metadata_dev), @metadata_dev, 0, up_interval, 60))
+              metadata.pause do
+                metadata.load(table)
+              end
+            end
+          end
+
+          sleep up_interval * 2
+          assert(read_only_or_fail_mode(pool))
+        end
+
+        # load identical table, should result in error about inability
+        # to switch pool to write mode due to 'needs_check'.
+        table = pool.active_table
+        pool.pause do
+          pool.load(table)
+        end
+      end
+    end
+  end
+
 end
 
 #----------------------------------------------------------------

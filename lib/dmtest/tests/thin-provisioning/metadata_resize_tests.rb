@@ -157,11 +157,6 @@ class MetadataResizeTests < ThinpTestCase
 
   #--------------------------------
 
-  def read_only_or_fail_mode(pool)
-    status = PoolStatus.new(pool)
-    status.fail || status.options[:mode] == :read_only
-  end
-
   def test_exhausting_metadata_space_causes_fail_mode
     md_blocks = 8
     md_size = 64 * md_blocks
