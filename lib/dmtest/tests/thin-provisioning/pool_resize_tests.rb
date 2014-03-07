@@ -221,6 +221,8 @@ class PoolResizeWithSpaceTests < ThinpTestCase
     volume_size = gig(3)
 
     with_dev(tvm.table('metadata')) do |metadata|
+      wipe_device(metadata, 8)
+
       # use higher low water mark, wait for it to trigger, establish flakey target for metadata
       low_water_mark = (volume_size / 3) / @data_block_size
       table = Table.new(ThinPoolTarget.new(volume_size, metadata, @data_dev,
@@ -260,7 +262,6 @@ class PoolResizeWithSpaceTests < ThinpTestCase
       end
     end
   end
-
 end
 
 #----------------------------------------------------------------
@@ -461,8 +462,7 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
       end
 
       # suspend/resume cycle should _not_ cause read-write -> read-only!
-      pool.suspend
-      pool.resume
+      pool.pause {}
 
       status = PoolStatus.new(pool)
       status.options[:mode].should == :read_write
