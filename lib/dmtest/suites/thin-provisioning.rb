@@ -1,4 +1,5 @@
 require 'dmtest/tests/thin-provisioning/basic_tests'
+require 'dmtest/tests/thin-provisioning/crash_tests'
 require 'dmtest/tests/thin-provisioning/creation_tests'
 require 'dmtest/tests/thin-provisioning/deletion_tests'
 require 'dmtest/tests/thin-provisioning/discard_tests'
