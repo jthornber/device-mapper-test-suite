@@ -82,12 +82,7 @@ module DM
 
     def event_nr
       output = @interface.status(path, '-v')
-      m = output.match(/Event number:[ \t]*([0-9]+)/)
-      if m.nil?
-        raise "Couldn't find event number for dm device"
-      end
-
-      m[1].to_i
+      @interface.extract_event_nr(output)
     end
 
     def event_tracker(&condition)

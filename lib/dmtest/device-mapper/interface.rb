@@ -62,8 +62,17 @@ module DM
     end
 
     def wait(path, event_nr)
-      # FIXME: it would be nice if this returned the new event nr
-      ProcessControl.run("dmsetup wait #{strip(path)} #{event_nr}")
+      output = ProcessControl.run("dmsetup wait -v #{strip(path)} #{event_nr}")
+      extract_event_nr(output)
+    end
+
+    def extract_event_nr(output)
+      m = output.match(/Event number:[ \t]*([0-9]+)/)
+      if m.nil?
+        raise "Couldn't find event number for dm device"
+      end
+
+      m[1].to_i
     end
 
     private

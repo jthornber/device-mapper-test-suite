@@ -11,8 +11,7 @@ module DM
     # the new number.
     def wait(*args, &condition)
       until condition.call(*args)
-        @device.wait(@event_nr)
-        @event_nr = @device.event_nr
+        @event_nr = @device.wait(@event_nr)
       end
     end
   end
