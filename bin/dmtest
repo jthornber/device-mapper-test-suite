@@ -277,6 +277,9 @@ DMTestCommandLine = CommandLine::Parser.new do
   value_switch :testcase, :filter, '-t'
   value_switch :port, :int, '--port'
 
+  command :help do
+  end
+
   command :run do
     switches :name, :profile, :suite, :testcase
   end
@@ -307,6 +310,14 @@ class Dispatcher
   def name_filter(filter)
     lambda do |t|
       filter.call(trim_prefix('test_', t.method_name.to_s))
+    end
+  end
+
+  def help(opts, args)
+    if args.size == 0
+      usage
+    else
+      STDERR.puts "help not implemented yet"
     end
   end
 
@@ -355,7 +366,29 @@ class Dispatcher
     generator.stylesheet
   end
 
+  def global_command(opts, args)
+    if args.size > 0
+      STDERR.puts "Unknown command: #{args[0]}"
+    else
+      usage
+    end
+  end
+
   private
+  def usage
+    STDERR.puts <<EOF
+Usage: dmtest <cmd> <opts>
+
+  Where <cmd> is one of:
+
+    help        - display help for a specific command
+    generate    - regenerate reports (you rarely need to run this)
+    list        - list tests
+    run         - run tests
+    serve       - serve the reports on a little web server
+EOF
+  end
+
   def setup_profile(sym = nil)
     cfg = get_config
     sym ||= cfg.default_profile
