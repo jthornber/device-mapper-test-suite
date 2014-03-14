@@ -87,6 +87,7 @@ module Test
           @total_passed = 0
           @total_failed = 0
           @suites = Hash.new {|hash, key| hash[key] = Array.new}
+          @current_suite = nil
         end
 
         # Begins the test run.
@@ -131,7 +132,7 @@ module Test
           @current_test.add_fault(fault)
 
           @faults << fault
-          output_single(fault.single_character_display, PROGRESS_ONLY)
+          output_single("FAIL".red, PROGRESS_ONLY)
           @already_outputted = true
         end
 
@@ -175,16 +176,22 @@ module Test
 
         def test_started(name)
           suite, n = decompose_name(name)
+
+          if @current_suite.nil? || @current_suite != suite
+            output(suite.green, VERBOSE)
+            @current_suite = suite
+          end
+
           t = TestOutcome.new(suite, n, @output_dir)
           @current_log = File.open(t.log_path, 'w')
           set_log(@current_log)
           @current_test = t
           @suites[suite] << t
-          output_single(name + ": ", VERBOSE)
+          output_single("  #{n.yellow}...", VERBOSE)
         end
 
         def test_finished(name)
-          output_single(".", PROGRESS_ONLY) unless @already_outputted
+          output_single("PASS".green, PROGRESS_ONLY) unless @already_outputted
           nl(VERBOSE)
           @already_outputted = false
 
