@@ -21,6 +21,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "test-unit", "1.2.3"
   spec.add_dependency "ejt_command_line", "0.0.4"
   spec.add_dependency "thinp_xml"
+  spec.add_dependency "colored"
   spec.add_dependency "rspec"
   spec.add_dependency "webrick"
   spec.add_dependency "activerecord"

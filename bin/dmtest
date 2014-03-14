@@ -6,9 +6,8 @@ require 'dmtest/log'
 require 'dmtest/report-generators/report_templates'
 require 'dmtest/test-outcome'
 require 'dmtest/config'
+require 'dmtest/maybe_colored'
 require 'pathname'
-
-require 'terminfo'
 
 require 'test/unit/collector/objectspace'
 require 'test/unit/testsuite'
@@ -398,7 +397,7 @@ EOF
     if tags.length == 0
       ''
     else
-      tags.inject('') do |memo, tag|
+      str = tags.inject('') do |memo, tag|
         memo.length == 0 ? ":#{tag.to_s}" : "#{memo}, :#{tag.to_s}"
       end
     end
@@ -406,23 +405,16 @@ EOF
 
   def print_suite(prefix, suite, want_tags)
     if  suite.respond_to? :tests
-      puts "#{prefix}#{suite}"
+      puts "#{prefix}#{suite}".green
       prefix += '  '
       suite.tests.each {|t| print_suite(prefix, t, want_tags)}
     else
       tags = ''
       if want_tags && suite.class.respond_to?(:get_tags)
-        tags = format_tags(suite.class.get_tags(suite.method_name))
+        tags = format_tags(suite.class.get_tags(suite.method_name)).blue
       end
-      test = "#{prefix}#{trim_prefix('test_', suite.method_name.to_s)}"
-
-      width = TermInfo.screen_size[1]
-      padding = ' '
-      if test.length + tags.length < width
-        padding = ' ' * (width - test.length - tags.length)
-      end
-
-      puts "#{test}#{padding}#{tags}"
+      test = "#{prefix}#{trim_prefix('test_', suite.method_name.to_s)}".yellow
+      puts "#{test}    #{tags}"
     end
   end
 
