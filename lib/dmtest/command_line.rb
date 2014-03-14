@@ -33,10 +33,10 @@ DMTestCommandLine = CommandLine::Parser.new do
 
   simple_switch :help, '-h', '--help'
   simple_switch :tags, '--tags'
-  value_switch :name, :filter, '-n', '--name'
+  multivalue_switch :name, :filter, '-n', '--name'
+  multivalue_switch :testcase, :filter, '-t'
   value_switch :profile, :symbol, '--profile'
   value_switch :suite, :string, '--suite'
-  value_switch :testcase, :filter, '-t'
   value_switch :port, :int, '--port'
 
   command :help do

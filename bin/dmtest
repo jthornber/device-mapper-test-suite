@@ -251,6 +251,26 @@ class Dispatcher
     end
   end
 
+  def filter_combine_and(filters)
+    lambda do |t|
+      filters.each do |f|
+        return false unless f.call(t)
+      end
+
+      true
+    end
+  end
+
+  def filter_combine_or(filters)
+    lambda do |t|
+      filters.each do |f|
+        return true if f.call(t)
+      end
+
+      false
+    end
+  end
+
   def help(opts, args)
     if args.size == 0
       usage
@@ -283,7 +303,7 @@ class Dispatcher
     server = WEBrick::HTTPServer.new(config)
 
     ['INT', 'TERM'].each do |signal|
-      trap(signal){ server.shutdown} 
+      trap(signal){ server.shutdown}
     end
 
     server.start
@@ -343,16 +363,14 @@ EOF
   end
 
   def select_tests(opts)
-    $filters = []
+    filters = []
     if opts.member? :testcase
-      $filters << testcase_filter(opts[:testcase])
+      filters << filter_combine_or(opts[:testcase].map {|p| testcase_filter(p)})
     end
 
     if opts.member? :name
-      $filters << name_filter(opts[:name])
+      filters << filter_combine_or(opts[:name].map {|p| name_filter(p)})
     end
-
-    $filters << proc {|t| false} unless($filters.empty?)
 
     suite = opts.fetch(:suite, nil)
     if suite.nil?
@@ -363,8 +381,12 @@ EOF
 
     require "dmtest/suites/#{suite}"
 
+    if filters.size > 0
+      filters = filter_combine_and(filters)
+    end
+
     c = Test::Unit::Collector::ObjectSpace.new
-    c.filter = $filters
+    c.filter = filters
     c.collect(opts[:suite])
   end
 
