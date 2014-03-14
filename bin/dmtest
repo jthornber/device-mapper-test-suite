@@ -399,7 +399,7 @@ EOF
       ''
     else
       tags.inject('') do |memo, tag|
-        memo.length == 0 ? tag.to_s : "#{memo}, #{tag.to_s}"
+        memo.length == 0 ? ":#{tag.to_s}" : "#{memo}, :#{tag.to_s}"
       end
     end
   end
