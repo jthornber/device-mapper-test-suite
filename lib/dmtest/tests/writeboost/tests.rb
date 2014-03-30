@@ -9,7 +9,8 @@ require 'dmtest/cache-status'
 require 'dmtest/disk-units'
 require 'dmtest/test-utils'
 require 'dmtest/tests/cache/fio_subvolume_scenario'
-require 'dmtest/tests/writeboost/writeboost_stack'
+
+require 'dmtest/tests/writeboost/stack'
 
 require 'pp'
 
@@ -23,35 +24,28 @@ class WriteboostTests < ThinpTestCase
   include FioSubVolumeScenario
   extend TestUtils
 
-  def with_standard_cache(opts = Hash.new, &block)
-    stack = WriteboostStack.new(@dm, @metadata_dev, @data_dev, opts)
-    stack.activate do |stack|
-      block.call(stack.cache)
-    end
-  end
-
   def test_fio_sub_volume
-    with_standard_cache(:cache_size => meg(256),
-                        :format => true,
-                        :data_size => gig(4)) do |cache|
+    s = WriteboostStack.new(@dm, @data_dev, @metadata_dev);
+    s.activate(true) do
+      s.cleanup_cache
       wait = lambda {sleep(5)}
-      fio_sub_volume_scenario(cache, &wait)
+      fio_sub_volume_scenario(s.wb, &wait)
     end
   end
 
   def test_fio_cache
-    with_standard_cache(:cache_size => meg(512),
-                        :format => true,
-                        :data_size => gig(2)) do |cache|
-      do_fio(cache, :ext4)
+    s = WriteboostStack.new(@dm, @data_dev, @metadata_dev);
+    s.activate(true) do
+      s.cleanup_cache
+      do_fio(s.wb, :ext4)
     end
   end
 
   def test_fio_database_funtime
-    with_standard_cache(:cache_size => meg(1024),
-                        :format => true,
-                        :data_size => gig(10)) do |cache|
-      do_fio(cache, :ext4,
+    s = WriteboostStack.new(@dm, @data_dev, @metadata_dev);
+    s.activate(true) do
+      s.cleanup_cache
+      do_fio(s.wb, :ext4,
              :outfile => AP("fio_writeboost.out"),
              :cfgfile => LP("tests/cache/database-funtime.fio"))
     end

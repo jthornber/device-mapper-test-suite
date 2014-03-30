@@ -1,1 +1,1 @@
-require 'dmtest/tests/writeboost/writeboost_tests'
+require 'dmtest/tests/writeboost/tests'
