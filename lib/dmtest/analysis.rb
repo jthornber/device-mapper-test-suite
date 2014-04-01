@@ -23,12 +23,12 @@ class MetadataAnalysis
     end
   end
 
-  def fragmentations
+  def fragmentations(out = STDOUT)
     @md.devices.each do |dev|
-      puts "device #{dev.dev_id}"
-      printf("  %10s %10s %10s\n",
-             'io size', 'seeks/io', 'distance/seek')
-      puts "  --------------------------------------"
+      out.puts "device #{dev.dev_id}"
+      out.printf("  %10s %10s %10s\n",
+                 'io size', 'seeks/io', 'distance/seek')
+      out.puts "  --------------------------------------"
 
       power = 0
       loop do
@@ -38,9 +38,9 @@ class MetadataAnalysis
         break if r.nil?
         seeks, dist = r
 
-        printf("  %10s\t%.3f\t%s\n",
-               segments_to_human(io_size),
-               seeks, segments_to_human(dist.to_i))
+        out.printf("  %10s\t%.3f\t%s\n",
+                   segments_to_human(io_size),
+                   seeks, segments_to_human(dist.to_i))
 
         power += 1
       end
@@ -155,7 +155,7 @@ class MetadataAnalysis
       # calculate the nr of different ios of |io_size| can fit into
       nr_ios = unique_ios_per_lseg(lseg, io_size, GRANULARITY)
       next if nr_ios == 0
-      
+
       total_ios += nr_ios
 
       # now we look at the junctions between physical segments

@@ -1,3 +1,4 @@
+require 'dmtest/analysis'
 require 'dmtest/log'
 require 'dmtest/utils'
 require 'dmtest/fs'
@@ -11,12 +12,21 @@ class ThroughputTests < ThinpTestCase
   include Tags
   include Utils
   include DiskUnits
+  include XMLFormat
 
   def setup
     super
   end
 
   tag :thinp_target
+
+  def read_metadata
+    dump_metadata(@metadata_dev) do |xml_path|
+      File.open(xml_path, 'r') do |io|
+        read_xml(io)            # this is the return value
+      end
+    end
+  end
 
   #--------------------------------
 
@@ -125,6 +135,95 @@ class ThroughputTests < ThinpTestCase
   def test_linear_throughput
     across_various_io_sizes do |io_size|
       throughput_linear(io_size)
+    end
+  end
+
+  def multithreaded_layout_reread(device, io_size, desc)
+    # Use iozone to layout interleaved files on device and then re-read with dd using DIO
+    fs = FS::file_system(:xfs, device)
+    fs.format
+    fs.with_mount("./mnt1") do
+      report_time("iozone init #{desc}", STDERR) do
+        ProcessControl.run("iozone -i 0 -i 1 -w -+n -+N -c -C -e -s 768m -r #{io_size / 2}k -t 8 -F ./mnt1/1 ./mnt1/2 ./mnt1/3 ./mnt1/4 ./mnt1/5 ./mnt1/6 ./mnt1/7 ./mnt1/8")
+      end
+
+      ProcessControl.run('echo 3 > /proc/sys/vm/drop_caches')
+
+      report_time(" dd re-read #{desc}", STDERR) do
+        ProcessControl.run("dd iflag=direct if=./mnt1/1 of=/dev/null bs=#{io_size / 2}k")
+      end
+    end
+  end
+
+  def throughput_multithreaded_layout_reread(block_size, io_size)
+    # currently assumes underlying striped storage w/ chunk=64K stripe=256K
+    @volume_size = gig(7)
+
+    @blocks_per_dev = div_up(@volume_size, block_size)
+    @volume_size = @blocks_per_dev * block_size
+    @size = @volume_size
+
+    # FIXME: add a :format option to with_standard_pool
+    wipe_device(@metadata_dev, 8)
+
+    with_standard_pool(@size, :zero => false, :block_size => block_size) do |pool|
+      with_new_thin(pool, @volume_size, 0) do |thin|
+        multithreaded_layout_reread(thin, io_size,
+                                    "block_size = #{block_size}, io_size = #{io_size}")
+      end
+    end
+  end
+
+  def throughput_multithreaded_layout_reread_linear(block_size, io_size)
+    with_standard_linear(:data_size => gig(7)) do |linear|
+      multithreaded_layout_reread(linear, block_size, io_size)
+    end
+  end
+
+  def test_multithreaded_layout_reread_throughput
+    across_various_block_and_io_sizes do |block_size, io_size|
+      throughput_multithreaded_layout_reread(block_size, io_size)
+    end
+  end
+
+  #--------------------------------
+
+  def prepare_multithreaded_layout(pool, block_size, io_size)
+    with_new_thin(pool, @volume_size, 0) do |thin|
+      # Use iozone to layout interleaved files on device and then re-read with dd using DIO
+      fs = FS::file_system(:xfs, thin)
+      fs.format
+      fs.with_mount("./mnt1") do
+        report_time("iozone init", STDERR) do
+          ProcessControl.run("iozone -i 0 -i 1 -w -+n -+N -c -C -e -s 768m -r #{io_size / 2}k -t 8 -F ./mnt1/1 ./mnt1/2 ./mnt1/3 ./mnt1/4 ./mnt1/5 ./mnt1/6 ./mnt1/7 ./mnt1/8")
+        end
+      end
+    end
+  end
+
+  def test_multithreaded_layout_analysis
+    File.open("multithreaded_layout_analysis.log", "w") do |file|
+      across_various_block_and_io_sizes do |block_size, io_size|
+        file.puts "block_size = #{block_size}, io_size = #{io_size}"
+
+        # currently assumes underlying striped storage w/ chunk=64K stripe=256K
+        @volume_size = gig(7)
+
+        @blocks_per_dev = div_up(@volume_size, block_size)
+        @volume_size = @blocks_per_dev * block_size
+        @size = @volume_size
+
+        # FIXME: add a :format option to with_standard_pool
+        wipe_device(@metadata_dev, 8)
+
+        with_standard_pool(@size, :zero => false, :block_size => block_size) do |pool|
+          prepare_multithreaded_layout(pool, block_size, io_size)
+        end
+
+        a = MetadataAnalysis.new(read_metadata())
+        a.fragmentations(file)
+        file.flush
+      end
     end
   end
 end
