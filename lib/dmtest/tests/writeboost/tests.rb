@@ -24,8 +24,11 @@ class WriteboostTests < ThinpTestCase
   include FioSubVolumeScenario
   extend TestUtils
 
+  attr_accessor :stack_maker
+
   def test_fio_sub_volume
-    s = WriteboostStack.new(@dm, @data_dev, @metadata_dev);
+    return unless @stack_maker
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev);
     s.activate(true) do
       s.cleanup_cache
       wait = lambda {sleep(5)}
@@ -34,7 +37,8 @@ class WriteboostTests < ThinpTestCase
   end
 
   def test_fio_cache
-    s = WriteboostStack.new(@dm, @data_dev, @metadata_dev);
+    return unless @stack_maker
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev);
     s.activate(true) do
       s.cleanup_cache
       do_fio(s.wb, :ext4)
@@ -42,7 +46,8 @@ class WriteboostTests < ThinpTestCase
   end
 
   def test_fio_database_funtime
-    s = WriteboostStack.new(@dm, @data_dev, @metadata_dev);
+    return unless @stack_maker
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev);
     s.activate(true) do
       s.cleanup_cache
       do_fio(s.wb, :ext4,
@@ -52,4 +57,17 @@ class WriteboostTests < ThinpTestCase
   end
 end
 
+class WriteboostTestsType0 < WriteboostTests
+  def setup
+    super
+    @stack_maker = WriteboostStackType0
+  end
+end
+
+class WriteboostTestsType1 < WriteboostTests
+  def setup
+    super
+    @stack_maker = WriteboostStackType1
+  end
+end
 #----------------------------------------------------------------
