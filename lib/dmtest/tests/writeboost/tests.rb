@@ -55,6 +55,72 @@ class WriteboostTests < ThinpTestCase
              :cfgfile => LP("tests/cache/database-funtime.fio"))
     end
   end
+
+  # really a compound test
+  def test_compile_ruby
+    def build_and_test_ruby
+      ProcessControl.run("./configure")
+      ProcessControl.run("make -j")
+      # page caches are dropped before make test
+      ProcessControl.run("echo 3 > /proc/sys/vm/drop_caches")
+      ProcessControl.run("make test")
+    end
+
+    return unless @stack_maker
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev);
+    s.activate_support_devs() do
+      s.cleanup_cache
+
+      ruby = "ruby-2.1.1"
+      mount_dir = "./ruby_mount_1"
+
+      # for testing segment size order < 10
+      # to dig up codes that depend on the order is 10
+      sso = 9
+
+      # (1) first extracts the archive in the directory
+      # no migration - all dirty data is on the cache device
+      no_migrate_opts = {
+        :segment_size_order => sso,
+        :enable_migration_modulator => 0,
+        :allow_migrate => 0
+      }
+      s.opts = no_migrate_opts
+      s.activate_top_level(true) do
+        fs = FS::file_system(:xfs, s.wb)
+        fs.format
+        fs.with_mount(mount_dir) do
+          pn = LP("tests/writeboost/#{ruby}.tar.gz")
+          ProcessControl.run("cp #{pn} #{mount_dir}")
+          Dir.chdir(mount_dir) do
+            ProcessControl.run("tar xvfz #{ruby}.tar.gz")
+          end
+        end
+      end
+
+      yes_migrate_opts = {
+        :segment_size_order => sso,
+        :enable_migration_modulator => 1,
+        :allow_migrate => 0
+      }
+      s.opts = yes_migrate_opts
+      # (2) replays the log on the cache device
+      # if the data corrupts, Ruby can't compile
+      # or fs corrupts.
+      s.activate_top_level(true) do
+        fs = FS::file_system(:xfs, s.wb)
+
+        # (3) drop all the dirty caches
+        # to see migration works
+        s.wb.message(0, "drop_caches")
+        fs.with_mount(mount_dir) do
+          Dir.chdir("#{mount_dir}/#{ruby}") do
+            build_and_test_ruby
+          end
+        end
+      end
+    end
+  end
 end
 
 class WriteboostTestsType0 < WriteboostTests
