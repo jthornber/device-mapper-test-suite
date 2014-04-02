@@ -55,6 +55,36 @@ class WriteboostTests < ThinpTestCase
              :cfgfile => LP("tests/cache/database-funtime.fio"))
     end
   end
+
+  def build_and_test_ruby
+    ProcessControl.run("./configure")
+    ProcessControl.run("make -j")
+    ProcessControl.run("echo 3 > /proc/sys/vm/drop_caches")
+    ProcessControl.run("make test")
+  end
+
+  # make & make test a ruby interpreter
+  def test_ruby_compile
+    s = WriteboostStack.new(@dm, @data_dev, @metadata_dev);
+    s.activate(true) do
+      ruby = "ruby-2.1.1"
+
+      fs = FS::file_system(:xfs, s.wb)
+      fs.format
+
+      mount_dir = "./ruby_mount_1"
+      fs.with_mount(mount_dir) do
+        pn = LP("tests/writeboost/#{ruby}.tar.gz")
+        ProcessControl.run("cp #{pn} #{mount_dir}")
+        Dir.chdir(mount_dir) do
+          ProcessControl.run("tar xvfz #{ruby}.tar.gz")
+          Dir.chdir(ruby) do
+            build_and_test_ruby
+          end
+        end
+      end
+    end
+  end
 end
 
 class WriteboostTestsType0 < WriteboostTests
