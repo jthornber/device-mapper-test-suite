@@ -72,20 +72,19 @@ class NeedsCheckTests < ThinpTestCase
         end
       end
 
-      # We shouldn't be able to bring up the pool because of the needs check flag
-      failed = false
-      begin
-        with_dev(table) do |pool|
-        end
-      rescue
-        failed = true
+      # We can bring up the pool, but it will have immediately fallen
+      # back to read_only mode.
+      with_dev(table) do |pool|
+        assert(read_only_mode(pool))
       end
-
-      # FIXME: investigate
-      #failed.should be_true
 
       # FIXME: use tools to clear needs_check mode
       ProcessControl.run("thin_check --clear-needs-check-flag #{metadata}")
+
+      # Now we should be able to run in write mode
+      with_dev(table) do |pool|
+        assert(write_mode(pool))
+      end
     end
   end
 end

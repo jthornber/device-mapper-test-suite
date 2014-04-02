@@ -89,4 +89,12 @@ def read_only_or_fail_mode(pool)
   status.fail || status.options[:mode] == :read_only
 end
 
+def read_only_mode(pool)
+  PoolStatus.new(pool).options[:mode] == :read_only
+end
+
+def write_mode(pool)
+  PoolStatus.new(pool).options[:mode] == :read_write
+end
+
 #----------------------------------------------------------------
