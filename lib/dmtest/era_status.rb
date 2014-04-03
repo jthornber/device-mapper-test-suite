@@ -3,7 +3,7 @@ require 'dmtest/log'
 #----------------------------------------------------------------
 
 class EraStatus
-  attr_accessor :md_used, :md_total, :current_era, :metadata_snap
+  attr_accessor :md_block_size, :md_used, :md_total, :current_era, :metadata_snap
 
   PATTERN ='\d+\s+\d+\s+era\s+(.*)'
 
@@ -13,6 +13,7 @@ class EraStatus
 
     @a = m[1].split
 
+    shift_int :md_block_size
     shift_ratio :md_used, :md_total
     shift_int :current_era
     shift_maybe_int :metadata_snap
