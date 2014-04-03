@@ -70,4 +70,5 @@ class WriteboostTestsType1 < WriteboostTests
     @stack_maker = WriteboostStackType1
   end
 end
+
 #----------------------------------------------------------------
