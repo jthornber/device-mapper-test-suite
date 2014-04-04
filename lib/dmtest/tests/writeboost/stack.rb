@@ -17,6 +17,7 @@ end
 
 #----------------------------------------------------------------
 
+# template class for stacks
 class WriteboostStack
   include EnsureElapsed
   include DiskUnits
@@ -97,6 +98,7 @@ class WriteboostStack
 
   def activate(force, &block)
     activate_support_devs do
+      cleanup_cache
       activate_top_level(force, &block)
     end
   end
@@ -150,9 +152,19 @@ class WriteboostStack
       a
     end
   end
+end
 
+class WriteboostStackType0 < WriteboostStack
   def table
     essentials = [0, @backing_dev, @cache_dev]
+    args = Args.new(@opts)
+    Table.new(WriteboostTarget.new(backing_sz, essentials + args.to_a))
+  end
+end
+
+class WriteboostStackType1 < WriteboostStack
+  def table
+    essentials = [1, @backing_dev, @cache_dev, @plog_dev]
     args = Args.new(@opts)
     Table.new(WriteboostTarget.new(backing_sz, essentials + args.to_a))
   end
