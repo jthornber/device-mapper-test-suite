@@ -24,8 +24,11 @@ class WriteboostTests < ThinpTestCase
   include FioSubVolumeScenario
   extend TestUtils
 
+  attr_accessor :stack_maker
+
   def test_fio_sub_volume
-    s = WriteboostStack.new(@dm, @data_dev, @metadata_dev);
+    return unless @stack_maker
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev);
     s.activate(true) do
       s.cleanup_cache
       wait = lambda {sleep(5)}
@@ -34,7 +37,8 @@ class WriteboostTests < ThinpTestCase
   end
 
   def test_fio_cache
-    s = WriteboostStack.new(@dm, @data_dev, @metadata_dev);
+    return unless @stack_maker
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev);
     s.activate(true) do
       s.cleanup_cache
       do_fio(s.wb, :ext4)
@@ -42,7 +46,8 @@ class WriteboostTests < ThinpTestCase
   end
 
   def test_fio_database_funtime
-    s = WriteboostStack.new(@dm, @data_dev, @metadata_dev);
+    return unless @stack_maker
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev);
     s.activate(true) do
       s.cleanup_cache
       do_fio(s.wb, :ext4,
@@ -50,6 +55,49 @@ class WriteboostTests < ThinpTestCase
              :cfgfile => LP("tests/cache/database-funtime.fio"))
     end
   end
+
+  def build_and_test_ruby
+    ProcessControl.run("./configure")
+    ProcessControl.run("make -j")
+    ProcessControl.run("echo 3 > /proc/sys/vm/drop_caches")
+    ProcessControl.run("make test")
+  end
+
+  # make & make test a ruby interpreter
+  def test_ruby_compile
+    s = WriteboostStack.new(@dm, @data_dev, @metadata_dev);
+    s.activate(true) do
+      ruby = "ruby-2.1.1"
+
+      fs = FS::file_system(:xfs, s.wb)
+      fs.format
+
+      mount_dir = "./ruby_mount_1"
+      fs.with_mount(mount_dir) do
+        pn = LP("tests/writeboost/#{ruby}.tar.gz")
+        ProcessControl.run("cp #{pn} #{mount_dir}")
+        Dir.chdir(mount_dir) do
+          ProcessControl.run("tar xvfz #{ruby}.tar.gz")
+          Dir.chdir(ruby) do
+            build_and_test_ruby
+          end
+        end
+      end
+    end
+  end
 end
 
+class WriteboostTestsType0 < WriteboostTests
+  def setup
+    super
+    @stack_maker = WriteboostStackType0
+  end
+end
+
+class WriteboostTestsType1 < WriteboostTests
+  def setup
+    super
+    @stack_maker = WriteboostStackType1
+  end
+end
 #----------------------------------------------------------------
