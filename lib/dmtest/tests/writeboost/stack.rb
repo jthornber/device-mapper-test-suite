@@ -17,6 +17,7 @@ end
 
 #----------------------------------------------------------------
 
+# template class for stacks
 class WriteboostStack
   include EnsureElapsed
   include DiskUnits
@@ -114,7 +115,7 @@ class WriteboostStack
                 :sync_interval,
     ]
     def pop
-      k,v = @opts.first
+      k, v = @opts.first
       if OPTIONALS.include? k
         @optionals[k] = v
         @opts.delete k
@@ -131,14 +132,14 @@ class WriteboostStack
       @tunables = {}
 
       @opts = opts.clone
-      unless @opts.empty?
-        @opts.pop
+      until @opts.empty?
+        pop
       end
     end
     # {k1=>v1, k2=>v2} -> [N k1 v1 k2 v2]
     def h_to_a(h)
-      a = [h.size]
-      h.each_with_index do |k, v|
+      a = [h.size * 2]
+      h.each do |k, v|
         a += [k, v]
       end
       a
@@ -146,13 +147,26 @@ class WriteboostStack
     def to_a
       a = []
       a += h_to_a(@optionals) unless @optionals.empty?
-      a += h_to_a(@tunables) unless @tunables.empty?
+      unless @tunables.empty?
+        a += [0] if @optionals.empty?
+        a += h_to_a(@tunables)
+      end
       a
     end
   end
+end
 
+class WriteboostStackType0 < WriteboostStack
   def table
     essentials = [0, @backing_dev, @cache_dev]
+    args = Args.new(@opts)
+    Table.new(WriteboostTarget.new(backing_sz, essentials + args.to_a))
+  end
+end
+
+class WriteboostStackType1 < WriteboostStack
+  def table
+    essentials = [1, @backing_dev, @cache_dev, @plog_dev]
     args = Args.new(@opts)
     Table.new(WriteboostTarget.new(backing_sz, essentials + args.to_a))
   end
