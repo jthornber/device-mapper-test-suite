@@ -20,8 +20,8 @@ The above link gives more details, but here's a quickstart:
 
     curl -L https://get.rvm.io | bash
 
-Make sure you follow the instructions at the end of the script
-regarding setting your shell's environment.
+**Make sure you follow the instructions at the end of the script
+regarding setting your shell's environment.**
 
 Now we need to install Ruby 1.9.3
 
