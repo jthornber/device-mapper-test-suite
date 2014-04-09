@@ -250,7 +250,7 @@ class PoolResizeWithSpaceTests < ThinpTestCase
           end
 
           sleep up_interval * 2
-          assert(read_only_or_fail_mode(pool))
+          assert(read_only_or_fail_mode?(pool))
         end
 
         # load identical table, should result in error about inability
