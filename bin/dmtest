@@ -442,8 +442,8 @@ EOF
   end
 
   def print_suite(prefix, suite, want_tags)
-    if  suite.respond_to? :tests
-      puts "#{prefix}#{suite}".green
+    if suite.respond_to? :tests
+      puts "#{prefix}#{suite}"
       prefix += '  '
       suite.tests.each {|t| print_suite(prefix, t, want_tags)}
     else
