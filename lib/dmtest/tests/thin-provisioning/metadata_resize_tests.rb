@@ -133,21 +133,21 @@ class MetadataResizeTests < ThinpTestCase
 
       ProcessControl.run("thin_check --clear-needs-check-flag #{md.path}")
 
-      STDERR.puts "resizing..."
-      metadata_size = metadata_size + meg(30)
-      @tvm.resize('metadata', metadata_size)
-      md.pause do
-        md.load(@tvm.table('metadata'))
-      end
-
-      system("thin_dump #{md.path}")
-
+      # Prove that we can bring up the pool at this point.  ie. before
+      # we resize the metadata dev.
       with_dev(table) do |pool|
-        with_thin(pool, thin_size, 0) do |thin|
-          pp PoolStatus.new(pool)
-          assert(write_mode?(pool))
+        # Then we resize the metadata dev
+        metadata_size = metadata_size + meg(30)
+        @tvm.resize('metadata', metadata_size)
+        pool.pause do
+          md.pause do
+            md.load(@tvm.table('metadata'))
+          end
+        end
 
-          # this should work now
+        # Now we can provision our thin completely
+        with_thin(pool, thin_size, 0) do |thin|
+          assert(write_mode?(pool))
           wipe_device(thin)
         end
       end
