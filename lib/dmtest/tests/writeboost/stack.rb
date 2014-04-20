@@ -98,6 +98,7 @@ class WriteboostStack
 
   def activate(force, &block)
     activate_support_devs do
+      cleanup_cache
       activate_top_level(force, &block)
     end
   end
