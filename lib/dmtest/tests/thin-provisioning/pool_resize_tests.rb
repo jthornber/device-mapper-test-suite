@@ -322,7 +322,7 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
     end
   end
 
-  def _test_out_of_data_space_times_out
+  def test_out_of_data_space_times_out
     with_standard_pool(@volume_size / 2, :error_if_no_space => false) do |pool|
       failed = false
 
