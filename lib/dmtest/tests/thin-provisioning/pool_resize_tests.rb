@@ -434,6 +434,58 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
     end
   end
 
+  # bz #1095639
+  def test_io_to_provisioned_region_with_OODS_held_io
+    tvm = VM.new
+    tvm.add_allocation_volume(@data_dev, 0, dev_size(@data_dev))
+
+    @size = @volume_size / 2
+    tvm.add_volume(linear_vol('data', @volume_size / 2))
+
+    with_dev(tvm.table('data')) do |data|
+      wipe_device(@metadata_dev, 8)
+
+      table = Table.new(ThinPoolTarget.new(@size, @metadata_dev, data,
+                                           @data_block_size, @low_water_mark))
+
+      with_dev(table) do |pool|
+        with_new_thin(pool, @volume_size, 0) do |thin|
+          tid = Thread.new(thin) do |thin|
+            # If this errors then the exception _will_ be reported
+            wipe_device(thin)
+          end
+
+          wait_until_out_of_data(pool)
+
+          ProcessControl.run("dd iflag=direct if=#{thin.path} of=/dev/null bs=4194304 count=2")
+          ProcessControl.run("dd oflag=direct of=#{thin.path} if=/dev/zero bs=4194304 count=2")
+
+          thin.pause_noflush do
+            # new size of the pool/data device
+            @size *= 4
+
+            in_out_of_data_mode(pool).should be_true
+
+            # resize the underlying data device
+            tvm.resize('data', @size)
+            data.pause do
+              data.load(tvm.table('data'))
+            end
+
+            # resize the pool
+            pool.pause do
+              table2 = Table.new(ThinPoolTarget.new(@size, @metadata_dev, data,
+                                                    @data_block_size, @low_water_mark))
+              pool.load(table2)
+            end
+          end
+
+          tid.join
+        end
+      end
+    end
+  end
+
   #--------------------------------
 
   # https://bugzilla.redhat.com/show_bug.cgi?id=1091852
