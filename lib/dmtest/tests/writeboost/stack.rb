@@ -28,7 +28,8 @@ class WriteboostStack
                 :cache_dev,
                 :plog_dev, # not used now
                 :wb,
-                :opts # :: {}
+                :opts, # :: {}
+                :table_extra_args # :: {}
 
   def initialize(dm, slow_dev_name, fast_dev_name, opts = {})
     @dm = dm
@@ -40,6 +41,7 @@ class WriteboostStack
     @plog_dev = nil
 
     @opts = opts
+    @table_extra_args = {}
 
     @fast_tvm = TinyVolumeManager::VM.new
     @fast_tvm.add_allocation_volume(fast_dev_name, 0, dev_size(fast_dev_name))
@@ -159,7 +161,7 @@ end
 class WriteboostStackType0 < WriteboostStack
   def table
     essentials = [0, @backing_dev, @cache_dev]
-    args = Args.new(@opts)
+    args = Args.new(@table_extra_args)
     Table.new(WriteboostTarget.new(backing_sz, essentials + args.to_a))
   end
 end
@@ -167,7 +169,7 @@ end
 class WriteboostStackType1 < WriteboostStack
   def table
     essentials = [1, @backing_dev, @cache_dev, @plog_dev]
-    args = Args.new(@opts)
+    args = Args.new(@table_extra_args)
     Table.new(WriteboostTarget.new(backing_sz, essentials + args.to_a))
   end
 end

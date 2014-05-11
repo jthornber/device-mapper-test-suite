@@ -92,12 +92,12 @@ module WriteboostTests
 
       # (1) first extracts the archive in the directory
       # no migration - all dirty data is on the cache device
-      no_migrate_opts = {
+      no_migrate_args = {
         :segment_size_order => sso,
         :enable_migration_modulator => 0,
         :allow_migrate => 0
       }
-      s.opts = no_migrate_opts
+      s.table_extra_args = no_migrate_args
       s.activate_top_level(true) do
         fs = FS::file_system(:xfs, s.wb)
         fs.format
@@ -110,12 +110,12 @@ module WriteboostTests
         end
       end
 
-      yes_migrate_opts = {
+      yes_migrate_args = {
         :segment_size_order => sso,
         :enable_migration_modulator => 1,
         :allow_migrate => 0
       }
-      s.opts = yes_migrate_opts
+      s.table_extra_args = yes_migrate_args
       # (2) replays the log on the cache device
       # if the data corrupts, Ruby can't compile
       # or fs corrupts.
