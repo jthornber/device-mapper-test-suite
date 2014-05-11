@@ -170,6 +170,26 @@ module WriteboostTests
       end
     end
   end
+
+  def test_do_stress
+    opts = {
+      :cache_sz => meg(128),
+    }
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs() do
+      s.cleanup_cache
+      s.activate_top_level(true) do
+        fs = FS::file_system(:xfs, s.wb)
+        fs.format
+        mount_dir = "./mnt_wb"
+        fs.with_mount(mount_dir) do
+          Dir.chdir(mount_dir) do
+            ProcessControl.run("stress -v --timeout 30s --hdd 4 --hdd-bytes 512M")
+          end
+        end
+      end
+    end
+  end
 end
 
 class WriteboostTestsType0 < ThinpTestCase
