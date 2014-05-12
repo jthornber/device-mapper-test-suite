@@ -6,12 +6,15 @@ require 'dmtest/fs'
 require 'dmtest/tags'
 require 'dmtest/thinp-test'
 require 'dmtest/cache-status'
+require 'dmtest/pattern_stomper'
 require 'dmtest/disk-units'
 require 'dmtest/test-utils'
 require 'dmtest/tests/cache/fio_subvolume_scenario'
 
+require 'dmtest/tests/writeboost/status'
 require 'dmtest/tests/writeboost/stack'
 
+require 'rspec/expectations'
 require 'pp'
 
 #----------------------------------------------------------------
@@ -92,12 +95,12 @@ module WriteboostTests
 
       # (1) first extracts the archive in the directory
       # no migration - all dirty data is on the cache device
-      no_migrate_opts = {
+      no_migrate_args = {
         :segment_size_order => sso,
         :enable_migration_modulator => 0,
         :allow_migrate => 0
       }
-      s.opts = no_migrate_opts
+      s.table_extra_args = no_migrate_args
       s.activate_top_level(true) do
         fs = FS::file_system(:xfs, s.wb)
         fs.format
@@ -110,12 +113,12 @@ module WriteboostTests
         end
       end
 
-      yes_migrate_opts = {
+      yes_migrate_args = {
         :segment_size_order => sso,
         :enable_migration_modulator => 1,
         :allow_migrate => 0
       }
-      s.opts = yes_migrate_opts
+      s.table_extra_args = yes_migrate_args
       # (2) replays the log on the cache device
       # if the data corrupts, Ruby can't compile
       # or fs corrupts.
@@ -128,6 +131,60 @@ module WriteboostTests
         fs.with_mount(mount_dir) do
           Dir.chdir("#{mount_dir}/#{ruby}") do
             build_and_test_ruby
+          end
+        end
+      end
+    end
+  end
+
+  # Reading from RAM buffer is really an unlikely path
+  # in real-world workload.
+  def test_rambuf_read_fullsize
+
+    # Cache is bigger than backing.
+    # So, no overwrite on cache device occurs.
+    # Overwrite may writes back caches on the RAM buffer
+    # which we attempt to hit on read.
+    opts = {
+      :backing_sz => meg(16),
+      :cache_sz => meg(32),
+    }
+
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs() do
+      s.cleanup_cache
+      args = {
+        :segment_size_order => 10,
+        :enable_migration_modulator => 0,
+        :allow_migrate => 0,
+      }
+      s.table_extra_args = args
+
+      s.activate_top_level(true) do
+        st1 = WriteboostStatus.from_raw_status(s.wb.status)
+        ps = PatternStomper.new(s.wb.path, k(31), :needs_zero => true)
+        ps.stamp(20)
+        ps.verify(0, 1)
+        st2 = WriteboostStatus.from_raw_status(s.wb.status)
+        st2.stat(0, 1, 1, 1).should > st1.stat(0, 1, 1, 1)
+      end
+    end
+  end
+
+  def test_do_stress
+    opts = {
+      :cache_sz => meg(128),
+    }
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs() do
+      s.cleanup_cache
+      s.activate_top_level(true) do
+        fs = FS::file_system(:xfs, s.wb)
+        fs.format
+        mount_dir = "./mnt_wb"
+        fs.with_mount(mount_dir) do
+          Dir.chdir(mount_dir) do
+            ProcessControl.run("stress -v --timeout 30s --hdd 4 --hdd-bytes 512M")
           end
         end
       end
