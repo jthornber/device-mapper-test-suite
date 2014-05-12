@@ -1,5 +1,12 @@
 class WriteboostStatus
-  TUNEBLES = ["barrier_deadline_ms",
+  PATTERN ='\d+\s+\d+\s+writeboost\s+(.*)'
+  def self.from_raw_status(raw_output)
+    m = raw_output.match(PATTERN)
+    raise "Couldn't parse writeboost status" if m.nil?
+    WriteboostStatus.new m[1]
+  end
+
+  TUNABLES = ["barrier_deadline_ms",
               "allow_migrate",
               "enable_migration_modulator",
               "migrate_threshold",
@@ -66,9 +73,9 @@ class WriteboostStatus
     @tbl["nr_partial_flushed"] = v
 
     nr_tunables = arr.pop(1).first.to_i # nr tunables
-    raise "Incorrect nr_tunables" unless nr_tunables == TUNEBLES.size * 2    
+    raise "Incorrect nr_tunables(#{nr_tunables})" unless nr_tunables == TUNABLES.size * 2
 
-    TUNEBLES.size.times do
+    TUNABLES.size.times do
       _v, k = arr.pop(2)
       v = _v.to_i
       @tbl[k] = v
@@ -96,4 +103,6 @@ if __FILE__ == $0
   p st["nr_segments"]
   p st.stat(1, 0, 1, 0)
   puts st.format_stat_table
+
+  p WriteboostStatus.from_raw_status("11 12 writeboost " + output)
 end
