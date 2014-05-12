@@ -62,7 +62,7 @@ class NeedsCheckTests < ThinpTestCase
             end
 
             wipe_device(thin, 256)
-            assert(read_only_or_fail_mode(pool))
+            assert(read_only_or_fail_mode?(pool))
           ensure
             # Put the metadata dev back
             metadata.pause do
@@ -75,7 +75,7 @@ class NeedsCheckTests < ThinpTestCase
       # We can bring up the pool, but it will have immediately fallen
       # back to read_only mode.
       with_dev(table) do |pool|
-        assert(read_only_mode(pool))
+        assert(read_only_mode?(pool))
       end
 
       # FIXME: use tools to clear needs_check mode
@@ -83,7 +83,7 @@ class NeedsCheckTests < ThinpTestCase
 
       # Now we should be able to run in write mode
       with_dev(table) do |pool|
-        assert(write_mode(pool))
+        assert(write_mode?(pool))
       end
     end
   end

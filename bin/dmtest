@@ -61,6 +61,33 @@ end
 
 #----------------------------------------------------------------
 
+TestSpecifier = Struct.new(:suite, :name)
+
+# Loads the yaml files for the test outcomes on demand
+class OutcomeCache
+  def initialize(log_dir)
+    @log_dir = log_dir
+    @outcomes = {}
+  end
+
+  # Returns nil if the yaml file is not present
+  def get_outcome(specifier)
+    @outcomes[specifier] ||= load(specifier)
+  end
+
+  private
+  def load(specifier)
+    path = "#{@log_dir}/#{specifier.suite}_#{specifier.name}.yaml"
+    if File::exist?(path)
+      @outcomes[specifier] = YAML::load_file(path)
+    else
+      nil
+    end
+  end
+end
+
+#----------------------------------------------------------------
+
 # based on the console test runner
 module Test
   module Unit
@@ -247,6 +274,10 @@ end
 #----------------------------------------------------------------
 
 class Dispatcher
+  def initialize
+    @outcome_cache = OutcomeCache.new(log_dir)
+  end
+
   def testcase_filter(filter)
     lambda {|t| filter.call(t.class.name.to_s)}
   end
@@ -411,8 +442,8 @@ EOF
   end
 
   def print_suite(prefix, suite, want_tags)
-    if  suite.respond_to? :tests
-      puts "#{prefix}#{suite}".green
+    if suite.respond_to? :tests
+      puts "#{prefix}#{suite}"
       prefix += '  '
       suite.tests.each {|t| print_suite(prefix, t, want_tags)}
     else
@@ -420,7 +451,19 @@ EOF
       if want_tags && suite.class.respond_to?(:get_tags)
         tags = format_tags(suite.class.get_tags(suite.method_name)).blue
       end
-      test = "#{prefix}#{trim_prefix('test_', suite.method_name.to_s)}".yellow
+      test = "#{prefix}#{trim_prefix('test_', suite.method_name.to_s)}"
+
+      specifier = TestSpecifier.new(suite.class.to_s, trim_prefix('test_', suite.method_name.to_s))
+      outcome = @outcome_cache.get_outcome(specifier)
+
+      if outcome.nil?
+        test = test.yellow
+      elsif (outcome.pass?)
+        test = test.green
+      else
+        test = test.red
+      end
+
       puts "#{test}    #{tags}"
     end
   end

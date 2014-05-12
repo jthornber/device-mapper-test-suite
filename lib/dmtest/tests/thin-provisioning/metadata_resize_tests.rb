@@ -29,7 +29,9 @@ class MetadataResizeTests < ThinpTestCase
 
   tag :thinp_target
 
-  def test_resize_metadata_no_io
+  # FIXME: replace all these explicit pool tables with stacks
+
+  def test_resize_no_io
     md_size = meg(1)
     data_size = meg(100)
     @tvm.add_volume(linear_vol('metadata', md_size))
@@ -62,7 +64,7 @@ class MetadataResizeTests < ThinpTestCase
     end
   end
 
-  def test_resize_metadata_with_io
+  def test_resize_with_io
     data_size = gig(1)
     @tvm.add_volume(linear_vol('metadata', meg(1)))
     @tvm.add_volume(linear_vol('data', data_size))
@@ -99,13 +101,11 @@ class MetadataResizeTests < ThinpTestCase
     end
   end
 
-  def test_resize_metadata_after_exhaust
-    n = 10
-
+  def test_resize_after_exhaust
     metadata_reserve = meg(32)
-    data_size = @tvm.free_space - metadata_reserve
+    data_size = [@tvm.free_space - metadata_reserve, gig(10)].min
+    thin_size = data_size / 2   # because some data blocks may be misplaced during the abort
     metadata_size = k(512)
-    metadata_step = k(256)
 
     @tvm.add_volume(linear_vol('data', data_size))
     @tvm.add_volume(linear_vol('metadata', metadata_size))
@@ -114,42 +114,41 @@ class MetadataResizeTests < ThinpTestCase
               @tvm.table('data')) do |md, data|
       wipe_device(md, 8)
 
-      # FIXME: :error_if_out_of_space should not be neccessary, bios
-      # that would cause provisioning should _always_ be errored if in
-      # read-only mode.  Kernel bug.
       table = Table.new(ThinPoolTarget.new(data_size, md, data, @data_block_size, @low_water_mark,
                                            true, true, true, false, true))
       with_dev(table) do |pool|
-        with_new_thin(pool, data_size, 0) do |thin|
-          1.upto(n - 1) do |step|
-            STDERR.puts "metadata_size = #{metadata_size / 2}k"
-
-            # There isn't enough metadata to provision the whole
-            # device, so this will fail
-            begin
-              wipe_device(thin)
-            rescue
-              STDERR.puts "wipe_device failed as expected"
-            end
-
-            # Running out of metadata will have triggered read only mode
-            PoolStatus.new(pool).options[:mode].should == :read_only
-
-            STDERR.puts "resizing..."
-            metadata_size = metadata_size + metadata_step
-            @tvm.resize('metadata', metadata_size)
-
-            thin.pause do
-              pool.pause do
-                md.pause do
-                  md.load(@tvm.table('metadata'))
-                end
-                
-                # We reload to force the pool out of read-only mode
-                pool.load(table)
-              end
-            end
+        with_new_thin(pool, thin_size, 0) do |thin|
+          # There isn't enough metadata to provision the whole
+          # device, so this will fail
+          begin
+            wipe_device(thin)
+          rescue
+            STDERR.puts "wipe_device failed as expected"
           end
+
+          # Running out of metadata will have triggered read only mode
+          PoolStatus.new(pool).options[:mode].should == :read_only
+        end
+      end
+
+      ProcessControl.run("thin_check --clear-needs-check-flag #{md.path}")
+
+      # Prove that we can bring up the pool at this point.  ie. before
+      # we resize the metadata dev.
+      with_dev(table) do |pool|
+        # Then we resize the metadata dev
+        metadata_size = metadata_size + meg(30)
+        @tvm.resize('metadata', metadata_size)
+        pool.pause do
+          md.pause do
+            md.load(@tvm.table('metadata'))
+          end
+        end
+
+        # Now we can provision our thin completely
+        with_thin(pool, thin_size, 0) do |thin|
+          assert(write_mode?(pool))
+          wipe_device(thin)
         end
       end
     end
@@ -157,7 +156,7 @@ class MetadataResizeTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_exhausting_metadata_space_causes_fail_mode
+  def test_exhausting_metadata_space_aborts_to_ro_mode
     md_blocks = 8
     md_size = 64 * md_blocks
     data_size = gig(2)
@@ -178,9 +177,17 @@ class MetadataResizeTests < ThinpTestCase
           assert(err)
         end
 
-        assert(read_only_or_fail_mode(pool))
+        assert(read_only_mode?(pool))
+      end
+
+      stack.activate do |pool|
+        # We should still be in read-only mode because of the
+        # needs_check flag being set
+        assert(read_only_mode?(pool))
       end
     end
+
+
   end
 
   # It's hard to predict how much metadata will be used by a
