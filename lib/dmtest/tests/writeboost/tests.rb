@@ -190,6 +190,19 @@ module WriteboostTests
       end
     end
   end
+
+  #--------------------------------
+
+  def test_git_extract_cache_quick
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, :cache_sz => meg(1024))
+    s.activate_support_devs do
+      s.cleanup_cache
+      s.activate_top_level(true) do
+        git_prepare(s.wb, :ext4)
+        git_extract(s.wb, :ext4, TAGS[0..5])
+      end
+    end
+  end
 end
 
 class WriteboostTestsType0 < ThinpTestCase
