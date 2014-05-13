@@ -203,6 +203,53 @@ module WriteboostTests
       end
     end
   end
+
+  # Writeboost sorts in writeback.
+  # This test is to see how the sorting takes effects.
+  # Aspects
+  # - Does just stacking writeboost can always boost write.
+  # - How the effect changes according to the nr_max_batched_migration tunable?
+  def test_writeback_sorting_effect
+
+    def run_fio(dev)
+      fs = FS::file_system(:xfs, dev)
+      fs.format
+      dir = "./fio_test"
+      fs.with_mount(dir) do
+        Dir.chdir(dir) do
+          ProcessControl.run("fio --name=test --rw=randwrite --ioengine=libaio --direct=1 --size=64m --bs=4k --ba=4k --iodepth=32")
+        end
+        ProcessControl.run("sync")
+        drop_caches
+      end
+    end
+
+    def run_wb(s, batch_size)
+      s.cleanup_cache
+      s.table_extra_args = {
+        :nr_max_batched_migration => batch_size,
+      }
+      s.activate_top_level(true) do
+        report_time("writeboost batch_size(#{batch_size})", STDERR) do
+          run_fio(s.wb)
+          # For Writeboost,
+          # we wait for all the dirty blocks are written back to the backing device.
+          # The data written back are all persistent.
+          s.wb.message(0, "drop_caches")
+        end
+      end
+    end
+
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, :cache_sz => meg(65))
+    s.activate_support_devs do
+      [4, 32, 128].each do |batch_size|
+        run_wb(s, batch_size)
+      end
+      report_time("backing ONLY", STDERR) do
+        run_fio(s.backing_dev)
+      end
+    end
+  end
 end
 
 class WriteboostTestsType0 < ThinpTestCase
