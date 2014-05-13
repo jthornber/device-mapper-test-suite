@@ -54,7 +54,6 @@ module WriteboostTests
   def test_fio_sub_volume
     s = @stack_maker.new(@dm, @data_dev, @metadata_dev);
     s.activate(true) do
-      s.cleanup_cache
       wait = lambda {sleep(5)}
       fio_sub_volume_scenario(s.wb, &wait)
     end
@@ -63,7 +62,6 @@ module WriteboostTests
   def test_fio_cache
     s = @stack_maker.new(@dm, @data_dev, @metadata_dev);
     s.activate(true) do
-      s.cleanup_cache
       do_fio(s.wb, :ext4)
     end
   end
@@ -71,7 +69,6 @@ module WriteboostTests
   def test_fio_database_funtime
     s = @stack_maker.new(@dm, @data_dev, @metadata_dev);
     s.activate(true) do
-      s.cleanup_cache
       do_fio(s.wb, :ext4,
              :outfile => AP("fio_writeboost.out"),
              :cfgfile => LP("tests/cache/database-funtime.fio"))
