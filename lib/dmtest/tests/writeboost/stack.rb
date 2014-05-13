@@ -78,6 +78,7 @@ class WriteboostStack
     end
   end
 
+  # Calling this flushes the current RAM buffer
   def cleanup_forcibly
     @wb.suspend
     @wb.resume
@@ -100,6 +101,12 @@ class WriteboostStack
 
   def is_wb?
     true
+  end
+
+  def drop_caches
+    return unless is_wb?
+    cleanup_forcibly
+    @wb.message(0, "drop_caches")
   end
 
   class Args

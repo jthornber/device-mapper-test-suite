@@ -29,9 +29,9 @@ module WriteboostTests
 
   attr_accessor :stack_maker
 
+  DEBUGMODE = false
   RUBY = 'ruby-2.1.1.tar.gz'
   RUBY_LOCATION = "http://cache.ruby-lang.org/pub/ruby/2.1/ruby-2.1.1.tar.gz"
-
 
   def grab_ruby
     unless File.exist?(RUBY)
@@ -124,7 +124,7 @@ module WriteboostTests
 
         # (3) drop all the dirty caches
         # to see migration works
-        s.wb.message(0, "drop_caches")
+        s.drop_caches
         fs.with_mount(mount_dir) do
           Dir.chdir("#{mount_dir}/#{ruby}") do
             build_and_test_ruby
@@ -168,7 +168,47 @@ module WriteboostTests
     end
   end
 
+  def test_do_dbench
+
+    def run_dbench(s, option)
+      s.activate_top_level(true) do
+        fs = FS::file_system(:xfs, s.wb)
+        fs.format
+        mount_dir = "./dbench_wb"
+        fs.with_mount(mount_dir) do
+          Dir.chdir(mount_dir) do
+            system "dbench #{option}"
+            ProcessControl.run("sync")
+            drop_caches
+            s.drop_caches
+          end
+        end
+      end
+    end
+
+    @param[0] = DEBUGMODE ? 1 : 300
+
+    opts = {
+      :backing_sz => gig(2),
+      :cache_sz => meg(64),
+    }
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs do
+      s.cleanup_cache
+      args = {
+        :enable_migration_modulator => 1,
+      }
+      s.table_extra_args = args
+      t = @param[0]
+      run_dbench(s, "-t #{t} 4")
+      run_dbench(s, "-S -t #{t} 4") # -S: Directory operations are SYNC
+      run_dbench(s, "-s -t #{t} 4") # -s: All operations are SYNC
+    end
+  end
+
   def test_do_stress
+    @param[0] = DEBUGMODE ? 1 : 60
+
     opts = {
       :cache_sz => meg(128),
     }
@@ -181,7 +221,7 @@ module WriteboostTests
         mount_dir = "./mnt_wb"
         fs.with_mount(mount_dir) do
           Dir.chdir(mount_dir) do
-            ProcessControl.run("stress -v --timeout 30s --hdd 4 --hdd-bytes 512M")
+            ProcessControl.run("stress -v --timeout #{@param[0]}s --hdd 4 --hdd-bytes 512M")
           end
         end
       end
@@ -192,8 +232,10 @@ module WriteboostTests
   # This actually deteriorates direct reads from the backing device.
   # This test is to see how Writeboost deteriorates the block reads compared to backing device only.
   def test_fio_read_overhead
+    @param[0] = DEBUGMODE ? 1 : 128
+
     def run_fio(dev, iosize)
-      ProcessControl.run("fio --name=test --filename=#{dev.path} --rw=randread --ioengine=libaio --direct=1 --size=128m --ba=#{iosize}k --bs=#{iosize}k --iodepth=32")
+      ProcessControl.run("fio --name=test --filename=#{dev.path} --rw=randread --ioengine=libaio --direct=1 --size=#{@param[0]}m --ba=#{iosize}k --bs=#{iosize}k --iodepth=32")
       ProcessControl.run("sync")
       drop_caches
     end
@@ -238,18 +280,7 @@ module WriteboostTests
   # - How the effect changes according to the nr_max_batched_migration tunable?
   def test_writeback_sorting_effect
 
-    def run_fio(dev)
-      fs = FS::file_system(:xfs, dev)
-      fs.format
-      dir = "./fio_test"
-      fs.with_mount(dir) do
-        Dir.chdir(dir) do
-          ProcessControl.run("fio --name=test --rw=randwrite --ioengine=libaio --direct=1 --size=64m --bs=4k --ba=4k --iodepth=32")
-        end
-        ProcessControl.run("sync")
-        drop_caches
-      end
-    end
+    @param[0] = DEBUGMODE ? 1 : 128
 
     def run_wb(s, batch_size)
       s.cleanup_cache
@@ -257,19 +288,28 @@ module WriteboostTests
         :nr_max_batched_migration => batch_size,
       }
       s.activate_top_level(true) do
-        report_time("batch_size(#{batch_size})", STDERR) do
-          run_fio(s.wb)
-          # For Writeboost,
-          # we wait for all the dirty blocks are written back to the backing device.
-          # The data written back are all persistent.
-          s.wb.message(0, "drop_caches") if s.is_wb?
+        fs = FS::file_system(:xfs, s.wb)
+        fs.format
+        dir = "./fio_test"
+        fs.with_mount(dir) do
+          report_time("batch_size(#{batch_size})", STDERR) do
+            Dir.chdir(dir) do
+              ProcessControl.run("fio --name=test --rw=randwrite --ioengine=libaio --direct=1 --size=#{@param[0]}m --bs=4k --ba=4k --iodepth=32")
+            end
+            ProcessControl.run("sync")
+            drop_caches
+            # For Writeboost,
+            # we wait for all the dirty blocks are written back to the backing device.
+            # The data written back are all persistent.
+            s.drop_caches
+          end
         end
       end
     end
 
-    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, :cache_sz => meg(65))
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, :cache_sz => meg(129))
     s.activate_support_devs do
-      [4, 32, 128].each do |batch_size|
+      [4, 32, 128, 256].each do |batch_size|
         run_wb(s, batch_size)
       end
     end
@@ -282,6 +322,7 @@ class WriteboostTestsBackingDevice < ThinpTestCase
   def setup
     super
     @stack_maker = WriteboostStackBackingDevice
+    @param = []
   end
 end
 
@@ -291,6 +332,7 @@ class WriteboostTestsType0 < ThinpTestCase
   def setup
     super
     @stack_maker = WriteboostStackType0
+    @param = []
   end
 end
 
@@ -300,6 +342,7 @@ class WriteboostTestsType1 < ThinpTestCase
   def setup
     super
     @stack_maker = WriteboostStackType1
+    @param = []
   end
 end
 
