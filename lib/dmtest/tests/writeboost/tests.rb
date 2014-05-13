@@ -191,6 +191,33 @@ module WriteboostTests
     end
   end
 
+  # Writeboost always split I/O to 4KB fragment.
+  # This actually deteriorates direct reads from the backing device.
+  # This test is to see how Writeboost deteriorates the block reads compared to backing device only.
+  def test_fio_read_overhead
+    def run_fio(dev, iosize)
+      ProcessControl.run("fio --name=test --filename=#{dev.path} --rw=randread --ioengine=libaio --direct=1 --size=128m --ba=#{iosize}k --bs=#{iosize}k --iodepth=32")
+      ProcessControl.run("sync")
+      drop_caches
+    end
+
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev)
+    s.activate_support_devs do
+      s.cleanup_cache
+      [1, 2, 4, 8, 16, 32, 64, 128].each do |iosize|
+        s.activate_top_level(true) do
+          report_time("writeboost iosize=#{iosize}k", STDERR) do
+            run_fio(s.wb, iosize)
+          end
+        end
+
+        report_time("backing ONLY iosize=#{iosize}k", STDERR) do
+          run_fio(s.backing_dev, iosize)
+        end
+      end
+    end
+  end
+
   #--------------------------------
 
   def test_git_extract_cache_quick
