@@ -203,13 +203,9 @@ module WriteboostTests
       s.cleanup_cache
       [1, 2, 4, 8, 16, 32, 64, 128].each do |iosize|
         s.activate_top_level(true) do
-          report_time("writeboost iosize=#{iosize}k", STDERR) do
+          report_time("iosize=#{iosize}k", STDERR) do
             run_fio(s.wb, iosize)
           end
-        end
-
-        report_time("backing ONLY iosize=#{iosize}k", STDERR) do
-          run_fio(s.backing_dev, iosize)
         end
       end
     end
@@ -261,12 +257,12 @@ module WriteboostTests
         :nr_max_batched_migration => batch_size,
       }
       s.activate_top_level(true) do
-        report_time("writeboost batch_size(#{batch_size})", STDERR) do
+        report_time("batch_size(#{batch_size})", STDERR) do
           run_fio(s.wb)
           # For Writeboost,
           # we wait for all the dirty blocks are written back to the backing device.
           # The data written back are all persistent.
-          s.wb.message(0, "drop_caches")
+          s.wb.message(0, "drop_caches") if s.is_wb?
         end
       end
     end
@@ -276,10 +272,16 @@ module WriteboostTests
       [4, 32, 128].each do |batch_size|
         run_wb(s, batch_size)
       end
-      report_time("backing ONLY", STDERR) do
-        run_fio(s.backing_dev)
-      end
     end
+  end
+end
+
+class WriteboostTestsBackingDevice < ThinpTestCase
+  include WriteboostTests
+
+  def setup
+    super
+    @stack_maker = WriteboostStackBackingDevice
   end
 end
 
