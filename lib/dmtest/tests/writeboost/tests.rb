@@ -194,9 +194,16 @@ module WriteboostTests
   #--------------------------------
 
   def test_git_extract_cache_quick
-    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, :cache_sz => meg(1024))
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev,
+                         :backing_sz => gig(2),
+                         :cache_sz => meg(1024))
     s.activate_support_devs do
       s.cleanup_cache
+      s.table_extra_args = {
+        :enable_migration_modulator => 1,
+        :allow_migrate => 1
+      }
+
       s.activate_top_level(true) do
         git_prepare(s.wb, :ext4)
         git_extract(s.wb, :ext4, TAGS[0..5])
