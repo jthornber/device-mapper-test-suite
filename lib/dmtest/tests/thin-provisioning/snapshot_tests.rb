@@ -5,6 +5,7 @@ require 'dmtest/process'
 require 'dmtest/utils'
 require 'dmtest/tags'
 require 'dmtest/thinp-test'
+require 'dmtest/disk-units'
 
 # these added for the dataset stuff
 require 'fileutils'
@@ -14,6 +15,7 @@ require 'fileutils'
 class SnapshotTests < ThinpTestCase
   include Tags
   include Utils
+  include DiskUnits
 
   def setup
     super
@@ -113,6 +115,26 @@ class SnapshotTests < ThinpTestCase
 
   def test_break_sharing_xfs
     do_break_sharing(:xfs)
+  end
+
+  def test_pool_utilization_block
+    thin_size = gig(1)
+
+    # meg(63) would fail, since we'd need extra blocks for the
+    # false-positive breaking of in flight blocks.  (Wipe_device()
+    # writes in 64m blocks).
+    extra = meg(64)
+
+    with_standard_pool(thin_size * 2 + extra) do |pool|
+      with_new_thin(pool, thin_size, 0) do |thin|
+        wipe_device(thin)
+
+        with_new_snap(pool, thin_size, 1, 0, thin) do |snap|
+          wipe_device(thin)
+          wipe_device(snap)
+        end
+      end
+    end
   end
 
   def test_many_snapshots_of_same_volume
