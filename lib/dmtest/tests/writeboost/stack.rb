@@ -106,6 +106,13 @@ class WriteboostStack
   def drop_caches
     return unless is_wb?
     cleanup_forcibly
+
+    # We need the sync daemon works while waiting for dirty
+    # caches all written back. Otherwise drop_caches message
+    # may never return because of dirty caches remain on RAM
+    # buffer that is submitted from upper layer after
+    # drop_caches started.
+    @wb.message(0, "sync_interval", 1)
     @wb.message(0, "drop_caches")
   end
 
