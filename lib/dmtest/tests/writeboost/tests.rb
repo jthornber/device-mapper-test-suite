@@ -314,6 +314,30 @@ module WriteboostTests
       end
     end
   end
+
+  # 4KB randwrite performance
+  def test_fio_randwrite_perf
+    @param[0] = DEBUGMODE ? 1 : 500
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, :cache_sz => meg(@param[0] + 100))
+    s.activate_support_devs do
+      s.cleanup_cache
+      # Migration is off
+      s.table_extra_args = {
+        :enable_migration_modulator => 0,
+        :allow_migrate => 0
+      }
+      s.activate_top_level(true) do
+        system "fio --name=test --filename=#{s.wb.path} --rw=randwrite --ioengine=libaio --direct=1 --size=#{@param[0]}m --ba=4k --bs=4k --iodepth=32"
+      end
+    end
+  end
+  def test_fio_cache_seqwrite # Baseline
+    @param[0] = DEBUGMODE ? 1 : 500
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, :cache_sz => meg(@param[0] + 100))
+    s.activate_support_devs do
+      system "fio --name=test --filename=#{s.cache_dev.path} --rw=write --ioengine=libaio --direct=1 --size=#{@param[0]}m --bs=256k --iodepth=32"
+    end
+  end
 end
 
 class WriteboostTestsBackingDevice < ThinpTestCase
