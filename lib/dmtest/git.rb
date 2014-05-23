@@ -46,7 +46,7 @@ module GitExtract
     STDERR.puts "formatting ..."
     fs.format
 
-    fs.with_mount('./kernel_builds', :discard => true) do
+    fs.with_mount('./kernel_builds', :discard => false) do
       Dir.chdir('./kernel_builds') do
         STDERR.puts "getting repo ..."
         repo = Git.clone('/root/linux-github', 'linux')
@@ -60,7 +60,7 @@ module GitExtract
 
   def git_extract(dev, fs_type, tags = TAGS)
     fs = FS::file_system(fs_type, dev)
-    fs.with_mount('./kernel_builds', :discard => true) do
+    fs.with_mount('./kernel_builds', :discard => false) do
       Dir.chdir('./kernel_builds') do
         repo = Git.new('linux')
 
