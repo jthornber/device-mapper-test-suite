@@ -24,10 +24,9 @@ class WriteboostStack
   include ThinpTestMixin
   include Utils
 
-  attr_accessor :backing_dev, # :: DMDev
-                :cache_dev,
+  attr_accessor :cache_dev,
                 :plog_dev, # not used now
-                :wb,
+                :wb, # :: DMDev
                 :opts, # :: {}
                 :table_extra_args # :: {}
 
@@ -36,7 +35,6 @@ class WriteboostStack
     @fast_dev_name = fast_dev_name
     @slow_dev_name = slow_dev_name
 
-    @backing_dev = nil
     @cache_dev = nil
     @plog_dev = nil
 
@@ -47,10 +45,6 @@ class WriteboostStack
     @fast_tvm.add_allocation_volume(fast_dev_name, 0, dev_size(fast_dev_name))
     @fast_tvm.add_volume(linear_vol('cache_dev', cache_sz))
     @fast_tvm.add_volume(linear_vol('plog_dev', plog_sz))
-
-    @slow_tvm = TinyVolumeManager::VM.new
-    @slow_tvm.add_allocation_volume(slow_dev_name, 0, dev_size(slow_dev_name))
-    @slow_tvm.add_volume(linear_vol('backing_dev', backing_sz))
   end
 
   def backing_sz
@@ -73,11 +67,10 @@ class WriteboostStack
   end
 
   def activate_support_devs(&block)
-    with_devs(@slow_tvm.table('backing_dev'),
-              @fast_tvm.table('cache_dev'),
+    with_devs(@fast_tvm.table('cache_dev'),
               @fast_tvm.table('plog_dev')
-             ) do |backing_dev, cache_dev, plog_dev|
-      @backing_dev = backing_dev
+             ) do |cache_dev, plog_dev|
+
       @cache_dev = cache_dev
       @plog_dev = plog_dev
 
@@ -85,6 +78,7 @@ class WriteboostStack
     end
   end
 
+  # Calling this flushes the current RAM buffer
   def cleanup_forcibly
     @wb.suspend
     @wb.resume
@@ -103,6 +97,23 @@ class WriteboostStack
       cleanup_cache
       activate_top_level(force, &block)
     end
+  end
+
+  def is_wb?
+    true
+  end
+
+  def drop_caches
+    return unless is_wb?
+    cleanup_forcibly
+
+    # We need the sync daemon works while waiting for dirty
+    # caches all written back. Otherwise drop_caches message
+    # may never return because of dirty caches remain on RAM
+    # buffer that is submitted from upper layer after
+    # drop_caches started.
+    @wb.message(0, "sync_interval", 1)
+    @wb.message(0, "drop_caches")
   end
 
   class Args
@@ -159,9 +170,19 @@ class WriteboostStack
   end
 end
 
+class WriteboostStackBackingDevice < WriteboostStack
+  def is_wb?
+    false
+  end
+
+  def table
+    Table.new(LinearTarget.new(backing_sz, @slow_dev_name, 0))
+  end
+end
+
 class WriteboostStackType0 < WriteboostStack
   def table
-    essentials = [0, @backing_dev, @cache_dev]
+    essentials = [0, @slow_dev_name, @cache_dev]
     args = Args.new(@table_extra_args)
     Table.new(WriteboostTarget.new(backing_sz, essentials + args.to_a))
   end
@@ -169,7 +190,7 @@ end
 
 class WriteboostStackType1 < WriteboostStack
   def table
-    essentials = [1, @backing_dev, @cache_dev, @plog_dev]
+    essentials = [1, @slow_dev_name, @cache_dev, @plog_dev]
     args = Args.new(@table_extra_args)
     Table.new(WriteboostTarget.new(backing_sz, essentials + args.to_a))
   end
