@@ -1,4 +1,5 @@
 require 'dmtest/tests/cache/background_writeback_tests'
+require 'dmtest/tests/cache/bursty_write_tests'
 require 'dmtest/tests/cache/cache_tests'
 require 'dmtest/tests/cache/hint_width_tests'
 require 'dmtest/tests/cache/initial_warming_tests'
