@@ -7,7 +7,7 @@ class Git
   attr_reader :origin, :dir
 
   def self.clone(origin, dir)
-    system("git clone #{origin} #{dir}")
+    ProcessControl.run("git clone #{origin} #{dir}")
     Git.new(dir)
   end
 
@@ -21,11 +21,11 @@ class Git
   end
 
   def checkout(tag)
-    system("git checkout #{tag}")
+    ProcessControl.run("git checkout #{tag}")
   end
 
   def delete
-    system("rm -rf #{origin}")
+    ProcessControl.run("rm -rf #{origin}")
   end
 end
 
