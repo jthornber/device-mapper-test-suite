@@ -26,6 +26,7 @@ module DMTest
 
     def initialize(&block)
       @profiles = {}
+      @default_test_scale = :normal
       self.instance_eval(&block) if block
     end
 
@@ -42,6 +43,11 @@ module DMTest
     def default_profile(sym = nil)
       @default_profile = sym unless sym.nil?
       @default_profile
+    end
+
+    def default_test_scale(sym = nil)
+      @default_test_scale = sym unless sym.nil?
+      @default_test_scale
     end
   end
 end

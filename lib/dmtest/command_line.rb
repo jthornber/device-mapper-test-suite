@@ -36,6 +36,7 @@ DMTestCommandLine = CommandLine::Parser.new do
   multivalue_switch :name, :filter, '-n', '--name'
   multivalue_switch :testcase, :filter, '-t'
   value_switch :profile, :symbol, '--profile'
+  value_switch :test_scale, :symbol, '--test-scale'
   value_switch :suite, :string, '--suite'
   value_switch :port, :int, '--port'
 
@@ -43,7 +44,7 @@ DMTestCommandLine = CommandLine::Parser.new do
   end
 
   command :run do
-    switches :name, :profile, :suite, :testcase
+    switches :name, :profile, :test_scale, :suite, :testcase
   end
 
   command :list do
