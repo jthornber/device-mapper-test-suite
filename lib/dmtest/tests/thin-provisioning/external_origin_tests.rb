@@ -81,7 +81,7 @@ class ExternalSnapStack
       @pool_stack = PoolStack.new(@dm, pool_data, md, @opts)
       @pool_stack.activate do |pool|
         with_new_thin(pool, thin_size, 0, :origin => @origin) do |thin|
-          block.call(@origin, thin)
+          block.call(thin)
         end
       end
     end
@@ -112,9 +112,10 @@ class ExternalOriginTests < ThinpTestCase
 
     s.activate_origin do |origin|
       origin_stomper = PatternStomper.new(origin.path, @data_block_size, :needs_zero => true)
+      origin_stomper.stamp(20)
 
       s.activate_thin do |thin|
-        origin_stomper.stamp(20)
+        origin_stomper.verify(0, 1)
 
         cache_stomper = origin_stomper.fork(thin.path)
         cache_stomper.verify(0, 1)
