@@ -58,6 +58,10 @@ module PatternStomperDetail
     def size
       @blocks.size
     end
+
+    def member?(b)
+      @blocks.member?(b)
+    end
   end
 
   #--------------------------------
@@ -67,7 +71,14 @@ module PatternStomperDetail
     blocks = BlockSet.new
 
     while blocks.size != nr_blocks do
-      blocks.add(Block.new(rand(max_block), rand(256)))
+      # choose a block that hasn't yet been selected in this delta
+      b = nil
+      loop do
+        b = rand(max_block)
+        break unless blocks.member?(b)
+      end
+
+      blocks.add(Block.new(b, rand(256)))
     end
 
     blocks
