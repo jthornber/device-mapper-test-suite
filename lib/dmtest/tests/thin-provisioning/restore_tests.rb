@@ -192,58 +192,7 @@ class RestoreTests < ThinpTestCase
   mk_cmd(:thin_dump)
   mk_cmd(:thin_restore)
 
-  TOOLS_VERSION = /0.1.5/
-  CHECK_USAGE =<<EOF.chomp
-Usage: thin_check [options] {device|file}
-Options:
-  {-q|--quiet}
-  {-h|--help}
-  {-V|--version}
-EOF
-
-  DUMP_USAGE =<<EOF.chomp
-Usage: thin_dump [options] {device|file}
-Options:
-  {-h|--help}
-  {-f|--format} {xml|human_readable}
-  {-r|--repair}
-  {-m|--metadata-snap}
-  {-V|--version}
-EOF
-
-  RESTORE_USAGE =<<EOF.chomp
-Usage: thin_restore [options]
-Options:
-  {-h|--help}
-  {-i|--input} input_file
-  {-o|--output} {device|file}
-  {-V|--version}
-EOF
-
-  def check_version(method)
-    check = lambda do |stdout, stderr, e|
-      assert(!e)
-      assert(TOOLS_VERSION.match(stdout))
-    end
-
-    send(method, '--version', &check)
-    send(method, '-V', &check)
-  end
-
-  def check_help(method, usage)
-    check = lambda do |stdout, stderr, e|
-      assert(!e)
-      assert_equal(usage, stdout)
-    end
-
-    send(method, '--help', &check)
-    send(method, '-h', &check)
-  end
-
   def test_thin_check
-    check_version(:thin_check)
-    check_help(:thin_check, CHECK_USAGE)
-
     thin_check() do |stdout, stderr, e|
       assert(e)
       assert(/No input file provided./.match(stderr))
@@ -278,7 +227,7 @@ EOF
         assert_equal('', stderr)
       end
 
-      thin_check(@metadata_dev) do |stdout, stderr, e|
+      thin_check(@metadata_dev, '-q') do |stdout, stderr, e|
         assert(!e)
         assert_equal('', stdout)
         assert_equal('', stderr)
@@ -287,9 +236,6 @@ EOF
   end
 
   def test_thin_dump
-    check_version(:thin_dump)
-    check_help(:thin_dump, DUMP_USAGE)
-
     thin_dump() do |stdout, stderr, e|
       assert(e)
       assert(/No input file provided./.match(stderr))
@@ -304,9 +250,6 @@ EOF
   end
 
   def test_thin_restore
-    check_version(:thin_restore)
-    check_help(:thin_restore, RESTORE_USAGE)
-
     thin_restore() do |stdout, stderr, e|
       assert(e)
       assert(/No input file provided./.match(stderr))
