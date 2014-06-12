@@ -62,6 +62,18 @@ module PatternStomperDetail
     def member?(b)
       @blocks.member?(b)
     end
+
+    def trim(max_blocks)
+      new_blocks = {}
+
+      @blocks.each do |key, val|
+        if (key < max_blocks)
+          new_blocks[key] = val
+        end
+      end
+
+      BlockSet.new(new_blocks)
+    end
   end
 
   #--------------------------------
@@ -101,8 +113,7 @@ class PatternStomper
   include PatternStomperDetail
   include Utils
 
-  attr_reader :dev, :block_size, :max_blocks
-  attr_accessor :deltas
+  attr_reader :dev, :block_size, :max_blocks, :deltas
 
   # dev must be zeroed (possibly virtually via thin block zeroing)
   def initialize(dev, block_size, opts = {})
@@ -138,6 +149,13 @@ class PatternStomper
     end
 
     verify_blocks(delta)
+  end
+
+  # Trims the deltas to fit into a smaller dev
+  def deltas=(new_ds)
+    @deltas = new_ds.map do |bs|
+      bs.trim(@max_blocks)
+    end
   end
 
   private
