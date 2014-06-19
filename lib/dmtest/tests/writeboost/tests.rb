@@ -29,9 +29,12 @@ module WriteboostTests
 
   attr_accessor :stack_maker
 
-  DEBUGMODE = false
   RUBY = 'ruby-2.1.1.tar.gz'
   RUBY_LOCATION = "http://cache.ruby-lang.org/pub/ruby/2.1/ruby-2.1.1.tar.gz"
+
+  def debug_scale?
+    $test_scale == :debug
+  end
 
   def grab_ruby
     unless File.exist?(RUBY)
@@ -186,7 +189,7 @@ module WriteboostTests
       end
     end
 
-    @param[0] = DEBUGMODE ? 1 : 300
+    @param[0] = debug_scale? ? 1 : 300
 
     opts = {
       :backing_sz => gig(2),
@@ -207,7 +210,7 @@ module WriteboostTests
   end
 
   def test_do_stress
-    @param[0] = DEBUGMODE ? 1 : 60
+    @param[0] = debug_scale? ? 1 : 60
 
     opts = {
       :cache_sz => meg(128),
@@ -232,7 +235,7 @@ module WriteboostTests
   # This actually deteriorates direct reads from the backing device.
   # This test is to see how Writeboost deteriorates the block reads compared to backing device only.
   def test_fio_read_overhead
-    @param[0] = DEBUGMODE ? 1 : 128
+    @param[0] = debug_scale? ? 1 : 128
 
     def run_fio(dev, iosize)
       ProcessControl.run("fio --name=test --filename=#{dev.path} --rw=randread --ioengine=libaio --direct=1 --size=#{@param[0]}m --ba=#{iosize}k --bs=#{iosize}k --iodepth=32")
@@ -280,7 +283,7 @@ module WriteboostTests
   # - How the effect changes according to the nr_max_batched_migration tunable?
   def test_writeback_sorting_effect
 
-    @param[0] = DEBUGMODE ? 1 : 128
+    @param[0] = debug_scale? ? 1 : 128
 
     def run_wb(s, batch_size)
       s.cleanup_cache
@@ -317,7 +320,7 @@ module WriteboostTests
 
   # 4KB randwrite performance
   def test_fio_randwrite_perf
-    @param[0] = DEBUGMODE ? 1 : 500
+    @param[0] = debug_scale? ? 1 : 500
     s = @stack_maker.new(@dm, @data_dev, @metadata_dev, :cache_sz => meg(@param[0] + 100))
     s.activate_support_devs do
       s.cleanup_cache
@@ -332,7 +335,7 @@ module WriteboostTests
     end
   end
   def test_fio_cache_seqwrite # Baseline
-    @param[0] = DEBUGMODE ? 1 : 500
+    @param[0] = debug_scale? ? 1 : 500
     s = @stack_maker.new(@dm, @data_dev, @metadata_dev, :cache_sz => meg(@param[0] + 100))
     s.activate_support_devs do
       system "fio --name=test --filename=#{s.cache_dev.path} --rw=write --ioengine=libaio --direct=1 --size=#{@param[0]}m --bs=256k --iodepth=32"
