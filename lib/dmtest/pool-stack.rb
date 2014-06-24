@@ -9,6 +9,7 @@ class PoolStack
 
   def initialize(dm, data_dev, metadata_dev, opts = {})
     @dm, @data_dev, @metadata_dev, @opts = [dm, data_dev, metadata_dev, opts]
+    format_if_requested
   end
 
   def pool_table
@@ -50,6 +51,12 @@ class PoolStack
   private
   def dm_interface
     @dm
+  end
+
+  def format_if_requested
+    if @opts[:format]
+      wipe_device(metadata_dev, 8)
+    end
   end
 end
 
