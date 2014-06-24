@@ -316,8 +316,14 @@ class Dispatcher
     end
   end
 
-  def run(opts, args)
+  def setup_config(opts)
     setup_profile(opts.fetch(:profile, nil))
+    setup_test_scale(opts.fetch(:test_scale, nil))
+  end
+
+  def run(opts, args)
+    setup_config(opts)
+
     suite = select_tests(opts)
     runner = Test::Unit::UI::ThinTestRunner.new(suite, log_dir, Test::Unit::UI::VERBOSE)
     runner.start
@@ -326,7 +332,8 @@ class Dispatcher
   end
 
   def list(opts, args)
-    setup_profile(opts.fetch(:profile, nil))
+    setup_config(opts)
+
     suite = select_tests(opts)
     print_suite('', suite, opts.member?(:tags))
   end
@@ -388,6 +395,12 @@ EOF
     cfg = get_config
     sym ||= cfg.default_profile
     $profile = cfg.profiles[sym]
+  end
+
+  def setup_test_scale(sym = nil)
+    cfg = get_config
+    sym ||= cfg.default_test_scale
+    $test_scale = sym
   end
 
   def get_config
@@ -521,6 +534,7 @@ EOF
 # end
 #
 # default_profile :ssd
+# default_test_scale :normal
 EOF
     end
   end
