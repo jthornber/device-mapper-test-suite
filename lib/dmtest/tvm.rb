@@ -1,6 +1,7 @@
 require 'dmtest/log'
 require 'dmtest/device_mapper'
 require 'dmtest/prelude'
+require 'dmtest/utils'
 
 #----------------------------------------------------------------
 
@@ -141,6 +142,8 @@ module TinyVolumeManager
   class VM
     attr_reader :volumes
 
+    include Utils
+
     def initialize()
       @allocator = Allocator.new
 
@@ -149,7 +152,7 @@ module TinyVolumeManager
     end
 
     # PV in LVM parlance
-    def add_allocation_volume(dev, offset, length)
+    def add_allocation_volume(dev, offset = 0, length = dev_size(dev))
       @allocator.release_segments(DevSegment.new(dev, offset, length))
     end
 
