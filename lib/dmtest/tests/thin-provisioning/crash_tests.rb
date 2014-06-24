@@ -5,6 +5,7 @@ require 'dmtest/tags'
 require 'dmtest/disk-units'
 require 'dmtest/thinp-test'
 require 'timeout'
+require 'rspec/expectations'
 
 #----------------------------------------------------------------
 
