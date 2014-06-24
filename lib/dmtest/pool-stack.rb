@@ -54,9 +54,7 @@ class PoolStack
   end
 
   def format_if_requested
-    if @opts[:format]
-      wipe_device(metadata_dev, 8)
-    end
+    wipe_device(metadata_dev, 8) if @opts.fetch(:format, true)
   end
 end
 

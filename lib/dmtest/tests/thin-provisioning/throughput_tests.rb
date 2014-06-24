@@ -48,9 +48,6 @@ class ThroughputTests < ThinpTestCase
     @blocks_per_dev = div_up(@volume_size, block_size)
     @volume_size = @blocks_per_dev * block_size
 
-    # FIXME: add a :format option to with_standard_pool
-    wipe_device(@metadata_dev, 8)
-
     with_standard_pool(@size, :zero => false, :block_size => block_size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         report_time("volume size = 1G, block_size = #{block_size}, io_size = #{io_size}", STDERR) do
@@ -63,9 +60,6 @@ class ThroughputTests < ThinpTestCase
   def throughput_snapped(block_size, io_size)
     @blocks_per_dev = div_up(@volume_size, block_size)
     @volume_size = @blocks_per_dev * block_size
-
-    # FIXME: add a :format option to with_standard_pool
-    wipe_device(@metadata_dev, 8)
 
     with_standard_pool(@size, :zero => false, :block_size => block_size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
@@ -85,9 +79,6 @@ class ThroughputTests < ThinpTestCase
   def throughput_snap_broken(block_size, io_size)
     @blocks_per_dev = div_up(@volume_size, block_size)
     @volume_size = @blocks_per_dev * block_size
-
-    # FIXME: add a :format option to with_standard_pool
-    wipe_device(@metadata_dev, 8)
 
     with_standard_pool(@size, :zero => false, :block_size => block_size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
@@ -163,9 +154,6 @@ class ThroughputTests < ThinpTestCase
     @volume_size = @blocks_per_dev * block_size
     @size = @volume_size
 
-    # FIXME: add a :format option to with_standard_pool
-    wipe_device(@metadata_dev, 8)
-
     with_standard_pool(@size, :zero => false, :block_size => block_size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         multithreaded_layout_reread(thin, io_size,
@@ -212,9 +200,6 @@ class ThroughputTests < ThinpTestCase
         @blocks_per_dev = div_up(@volume_size, block_size)
         @volume_size = @blocks_per_dev * block_size
         @size = @volume_size
-
-        # FIXME: add a :format option to with_standard_pool
-        wipe_device(@metadata_dev, 8)
 
         with_standard_pool(@size, :zero => false, :block_size => block_size) do |pool|
           prepare_multithreaded_layout(pool, block_size, io_size)

@@ -26,6 +26,7 @@ class StripesOnThinStack
     @stripe_width = stripe_width
   end
 
+  # FIXME: use a pool stack
   def activate(&block)
     pool_table = Table.new(ThinPoolTarget.new(dev_size(@data_dev),
                                               @metadata_dev,
@@ -35,7 +36,6 @@ class StripesOnThinStack
                                               true,
                                               true,
                                               false))
-
     # format the metadata dev
     wipe_device(@metadata_dev, 8)
 

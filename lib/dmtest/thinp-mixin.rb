@@ -66,8 +66,6 @@ module ThinpTestMixin
 
     @bufio = BufIOParams.new
     @bufio.set_param('peak_allocated_bytes', 0)
-
-    wipe_device(@metadata_dev, 8)
   end
 
   def teardown

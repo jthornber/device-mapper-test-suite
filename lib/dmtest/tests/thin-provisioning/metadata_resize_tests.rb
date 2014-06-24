@@ -166,7 +166,6 @@ class MetadataResizeTests < ThinpTestCase
 
     with_devs(@tvm.table('metadata'),
               @tvm.table('data')) do |md, data|
-      wipe_device(md, 8)
 
       stack = PoolStack.new(@dm, data, md, :data_size => data_size, :block_size => @data_block_size,
                             :low_water_mark => @low_water_mark, :error_if_no_space => true)

@@ -76,8 +76,6 @@ class ExternalSnapStack
     with_devs(@md_tvm.table('md'),
               @data_tvm.table('pool_data')) do |md, pool_data|
 
-      wipe_device(md, 8)
-
       @pool_stack = PoolStack.new(@dm, pool_data, md, @opts)
       @pool_stack.activate do |pool|
         with_new_thin(pool, thin_size, 0, :origin => @origin) do |thin|
