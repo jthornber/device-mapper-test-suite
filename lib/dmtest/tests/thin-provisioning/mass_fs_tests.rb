@@ -50,7 +50,7 @@ class MassFsTests < ThinpTestCase
   #
   def _mass_linear_create_apply_remove(fs_type, io_type, max)
     tvm = VM.new
-    tvm.add_allocation_volume(@data_dev, 0, dev_size(@data_dev))
+    tvm.add_allocation_volume(@data_dev)
 
     size = tvm.free_space / max
     size = @volume_size if size > @volume_size

@@ -24,7 +24,7 @@ class MetadataResizeTests < ThinpTestCase
     @data_block_size = 128
 
     @tvm = VM.new
-    @tvm.add_allocation_volume(@data_dev, 0, dev_size(@data_dev))
+    @tvm.add_allocation_volume(@data_dev)
   end
 
   tag :thinp_target

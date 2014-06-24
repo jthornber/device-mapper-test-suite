@@ -162,14 +162,14 @@ class CacheStack
     @opts = opts
 
     @tvm = TinyVolumeManager::VM.new
-    @tvm.add_allocation_volume(ssd_dev, 0, dev_size(ssd_dev))
+    @tvm.add_allocation_volume(ssd_dev)
     @tvm.add_volume(linear_vol('md', meg(4)))
 
     cache_size = opts.fetch(:cache_size, gig(1))
     @tvm.add_volume(linear_vol('ssd', cache_size))
 
     @data_tvm = TinyVolumeManager::VM.new
-    @data_tvm.add_allocation_volume(spindle_dev, 0, dev_size(spindle_dev))
+    @data_tvm.add_allocation_volume(spindle_dev)
     @data_tvm.add_volume(linear_vol('origin', origin_size))
   end
 

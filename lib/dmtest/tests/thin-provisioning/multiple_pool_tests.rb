@@ -41,7 +41,7 @@ class MultiplePoolTests < ThinpTestCase
     # carve up the data device into two metadata volumes and two data
     # volumes.
     tvm = VM.new
-    tvm.add_allocation_volume(@data_dev, 0, dev_size(@data_dev))
+    tvm.add_allocation_volume(@data_dev)
 
     md_size = limit_metadata_dev_size(tvm.free_space / 16)
     1.upto(2) {|id| tvm.add_volume(linear_vol("md_#{id}", md_size))}

@@ -17,7 +17,7 @@ class ReadOnlyMetadataTests < ThinpTestCase
   def test_with_ro_dev_works
     tvm = VM.new
 
-    tvm.add_allocation_volume(@metadata_dev, 0, dev_size(@metadata_dev))
+    tvm.add_allocation_volume(@metadata_dev)
     tvm.add_volume(linear_vol('metadata', meg(20)))
 
     # now we open it read-only, expecting to be unable to create a rw pool
@@ -32,7 +32,7 @@ class ReadOnlyMetadataTests < ThinpTestCase
   def _test_rw_pool_fails_with_ro_metadata
     tvm = VM.new
 
-    tvm.add_allocation_volume(@metadata_dev, 0, dev_size(@metadata_dev))
+    tvm.add_allocation_volume(@metadata_dev)
     tvm.add_volume(linear_vol('metadata', meg(20)))
 
     # First we format a pool
@@ -57,7 +57,7 @@ class ReadOnlyMetadataTests < ThinpTestCase
   def test_ro_pool_succeeds_with_ro_metadata
     tvm = VM.new
 
-    tvm.add_allocation_volume(@metadata_dev, 0, dev_size(@metadata_dev))
+    tvm.add_allocation_volume(@metadata_dev)
     tvm.add_volume(linear_vol('metadata', meg(20)))
 
     # First we format a pool, and create a thin in it

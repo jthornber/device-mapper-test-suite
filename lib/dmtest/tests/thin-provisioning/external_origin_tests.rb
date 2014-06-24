@@ -25,11 +25,11 @@ class ExternalSnapStack
     @opts = opts
 
     @md_tvm = TinyVolumeManager::VM.new
-    @md_tvm.add_allocation_volume(@metadata_dev, 0, dev_size(@metadata_dev))
+    @md_tvm.add_allocation_volume(@metadata_dev)
     @md_tvm.add_volume(linear_vol('md', metadata_size))
 
     @data_tvm = TinyVolumeManager::VM.new
-    @data_tvm.add_allocation_volume(@data_dev, 0, dev_size(@data_dev))
+    @data_tvm.add_allocation_volume(@data_dev)
     @data_tvm.add_volume(linear_vol('origin', origin_size))
     @data_tvm.add_volume(linear_vol('pool_data', pool_data_size))
   end

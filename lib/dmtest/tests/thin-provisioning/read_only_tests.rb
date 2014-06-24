@@ -109,7 +109,7 @@ class ReadOnlyTests < ThinpTestCase
     # Overlay the metadata dev with a linear mapping, so we can swap
     # it for an error target in a bit.
     tvm = VM.new
-    tvm.add_allocation_volume(@metadata_dev, 0, dev_size(@metadata_dev))
+    tvm.add_allocation_volume(@metadata_dev)
     tvm.add_volume(linear_vol('metadata', dev_size(@metadata_dev)))
 
     md_table = tvm.table('metadata')

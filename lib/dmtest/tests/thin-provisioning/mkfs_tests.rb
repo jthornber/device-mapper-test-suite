@@ -36,7 +36,7 @@ class MkfsTests < ThinpTestCase
 
   def mkfs_linear(fs_type)
     tvm = VM.new
-    tvm.add_allocation_volume(@data_dev, 0, dev_size(@data_dev))
+    tvm.add_allocation_volume(@data_dev)
     tvm.add_volume(linear_vol('linear', @size))
     with_dev(tvm.table('linear')) do |dev|
       mkfs(dev, fs_type)

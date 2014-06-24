@@ -19,7 +19,7 @@ class PoolAndDataSizeMatchTests < ThinpTestCase
     @data_block_size = 128
 
     @tvm = VM.new
-    @tvm.add_allocation_volume(@data_dev, 0, dev_size(@data_dev))
+    @tvm.add_allocation_volume(@data_dev)
 
     @size = @volume_size
     @tvm.add_volume(linear_vol('data', @size))
@@ -215,7 +215,7 @@ class PoolResizeWithSpaceTests < ThinpTestCase
 
   def test_commit_failure_sets_needs_check
     tvm = VM.new
-    tvm.add_allocation_volume(@metadata_dev, 0, dev_size(@metadata_dev))
+    tvm.add_allocation_volume(@metadata_dev)
     tvm.add_volume(linear_vol('metadata', dev_size(@metadata_dev)))
 
     volume_size = gig(3)
@@ -344,7 +344,7 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
 
   def test_resize_after_OODS_error_immediately
     tvm = VM.new
-    tvm.add_allocation_volume(@data_dev, 0, dev_size(@data_dev))
+    tvm.add_allocation_volume(@data_dev)
 
     @size = @volume_size / 2
     tvm.add_volume(linear_vol('data', @volume_size / 2))
@@ -388,7 +388,7 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
 
   def test_resize_after_OODS_held_io
     tvm = VM.new
-    tvm.add_allocation_volume(@data_dev, 0, dev_size(@data_dev))
+    tvm.add_allocation_volume(@data_dev)
 
     @size = @volume_size / 2
     tvm.add_volume(linear_vol('data', @volume_size / 2))
@@ -437,7 +437,7 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
   # bz #1095639
   def test_io_to_provisioned_region_with_OODS_held_io
     tvm = VM.new
-    tvm.add_allocation_volume(@data_dev, 0, dev_size(@data_dev))
+    tvm.add_allocation_volume(@data_dev)
 
     @size = @volume_size / 2
     tvm.add_volume(linear_vol('data', @volume_size / 2))
@@ -494,7 +494,7 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
   # bug was fixed.
   def test_resize_after_OODS_held_io_ext4
     tvm = VM.new
-    tvm.add_allocation_volume(@data_dev, 0, dev_size(@data_dev))
+    tvm.add_allocation_volume(@data_dev)
 
     @size = @volume_size / 2
     tvm.add_volume(linear_vol('data', @volume_size / 2))

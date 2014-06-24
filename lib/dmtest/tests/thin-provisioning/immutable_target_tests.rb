@@ -17,7 +17,7 @@ class ImmutableTargetTests < ThinpTestCase
     super
 
     @tvm = VM.new
-    @tvm.add_allocation_volume(@data_dev, 0, dev_size(@data_dev))
+    @tvm.add_allocation_volume(@data_dev)
     @volume_size = dev_size(@data_dev) / 4
     @metadata_dev_size = limit_metadata_dev_size(@volume_size)
   end

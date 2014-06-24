@@ -86,7 +86,7 @@ class InvalidationTests < ThinpTestCase
   def test_invalidation_works_on_rollback
     # reserve a bit of the metadata device for the thin pool metadata
     tvm = TinyVolumeManager::VM.new
-    tvm.add_allocation_volume(@metadata_dev, 0, dev_size(@metadata_dev))
+    tvm.add_allocation_volume(@metadata_dev)
     tvm.add_volume(linear_vol('thin_metadata', meg(128)))
     tvm.add_volume(linear_vol('cache_metadata', meg(512)))
 
@@ -148,7 +148,7 @@ class InvalidationTests < ThinpTestCase
   def test_external_storage_snap_and_rollback
     # reserve a bit of the metadata device for the thin pool metadata
     tvm = TinyVolumeManager::VM.new
-    tvm.add_allocation_volume(@metadata_dev, 0, dev_size(@metadata_dev))
+    tvm.add_allocation_volume(@metadata_dev)
     tvm.add_volume(linear_vol('thin_metadata', meg(128)))
     tvm.add_volume(linear_vol('cache_metadata', meg(512)))
 
@@ -173,7 +173,7 @@ class InvalidationTests < ThinpTestCase
 
   def test_with_io_mode
     tvm = TinyVolumeManager::VM.new
-    tvm.add_allocation_volume(@data_dev, 0, dev_size(@data_dev))
+    tvm.add_allocation_volume(@data_dev)
     tvm.add_volume(linear_vol('little_data', @nr_blocks * @data_block_size))
 
     with_dev(tvm.table('little_data')) do |little_data|

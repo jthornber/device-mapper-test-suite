@@ -31,7 +31,7 @@ class CryptStack
     device_size = opts.fetch(:device_size, gig(1))
 
     @tvm = TinyVolumeManager::VM.new
-    @tvm.add_allocation_volume(dev, 0, dev_size(dev))
+    @tvm.add_allocation_volume(dev)
     @tvm.add_volume(linear_vol('device', device_size))
   end
 

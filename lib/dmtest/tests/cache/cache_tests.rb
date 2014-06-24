@@ -439,7 +439,7 @@ class CacheTests < ThinpTestCase
     raise RuntimeError, "data device too small" unless data_size >= size + offset
 
     tvm = TinyVolumeManager::VM.new
-    tvm.add_allocation_volume(@data_dev, 0, dev_size(@data_dev))
+    tvm.add_allocation_volume(@data_dev)
     tvm.add_volume(linear_vol('offset_volume', offset))
     tvm.add_volume(linear_vol('origin_dev', size))
 

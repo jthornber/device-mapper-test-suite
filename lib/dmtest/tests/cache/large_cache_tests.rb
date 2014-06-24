@@ -35,7 +35,7 @@ class LargeConfigTests < ThinpTestCase
     # create two pools, one of fast ssd storage, and one of spindle
     # storage
     fast_tvm = TinyVolumeManager::VM.new
-    fast_tvm.add_allocation_volume(@metadata_dev, 0, dev_size(@metadata_dev))
+    fast_tvm.add_allocation_volume(@metadata_dev)
     fast_tvm.add_volume(linear_vol('fast_md', meg(128)))
     fast_tvm.add_volume(linear_vol('slow_md', meg(128)))
     fast_tvm.add_volume(linear_vol('fast_data', fast_tvm.free_space))
@@ -102,7 +102,7 @@ class LargeConfigTests < ThinpTestCase
 
       step = gig(1)
       tvm = TinyVolumeManager::VM.new
-      tvm.add_allocation_volume(s.cache, 0, dev_size(s.cache))
+      tvm.add_allocation_volume(s.cache)
 
       volumes = []
 

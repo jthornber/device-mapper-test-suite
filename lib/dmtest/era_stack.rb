@@ -30,11 +30,11 @@ class EraStack
     @opts = opts
 
     @metadata_tvm = TinyVolumeManager::VM.new
-    @metadata_tvm.add_allocation_volume(@metadata_pv, 0, dev_size(@metadata_pv))
+    @metadata_tvm.add_allocation_volume(@metadata_pv)
     @metadata_tvm.add_volume(linear_vol('md', metadata_size))
 
     @origin_tvm = TinyVolumeManager::VM.new
-    @origin_tvm.add_allocation_volume(@origin_pv, 0, dev_size(@origin_pv))
+    @origin_tvm.add_allocation_volume(@origin_pv)
     @origin_tvm.add_volume(linear_vol('origin', origin_size))
   end
 

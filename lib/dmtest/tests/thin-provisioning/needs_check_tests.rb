@@ -31,7 +31,7 @@ class NeedsCheckTests < ThinpTestCase
 
   def test_commit_failure_sets_needs_check
     tvm = VM.new
-    tvm.add_allocation_volume(@metadata_dev, 0, dev_size(@metadata_dev))
+    tvm.add_allocation_volume(@metadata_dev)
     tvm.add_volume(linear_vol('metadata', dev_size(@metadata_dev)))
 
     volume_size = gig(3)

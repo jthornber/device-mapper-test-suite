@@ -396,7 +396,7 @@ class DiscardSlowTests < ThinpTestCase
   def with_stacked_pools(levels, &block)
     # create 2 metadata devs
     tvm = VM.new
-    tvm.add_allocation_volume(@metadata_dev, 0, dev_size(@metadata_dev))
+    tvm.add_allocation_volume(@metadata_dev)
 
     md_size = tvm.free_space / 2
     tvm.add_volume(linear_vol('md1', md_size))

@@ -42,7 +42,7 @@ class WriteboostStack
     @table_extra_args = {}
 
     @fast_tvm = TinyVolumeManager::VM.new
-    @fast_tvm.add_allocation_volume(fast_dev_name, 0, dev_size(fast_dev_name))
+    @fast_tvm.add_allocation_volume(fast_dev_name)
     @fast_tvm.add_volume(linear_vol('cache_dev', cache_sz))
     @fast_tvm.add_volume(linear_vol('plog_dev', plog_sz))
   end

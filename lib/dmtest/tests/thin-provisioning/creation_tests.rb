@@ -90,7 +90,7 @@ class CreationTests < ThinpTestCase
 
   def test_too_small_a_metadata_dev_fails
     tvm = VM.new
-    tvm.add_allocation_volume(@data_dev, 0, dev_size(@data_dev))
+    tvm.add_allocation_volume(@data_dev)
 
     md_size = 32                # 16k, way too small
     data_size = 2097152
@@ -111,7 +111,7 @@ class CreationTests < ThinpTestCase
   # This is _not_ how linux behaves
   def _test_flush_on_close
     tvm = VM.new
-    tvm.add_allocation_volume(@data_dev, 0, dev_size(@data_dev))
+    tvm.add_allocation_volume(@data_dev)
 
     data_size = 2097152
     tvm.add_volume(linear_vol('metadata', 4096))
