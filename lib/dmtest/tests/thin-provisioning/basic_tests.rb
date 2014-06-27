@@ -46,17 +46,17 @@ class BasicTests < ThinpTestCase
     end
 
     info "dt a fully provisioned thin device"
-    with_standard_pool(@size) do |pool|
+    with_standard_pool(@size, :format => false) do |pool|
       with_thin(pool, @volume_size, 0) {|thin| dt_device(thin)}
     end
 
     info "dt a snapshot of a fully provisioned device"
-    with_standard_pool(@size) do |pool|
+    with_standard_pool(@size, :format => false) do |pool|
       with_new_snap(pool, @volume_size, 1, 0) {|snap| dt_device(snap)}
     end
 
     info "dt a snapshot with no sharing"
-    with_standard_pool(@size) do |pool|
+    with_standard_pool(@size, :format => false) do |pool|
       with_thin(pool, @volume_size, 1) {|snap| dt_device(snap)}
     end
   end
