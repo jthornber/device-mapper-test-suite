@@ -395,6 +395,7 @@ EOF
     cfg = get_config
     sym ||= cfg.default_profile
     $profile = cfg.profiles[sym]
+    raise "unkown profile '#{sym}'" unless $profile
   end
 
   def setup_test_scale(sym = nil)
