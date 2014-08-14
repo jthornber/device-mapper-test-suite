@@ -27,6 +27,13 @@ Now we need to install Ruby 1.9.3
 
     rvm install 1.9.3
 
+### Ruby Index (_ri_)
+
+If you wish to use ri to consult the Ruby Documentation (RDoc) for the newly
+installed ruby then it will need to be generated
+
+    rvm docs generate-ri
+
 ## Gems
 
 Now we need to make sure the gem catalogue is up to date.
