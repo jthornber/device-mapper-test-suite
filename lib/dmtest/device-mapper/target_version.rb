@@ -9,7 +9,7 @@ module DM
     def initialize(str)
       m = RX.match(str)
 
-      raise "badly formed target version string '#{str}'" if !m
+      raise "badly formed target version string '#{str}'" unless m
       @major = m[1].to_i
       @minor = m[2].to_i
       @patch = m[3].to_i
@@ -23,11 +23,11 @@ module DM
   def parse_version_lines(txt)
     result = {}
 
-    rx = /(\S+)\s+(\S+)/
+    rx = /^\s*(\S+)\s+(\S+)\s*$/
     txt.lines.each do |line|
       m = rx.match(line)
 
-      raise "badly formed version line: '#{line}'" if !m
+      raise "badly formed version line: '#{line}'" unless m
       result[m[1]] = TargetVersion.new(m[2])
     end
 
