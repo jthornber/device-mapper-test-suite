@@ -100,9 +100,23 @@ describe DMTest::Config do
       end
     end
 
-    c.profiles.length.should == 2
-    c.profiles[:ssd].metadata_dev.should == 'first'
-    c.profiles[:spindle].data_dev.should == 'second'
+    it "should have two profiles" do
+      c.profiles.length.should == 2
+    end
+
+    it "should have the correct data in each profile" do
+      c.profiles[:ssd].metadata_dev.should == 'first'
+      c.profiles[:spindle].data_dev.should == 'second'
+    end
+  end
+
+  it "should start with a default test scale of :normal" do
+    @c.default_test_scale.should == :normal
+  end
+
+  it "should accept a new default test scale" do
+    @c.default_test_scale :foldedpi
+    @c.default_test_scale == :foldedpi
   end
 end
 
