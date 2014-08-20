@@ -116,7 +116,7 @@ describe DMTest::Config do
 
   it "should accept a new default test scale" do
     @c.default_test_scale :foldedpi
-    @c.default_test_scale == :foldedpi
+    @c.default_test_scale.should == :foldedpi
   end
 end
 
