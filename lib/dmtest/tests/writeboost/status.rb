@@ -7,10 +7,10 @@ class WriteboostStatus
   end
 
   TUNABLES = ["barrier_deadline_ms",
-              "allow_migrate",
-              "enable_migration_modulator",
-              "migrate_threshold",
-              "nr_max_batched_migration",
+              "allow_writeback",
+              "enable_writeback_modulator",
+              "writeback_threshold",
+              "nr_max_batched_writeback",
               "update_record_interval",
               "sync_interval"]
 
@@ -55,7 +55,7 @@ class WriteboostStatus
   private
   def parse(output)
     arr = output.split.reverse
-    before_stat = ["cursor_pos", "nr_cache_blocks", "nr_segments", "current_id", "last_flushed_id", "last_migrated_id", "nr_dirty_cache_blocks"]
+    before_stat = ["cursor_pos", "nr_cache_blocks", "nr_segments", "current_id", "last_flushed_id", "last_writeback_id", "nr_dirty_cache_blocks"]
 
     before_stat.size.times do |i|
       v = arr.pop(1).first.to_i
@@ -86,15 +86,9 @@ end
 
 if __FILE__ == $0
   x = (1..24).to_a
-  names = ["barrier_deadline_ms",
-           "allow_migrate",
-           "enable_migration_modulator",
-           "migrate_threshold",
-           "nr_max_batched_migration",
-           "update_record_interval",
-           "sync_interval"]
+
   y = (25..31).to_a
-  _output = x + [14] + names.zip(y).flatten
+  _output = x + [14] + WriteboostStatus::TUNABLES.zip(y).flatten
   output = _output.join(" ")
   # p output
 

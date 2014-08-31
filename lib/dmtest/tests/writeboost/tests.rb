@@ -94,13 +94,13 @@ module WriteboostTests
       sso = 9
 
       # (1) first extracts the archive in the directory
-      # no migration - all dirty data is on the cache device
-      no_migrate_args = {
+      # no writeback - all dirty data is on the cache device
+      no_writeback_args = {
         :segment_size_order => sso,
-        :enable_migration_modulator => 0,
-        :allow_migrate => 0
+        :enable_writeback_modulator => 0,
+        :allow_writeback => 0
       }
-      s.table_extra_args = no_migrate_args
+      s.table_extra_args = no_writeback_args
       s.activate_top_level(true) do
         fs = FS::file_system(:xfs, s.wb)
         fs.format
@@ -113,12 +113,12 @@ module WriteboostTests
         end
       end
 
-      yes_migrate_args = {
+      yes_writeback_args = {
         :segment_size_order => sso,
-        :enable_migration_modulator => 1,
-        :allow_migrate => 0
+        :enable_writeback_modulator => 1,
+        :allow_writeback => 0
       }
-      s.table_extra_args = yes_migrate_args
+      s.table_extra_args = yes_writeback_args
       # (2) replays the log on the cache device
       # if the data corrupts, Ruby can't compile
       # or fs corrupts.
@@ -126,7 +126,7 @@ module WriteboostTests
         fs = FS::file_system(:xfs, s.wb)
 
         # (3) drop all the dirty caches
-        # to see migration works
+        # to see writeback works
         s.drop_caches
         fs.with_mount(mount_dir) do
           Dir.chdir("#{mount_dir}/#{ruby}") do
@@ -155,8 +155,8 @@ module WriteboostTests
       s.cleanup_cache
       args = {
         :segment_size_order => 10,
-        :enable_migration_modulator => 0,
-        :allow_migrate => 0,
+        :enable_writeback_modulator => 0,
+        :allow_writeback => 0,
       }
       s.table_extra_args = args
 
@@ -199,7 +199,7 @@ module WriteboostTests
     s.activate_support_devs do
       s.cleanup_cache
       args = {
-        :enable_migration_modulator => 1,
+        :enable_writeback_modulator => 1,
       }
       s.table_extra_args = args
       t = @param[0]
@@ -265,8 +265,8 @@ module WriteboostTests
     s.activate_support_devs do
       s.cleanup_cache
       s.table_extra_args = {
-        :enable_migration_modulator => 1,
-        :allow_migrate => 1
+        :enable_writeback_modulator => 1,
+        :allow_writeback => 1
       }
 
       s.activate_top_level(true) do
@@ -280,7 +280,7 @@ module WriteboostTests
   # This test is to see how the sorting takes effects.
   # Aspects
   # - Does just stacking writeboost can always boost write.
-  # - How the effect changes according to the nr_max_batched_migration tunable?
+  # - How the effect changes according to the nr_max_batched_writeback tunable?
   def test_writeback_sorting_effect
 
     @param[0] = debug_scale? ? 1 : 128
@@ -288,7 +288,7 @@ module WriteboostTests
     def run_wb(s, batch_size)
       s.cleanup_cache
       s.table_extra_args = {
-        :nr_max_batched_migration => batch_size,
+        :nr_max_batched_writeback => batch_size,
       }
       s.activate_top_level(true) do
         fs = FS::file_system(:xfs, s.wb)
@@ -326,8 +326,8 @@ module WriteboostTests
       s.cleanup_cache
       # Migration is off
       s.table_extra_args = {
-        :enable_migration_modulator => 0,
-        :allow_migrate => 0
+        :enable_writeback_modulator => 0,
+        :allow_writeback => 0
       }
       s.activate_top_level(true) do
         system "fio --name=test --filename=#{s.wb.path} --rw=randwrite --ioengine=libaio --direct=1 --size=#{@param[0]}m --ba=4k --bs=4k --iodepth=32"
