@@ -120,8 +120,7 @@ class WriteboostStack
     OPTIONALS = [:segment_size_order,
                  :nr_rambuf_pool,
     ]
-    TUNABLES = [:barrier_deadline_ms,
-                :allow_writeback,
+    TUNABLES = [:allow_writeback,
                 :enable_writeback_modulator,
                 :writeback_threshold,
                 :nr_max_batched_writeback,

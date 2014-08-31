@@ -6,8 +6,7 @@ class WriteboostStatus
     WriteboostStatus.new m[1]
   end
 
-  TUNABLES = ["barrier_deadline_ms",
-              "allow_writeback",
+  TUNABLES = ["allow_writeback",
               "enable_writeback_modulator",
               "writeback_threshold",
               "nr_max_batched_writeback",
@@ -87,8 +86,8 @@ end
 if __FILE__ == $0
   x = (1..24).to_a
 
-  y = (25..31).to_a
-  _output = x + [14] + WriteboostStatus::TUNABLES.zip(y).flatten
+  y = (25..30).to_a
+  _output = x + [12] + WriteboostStatus::TUNABLES.zip(y).flatten
   output = _output.join(" ")
   # p output
 
