@@ -121,10 +121,10 @@ class WriteboostStack
                  :nr_rambuf_pool,
     ]
     TUNABLES = [:barrier_deadline_ms,
-                :allow_migrate,
-                :enable_migration_modulator,
-                :migrate_threshold,
-                :nr_max_batched_migration,
+                :allow_writeback,
+                :enable_writeback_modulator,
+                :writeback_threshold,
+                :nr_max_batched_writeback,
                 :update_record_interval,
                 :sync_interval,
     ]
