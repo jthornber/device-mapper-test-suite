@@ -39,9 +39,11 @@ class IOUseTests < ThinpTestCase
 
       sleep 10
 
+      STDERR.puts "beginning idle period"
       traces, _ = blktrace(@metadata_dev, @data_dev) do
         sleep 30
       end
+      STDERR.puts "done"
 
       STDERR.puts "traces: #{traces}"
       assert(traces[0].empty?)

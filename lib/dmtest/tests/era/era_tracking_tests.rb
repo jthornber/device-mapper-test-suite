@@ -15,10 +15,6 @@ class EraTrackingTests < ThinpTestCase
   include DiskUnits
   extend TestUtils
 
-  def setup
-    super
-  end
-
   def make_stack(opts = Hash.new)
     EraStack.new(@dm, @metadata_dev, @data_dev, opts)
   end

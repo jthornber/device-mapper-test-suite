@@ -5,6 +5,7 @@ require 'dmtest/ensure_elapsed'
 require 'dmtest/era_status'
 require 'dmtest/tvm'
 require 'dmtest/utils'
+require 'thinp_xml/era_xml'
 
 #----------------------------------------------------------------
 
@@ -15,6 +16,8 @@ class EraStack
   include EnsureElapsed
   include Utils
   include TinyVolumeManager
+  include EraXML
+  include ThinpXML
 
   attr_accessor :metadata_pv, :data_pv, :md, :origin, :era, :opts
 
@@ -85,7 +88,15 @@ class EraStack
 
   def dump_metadata(opts = {})
     logical_flag = opts.fetch(:logical, false) ? "--logical" : ""
-    ProcessControl.run("era_dump #{logical_flag} #{@md}")
+    Utils::with_temp_file('metadata_xml') do |file|
+      ProcessControl.run("era_dump #{logical_flag} #{@md} > #{file.path}")
+      file.rewind
+      yield(file.path)
+    end
+  end
+
+  def restore_metadata(path)
+    ProcessControl.run("era_restore -i #{path} -o #{@md.path}")
   end
 
   def dm_interface

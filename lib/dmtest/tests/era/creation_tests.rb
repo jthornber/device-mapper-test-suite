@@ -7,14 +7,10 @@ require 'rspec/expectations'
 
 #----------------------------------------------------------------
 
-class CreationTests < ThinpTestCase
+class EraCreationTests < ThinpTestCase
   include Utils
   include DiskUnits
   extend TestUtils
-
-  def setup
-    super
-  end
 
   def test_bring_up_an_era_target
     s = EraStack.new(@dm, @metadata_dev, @data_dev, :format => true)
