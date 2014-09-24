@@ -1,3 +1,4 @@
+require 'dmtest/blktrace'
 require 'dmtest/log'
 require 'dmtest/disk-units'
 require 'dmtest/utils'
@@ -5,10 +6,13 @@ require 'dmtest/fs'
 require 'dmtest/tags'
 require 'dmtest/thinp-test'
 
+require 'pp'
+
 #----------------------------------------------------------------
 
 # Investigating bz 1145230
 class IOZoneTests < ThinpTestCase
+  include BlkTrace
   include Tags
   include Utils
   include DiskUnits
@@ -33,7 +37,15 @@ class IOZoneTests < ThinpTestCase
 
   def do_iozone(dev)
     with_fs(dev, :xfs) do
-      ProcessControl.run("iozone -s 1g -t 2 -i 0 -i 2")
+      report_time("Initial write and rewrite", STDERR) do
+        ProcessControl.run("iozone -s 1g -t 8 -i 0 -C -w -c -e -+n -r 64k")
+      end
+
+      ProcessControl.run('echo 3 > /proc/sys/vm/drop_caches')
+
+      report_time("Subsequent random io storm", STDERR) do
+        ProcessControl.run("iozone -s 1g -t 8 -i 2 -C -w -c -e -+n -r 64k")
+      end
     end
   end
 
@@ -42,8 +54,9 @@ class IOZoneTests < ThinpTestCase
   def test_iozone_thin
     wipe_device(@metadata_dev, 8)
 
-    with_standard_pool(@size, :block_size => k(256)) do |pool|
-      with_new_thin(pool, @volume_size, 0) do |thin|
+    size = dev_size(@data_dev)
+    with_standard_pool(size, :zero => false, :block_size => meg(4)) do |pool|
+      with_new_thin(pool, size, 0) do |thin|
         do_iozone(thin)
       end
     end
