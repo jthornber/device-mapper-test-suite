@@ -256,6 +256,47 @@ module WriteboostTests
     end
   end
 
+  # This test aims to pass unlikely path in invalidate_prev_cache()
+  def test_invalidate_prev_cache
+    @param[0] = debug_scale? ? 3 : 30
+
+    opts = {
+      # The 127th writes incurs queue_current_buffer().
+      # Others run into unfavorable path to write back the preivous cache on cache device.
+      :backing_sz => 1 * (128 - 1) * k(4),
+      :cache_sz => meg(1) + 3 * 128 * k(4), # 1M (super block) + 3 segments
+    }
+
+    # 512B stride write repeats in 30sec.
+    # The offset increases by 4k (E.g. 0, 4096, 8192, ...)
+    def run_fio(dev)
+      system("fio --name=test --time_based --runtime=#{@param[0]} --filename=#{dev.path} --rw=write:3584 --ioengine=libaio --direct=1 --bs=512")
+    end
+
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs do
+      s.cleanup_cache
+
+      # Stop automated writeback
+      s.table_extra_args = {
+        :segment_size_order => 10,
+        :enable_writeback_modulator => 0,
+        :allow_writeback => 0,
+        :nr_max_batched_writeback => 1,
+      }
+
+      s.activate_top_level(true) do
+        report_time("", STDERR) do
+          run_fio(s.wb)
+        end
+
+        # All writes except the first few handreds result in write hit on the cache device
+        # which leads to unfavorable foreground writeback. To see the stat, uncomment this line.
+        # print WriteboostStatus.from_raw_status(s.wb.status).format_stat_table
+      end
+    end
+  end
+
   #--------------------------------
 
   def test_wipe_device
