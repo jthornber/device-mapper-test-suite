@@ -297,6 +297,44 @@ module WriteboostTests
     end
   end
 
+  # This test shows how badly Writeboost performs with all-sync writes.
+  def test_sync_writes
+    @param[0] = debug_scale? ? 1 : 4
+
+    def run(s)
+      s.table_extra_args = {
+        :enable_writeback_modulator => 1,
+      }
+      s.cleanup_cache
+      s.activate_top_level(true) do
+        fs = FS::file_system(:xfs, s.wb)
+        fs.format
+        dir = "./fio_test"
+        fs.with_mount(dir) do
+          report_time("", STDERR) do
+            Dir.chdir(dir) do
+              # Alway submit barriers per one 512B write
+              # Note: --write_barrier and --io_limit is not available in fio v2.0.8
+              ProcessControl.run("fio --name=test --filename=#{s.wb.path} --rw=randwrite --ioengine=libaio --direct=1 --fsync=1 --write_barrier=1 --io_limit=#{@param[0]}M --bs=512")
+            end
+            ProcessControl.run("sync")
+            drop_caches
+            s.drop_caches # Wait until all cache blocks becomes clean.
+          end
+        end
+      end
+    end
+
+    opts = {
+      :cache_sz => meg(2) # The cache device is very small.
+    }
+
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs do
+      run(s)
+    end
+  end
+
   #--------------------------------
 
   def test_wipe_device
