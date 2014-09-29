@@ -50,6 +50,7 @@ class RestoreTests < ThinpTestCase
       end
     end
   end
+
   def restore_mappings(nr_devs, dev_size, mapper)
     # We don't use the kernel for this test, instead just creating a
     # large complicated xml metadata file, and then restoring it.
