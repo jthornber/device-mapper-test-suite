@@ -140,11 +140,16 @@ end
 
 class DiscardQuickTests < ThinpTestCase
   include DiscardMixin
+  include DiskUnits
 
   def test_discard_empty_device
-    with_standard_pool(@size) do |pool|
+    @size = dev_size(@data_dev)
+    @volume_size = @size
+    with_standard_pool(@size, :discard_passdown => false) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
-        thin.discard(0, @volume_size)
+        report_time("discarding volume of size #{@volume_size}", STDERR) do
+          thin.discard(0, @volume_size)
+        end
 
 #  DiscardMixin::define_test_over_bs(:discard_empty_device, 128, 192)  do |block_size, volume_size|
 #    with_standard_pool(@size, :block_size => block_size) do |pool|
@@ -173,6 +178,86 @@ class DiscardQuickTests < ThinpTestCase
     md = read_metadata
     assert_no_mappings(md, 0)
     assert_fully_mapped(md, 1)
+  end
+
+  def test_discard_fully_provisioned_device_benchmark
+    @size = [dev_size(@data_dev), gig(80)].min
+    @volume_size = @size
+
+    xml_file = "discard_test.xml"
+    ProcessControl.run("thinp_xml create --nr-thins 1 --nr-mappings #{@size / @data_block_size} --block-size #{@data_block_size} > #{xml_file}")
+    ProcessControl.run("thin_restore -o #{@metadata_dev} -i #{xml_file}")
+    STDERR.puts "restored metadata"
+
+    with_fake_discard(:granularity => 128, :max_discard_sectors => 512) do |fd_dev|
+      with_custom_data_pool(fd_dev, @size, :format => false, :discard_passdown => true) do |pool|
+        with_thin(pool, @volume_size, 0) do |thin|
+          STDERR.puts "about to discard"
+          report_time("discarding provisioning volume of size #{@volume_size}", STDERR) do
+            thin.discard(0, @volume_size)
+          end
+        end
+      end
+
+      md = read_metadata
+      assert_no_mappings(md, 0)
+    end
+  end
+
+  def test_discard_a_fragmented_device
+    @size = [dev_size(@data_dev), gig(80)].min
+    @volume_size = @size
+
+    # FIXME: factor out
+    nr_data_blocks = @size / @data_block_size
+    superblock = Superblock.new("uuid", 0, 1, 128, nr_data_blocks)
+    mappings = []
+    0.upto(nr_data_blocks - 1) do |n|
+      if n.even?
+        mappings << Mapping.new(n, n / 2, 1, 0)
+      end
+    end
+    devices = [Device.new(0, mappings.size, 0, 0, 0, mappings)]
+    metadata = Metadata.new(superblock, devices)
+
+    Utils::with_temp_file('metadata_xml') do |file|
+      write_xml(metadata, file)
+      file.flush
+      file.close
+      restore_metadata(file.path, @metadata_dev)
+    end
+    ProcessControl.run("thin_check #{@metadata_dev}")
+    STDERR.puts "restored metadata"
+
+    with_fake_discard(:granularity => 128, :max_discard_sectors => 512) do |fd_dev|
+      with_custom_data_pool(fd_dev, @size, :format => false, :discard_passdown => true) do |pool|
+        with_thin(pool, @volume_size, 0) do |thin|
+          STDERR.puts "about to discard"
+          report_time("discarding fragmented volume of size #{@volume_size}", STDERR) do
+            thin.discard(0, @volume_size)
+          end
+        end
+      end
+    end
+
+    md = read_metadata
+    assert_no_mappings(md, 0)
+  end
+
+  def test_delete_fully_provisioned_device
+    @size = [dev_size(@data_dev), gig(80)].min
+    @volume_size = @size
+
+    xml_file = "discard_test.xml"
+    ProcessControl.run("thinp_xml create --nr-thins 1 --nr-mappings #{@size / @data_block_size} --block-size #{@data_block_size} > #{xml_file}")
+    ProcessControl.run("thin_restore -o #{@metadata_dev} -i #{xml_file}")
+    STDERR.puts "restored metadata"
+
+    with_standard_pool(@size, :format => false) do |pool|
+      report_time("deleting provisioning volume of size #{@volume_size}", STDERR) do
+        pool.message(0, "delete 0")
+      end
+    end
   end
 
   def test_discard_single_block
