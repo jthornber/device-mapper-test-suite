@@ -1,3 +1,5 @@
+#----------------------------------------------------------------
+
 module DM
   class Target
     attr_accessor :type, :args, :sector_count
@@ -9,11 +11,15 @@ module DM
     end
   end
 
+  #--------------------------------
+
   class ErrorTarget < Target
     def initialize(sector_count)
       super('error', sector_count)
     end
   end
+
+  #--------------------------------
 
   class FlakeyTarget < Target
     def initialize(sector_count, dev, offset = 0, up_interval = 60, down_interval = 0, drop_writes = false)
@@ -26,17 +32,23 @@ module DM
     end
   end
 
+  #--------------------------------
+
   class LinearTarget < Target
     def initialize(sector_count, dev, offset)
       super('linear', sector_count, dev, offset)
     end
   end
 
+  #--------------------------------
+
   class StripeTarget < Target
     def initialize(sector_count, chunk_size, *pairs)
       super('striped', sector_count, chunk_size, *(pairs.flatten))
     end
   end
+
+  #--------------------------------
 
   class ThinPoolTarget < Target
     attr_accessor :metadata_dev
@@ -63,6 +75,8 @@ module DM
     end
   end
 
+  #--------------------------------
+
   class ThinTarget < Target
     def initialize(sector_count, pool, id, origin = nil)
       if origin
@@ -72,6 +86,8 @@ module DM
       end
     end
   end
+
+  #--------------------------------
 
   class CacheTarget < Target
     attr_reader :metadata_dev
@@ -90,6 +106,8 @@ module DM
     end
   end
 
+  #--------------------------------
+
   class EraTarget < Target
     def initialize(sector_count, metadata_dev, origin_dev, block_size)
       super('era', sector_count, metadata_dev, origin_dev, block_size)
@@ -100,6 +118,8 @@ module DM
       ProcessControl.run("era_check #{@metadata_dev}")
     end
   end
+
+  #--------------------------------
 
   class FakeDiscardTarget < Target
     def initialize(sector_count, dev, offset, granularity, max_discard,
@@ -115,4 +135,22 @@ module DM
             max_discard, extra_opts.length, *extra_opts)
     end
   end
+
+  #--------------------------------
+
+  class RaidTarget < Target
+    # We don't do validation of the params here, since some tests may
+    # want to deliberately pass bad params.
+    def initialize(sector_count, params, dev_pairs)
+      devs = []
+      devs.each do |p|
+        devs << p[0]
+        devs << p[1]
+      end
+
+      super('raid', params.size, *params, dev_pairs.size, devs);
+    end
+  end
 end
+
+#----------------------------------------------------------------
