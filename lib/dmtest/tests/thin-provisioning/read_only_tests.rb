@@ -26,7 +26,7 @@ class ReadOnlyTests < ThinpTestCase
     end
 
     # now we open it read-only
-    with_standard_pool(@size, :read_only => true) do |pool|
+    with_standard_pool(@size, :read_only => true, :format => false) do |pool|
     end
   end
 
@@ -39,7 +39,7 @@ class ReadOnlyTests < ThinpTestCase
     end
 
     # now we open it read-only
-    with_standard_pool(@size, :read_only => true) do |pool|
+    with_standard_pool(@size, :read_only => true, :format => false) do |pool|
       with_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin)
       end
@@ -54,7 +54,7 @@ class ReadOnlyTests < ThinpTestCase
     end
 
     # now we open it read-only
-    with_standard_pool(@size, :read_only => true, :error_if_no_space => true) do |pool|
+    with_standard_pool(@size, :read_only => true, :format => false, :error_if_no_space => true) do |pool|
       with_thin(pool, @volume_size, 0) do |thin|
         assert_raise(ExitError) do
           wipe_device(thin)
@@ -69,7 +69,7 @@ class ReadOnlyTests < ThinpTestCase
     end
 
     # now we open it read-only
-    with_standard_pool(@size, :read_only => true) do |pool|
+    with_standard_pool(@size, :read_only => true, :format => false) do |pool|
       assert_raise(ExitError) do
         with_new_thin(pool, @volume_size, 0) do |thin|
         end
@@ -85,7 +85,7 @@ class ReadOnlyTests < ThinpTestCase
     end
 
     # now we open it read-only
-    with_standard_pool(@size, :read_only => true) do |pool|
+    with_standard_pool(@size, :read_only => true, :format => false) do |pool|
       assert_raise(ExitError) do
         pool.message(0, "delete 0");
       end
