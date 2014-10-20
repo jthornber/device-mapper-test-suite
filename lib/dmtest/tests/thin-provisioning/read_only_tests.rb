@@ -15,14 +15,6 @@ class ReadOnlyTests < ThinpTestCase
   def setup
     super
 
-    # I'm assuming you have set up 2G ramdisks (ramdisk_size=2097152 on boot)
-    @data_dev = '/dev/ram1'
-
-    if !$wiped_ramdisk
-      wipe_device(@data_dev)
-      $wiped_ramdisk = true
-    end
-
     @size = 2097152 * 2         # sectors
     @volume_size = 1900000
     @data_block_size = 2 * 1024 * 8 # 8 M
