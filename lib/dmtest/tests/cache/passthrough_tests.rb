@@ -74,7 +74,8 @@ class PassthroughTests < ThinpTestCase
 
   def test_passthrough_fails_with_dirty_blocks
     s = make_stack(:format => false,
-                   :io_mode => :passthrough)
+                   :io_mode => :passthrough,
+                   :block_size => 128)
     s.activate_support_devs do
       s.prepare_populated_cache(:dirty_percentage => 100)
       expect do
