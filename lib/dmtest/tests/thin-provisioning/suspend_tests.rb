@@ -106,6 +106,30 @@ class SuspendTests < ThinpTestCase
       end
     end
   end
+
+  def test_suspend_pool_after_suspend_thin
+    with_standard_pool(@size) do |pool|
+      with_new_thins(pool, @volume_size, 0, 1) do |thin1, thin2|
+        thin1.pause do
+
+          pool.pause {}
+
+          timed_out = false
+          begin
+            Timeout::timeout(5) do
+              wipe_device(thin1, 8)
+            end
+          rescue Timeout::Error
+            timed_out = true
+          rescue
+            assert(false)
+          end
+
+          timed_out.should be_true
+        end
+      end
+    end
+  end
 end
 
 #----------------------------------------------------------------
