@@ -44,9 +44,6 @@ class LargeConfigTests < ThinpTestCase
               fast_tvm.table('slow_md'),
               fast_tvm.table('fast_data')) do |fast_md, slow_md, fast_data|
 
-      wipe_device(fast_md, 8)
-      wipe_device(slow_md, 8)
-
       fast_stack = PoolStack.new(@dm, fast_data, fast_md, :data_size => dev_size(fast_data))
       slow_stack = PoolStack.new(@dm, @data_dev, slow_md, :data_size => dev_size(@data_dev))
 
@@ -56,7 +53,7 @@ class LargeConfigTests < ThinpTestCase
             with_new_thin(slow_pool, tera(48), 0) do |slow_storage|
               
               cache_stack = CacheStack.new(@dm, fast_storage, slow_storage,
-                                           :format => true, :block_size => meg(4))
+                                           :format => true, :block_size => k(32))
               cache_stack.activate_support_devs do
                 cache_stack.prepare_populated_cache
                 cache_stack.activate do
@@ -124,6 +121,32 @@ class LargeConfigTests < ThinpTestCase
         status = CacheStatus.new(s.cache)
         promotions = status.promotions - promotions
         STDERR.puts "residency #{status.residency}, promotions this cycle #{promotions}"
+      end
+    end
+  end
+
+  #--------------------------------
+
+  def error_table(nr_sectors)
+    Table.new(ErrorTarget.new(nr_sectors))
+  end
+
+  def cache_table(md, fast_dev, slow_dev)
+    Table.new(CacheTarget.new(dev_size(slow_dev), md, fast_dev, slow_dev,
+                              k(32), [], 'mq', {}))
+  end
+
+  # If I run with 4G ram then the OOM killer kicks in.  14G is enough
+  # memory to reproduce the bug.
+  def test_bug_1080894
+    # we use a real metadata area, and the error target for the fast
+    # and slow devices.
+    with_devs(error_table(4504174592),
+              error_table(6442450944)) do |fast_dev, slow_dev|
+      wipe_device(@metadata_dev, 8);
+
+      with_dev(cache_table(@metadata_dev, fast_dev, slow_dev)) do |cache|
+        STDERR.puts "created cache device\n";
       end
     end
   end
