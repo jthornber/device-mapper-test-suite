@@ -139,10 +139,13 @@ class LargeConfigTests < ThinpTestCase
   # If I run with 4G ram then the OOM killer kicks in.  14G is enough
   # memory to reproduce the bug.
   def test_bug_1080894
+    fast_size = 4504174592
+    origin_size = 6442450944
+
     # we use a real metadata area, and the error target for the fast
     # and slow devices.
-    with_devs(error_table(4504174592),
-              error_table(6442450944)) do |fast_dev, slow_dev|
+    with_devs(error_table(fast_size),
+              error_table(origin_size)) do |fast_dev, slow_dev|
       wipe_device(@metadata_dev, 8);
 
       with_dev(cache_table(@metadata_dev, fast_dev, slow_dev)) do |cache|
