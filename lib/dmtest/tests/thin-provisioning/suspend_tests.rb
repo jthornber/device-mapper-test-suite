@@ -220,7 +220,24 @@ class SuspendTests < ThinpTestCase
         # (which _includes_ the inactive table for thin1 due to thin_ctr
         #  adding the new thin device to the pool's active thins list)
         pool.pause do
-        end
+          timed_out = false
+
+          begin
+            Timeout::timeout(5) do
+              # skip suspend, allow resume to initiate suspend
+              thin1.resume
+            end
+          rescue Timeout::Error
+            timed_out = true
+          rescue
+            assert(false)
+          end
+
+          timed_out.should be_true
+        end # pool resume triggers internal resume for active thin devices
+
+        thin1.resume
+        wipe_device(thin1, 8)
       end
     end
   end
