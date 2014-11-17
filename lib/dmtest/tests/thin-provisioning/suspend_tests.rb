@@ -90,7 +90,7 @@ class SuspendTests < ThinpTestCase
         timed_out = false
         begin
           Timeout::timeout(10) do
-            thin1.pause do
+            thin1.pause do # blocks waiting for pool.resume
               wipe_device(thin1, 8)
             end
           end
@@ -130,6 +130,85 @@ class SuspendTests < ThinpTestCase
       end
     end
   end
+
+  # term1:
+  # dmsetup suspend pool
+  # dmsetup suspend thin1
+  #                                                 term2:
+  # (blocks waiting for internal suspend to clear)  # dmsetup resume pool
+  #
+  # dmsetup resume thin1
+  def test_wait_on_bit_during_suspend
+    with_standard_pool(@size) do |pool|
+      with_new_thins(pool, @volume_size, 0, 1) do |thin1, thin2|
+        # trigger internal suspend of pool's active thin targets
+        pool.suspend
+
+        tid = Thread.new do
+          sleep 10
+          pool.resume
+        end
+
+        timed_out = false
+        begin
+          Timeout::timeout(5) do
+            thin1.pause do # blocks waiting for internal resume via pool.resume
+            end
+          end
+        rescue Timeout::Error
+          timed_out = true
+        rescue
+          assert(false)
+        end
+
+        timed_out.should be_true
+        thin1.pause do
+        end
+
+        tid.join
+      end
+    end
+  end
+
+  # term1:
+  # dmsetup suspend thin1
+  # dmsetup suspend pool
+  # dmsetup resume thin1
+  #                                                 term2:
+  # (blocks waiting for internal suspend to clear)  # dmsetup resume pool
+  #
+  # (finally thin1 resumes)
+  def test_wait_on_bit_during_resume
+    with_standard_pool(@size) do |pool|
+      with_new_thins(pool, @volume_size, 0, 1) do |thin1, thin2|
+        thin1.suspend
+        # trigger _nested_ internal suspend of thin1 target
+        pool.suspend
+
+        tid = Thread.new do
+          sleep 10
+          pool.resume
+        end
+
+        timed_out = false
+        begin
+          Timeout::timeout(5) do
+            thin1.resume # blocks waiting for internal resume via pool.resume
+          end
+        rescue Timeout::Error
+          timed_out = true
+        rescue
+          assert(false)
+        end
+
+        timed_out.should be_true
+        thin1.resume
+
+        tid.join
+      end
+    end
+  end
+
 end
 
 #----------------------------------------------------------------
