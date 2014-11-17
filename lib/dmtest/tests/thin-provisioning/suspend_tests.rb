@@ -209,6 +209,22 @@ class SuspendTests < ThinpTestCase
     end
   end
 
+  def test_nested_internal_suspend_using_inactive_table
+    with_standard_pool(@size) do |pool|
+      with_new_thins(pool, @volume_size, 0, 1) do |thin1, thin2|
+        # load duplicate thin table into thin1's inactive slot
+        thin_table = thin1.active_table
+        thin1.load(thin_table)
+
+        # trigger internal suspend of pool's active thin targets
+        # (which _includes_ the inactive table for thin1 due to thin_ctr
+        #  adding the new thin device to the pool's active thins list)
+        pool.pause do
+        end
+      end
+    end
+  end
+
 end
 
 #----------------------------------------------------------------
