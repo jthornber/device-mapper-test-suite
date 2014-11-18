@@ -40,6 +40,23 @@ class CreationTests < ThinpTestCase
     end
   end
 
+  def test_activate_thin_while_pool_suspended_fails
+    with_standard_pool(@size) do |pool|
+      pool.message(0, "create_thin 0")
+      pool.pause do
+        begin
+          with_thin(pool, @volume_size, 0) do |thin|
+            # expect failure.
+          end
+        rescue
+          failed = true
+        end
+
+        failed.should be_true
+      end
+    end
+  end
+
   def test_huge_block_size
     size = @size
     data_block_size = 524288
