@@ -43,7 +43,8 @@ class CacheStack
 
     @data_tvm = TinyVolumeManager::VM.new
     @data_tvm.add_allocation_volume(spindle_dev)
-    @data_tvm.add_volume(linear_vol('origin', origin_size = :all ? @data_tvm.free_space : origin_size))
+
+    @data_tvm.add_volume(linear_vol('origin', origin_size == :all ? @data_tvm.free_space : origin_size))
   end
 
   def metadata_size
