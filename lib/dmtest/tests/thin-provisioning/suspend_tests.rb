@@ -151,7 +151,7 @@ class SuspendTests < ThinpTestCase
 
         timed_out = false
         begin
-          Timeout::timeout(5) do
+          Timeout::timeout(1) do
             thin1.pause do # blocks waiting for internal resume via pool.resume
             end
           end
@@ -162,6 +162,7 @@ class SuspendTests < ThinpTestCase
         end
 
         timed_out.should be_true
+        sleep 10
         thin1.pause do
         end
 
@@ -192,7 +193,7 @@ class SuspendTests < ThinpTestCase
 
         timed_out = false
         begin
-          Timeout::timeout(5) do
+          Timeout::timeout(1) do
             thin1.resume # blocks waiting for internal resume via pool.resume
           end
         rescue Timeout::Error
@@ -202,6 +203,7 @@ class SuspendTests < ThinpTestCase
         end
 
         timed_out.should be_true
+        sleep 10
         thin1.resume
 
         tid.join
