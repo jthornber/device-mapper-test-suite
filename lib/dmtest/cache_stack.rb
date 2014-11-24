@@ -129,10 +129,6 @@ class CacheStack
     @tvm.volumes['md'].length / 8
   end
 
-  def block_size
-    @opts.fetch(:block_size, 512)
-  end
-
   def policy
     @opts.fetch(:policy, Policy.new('default'))
   end
