@@ -22,7 +22,7 @@ class ResizeTests < ThinpTestCase
 
   def setup
     super
-    @data_block_size = k(32)
+    @data_block_size = k(64)
     @cache_blocks = 1024
   end
 
@@ -52,7 +52,9 @@ class ResizeTests < ThinpTestCase
   def test_no_resize_retains_mappings_all_clean
     [23, 513, 1023, 4095].each do |nr_blocks|
       s = make_stack(:format => false,
-                     :cache_blocks => nr_blocks)
+                     :cache_blocks => nr_blocks,
+                     :policy => Policy.new('mq',
+                                           :migration_threshold => 0))
       s.activate_support_devs do
         s.prepare_populated_cache()
         md1 = dump_metadata(s.md)
@@ -68,7 +70,9 @@ class ResizeTests < ThinpTestCase
   def test_no_resize_retains_mappings_all_dirty
     [23, 513, 1023, 4095].each do |nr_blocks|
       s = make_stack(:format => false,
-                     :cache_blocks => nr_blocks)
+                     :cache_blocks => nr_blocks,
+                     :policy => Policy.new('mq',
+                                           :migration_threshold => 0))
       s.activate_support_devs do
         s.prepare_populated_cache(:dirty_percentage => 100)
         md1 = dump_metadata(s.md)
@@ -81,6 +85,64 @@ class ResizeTests < ThinpTestCase
         # some mappings may now be clean since there's a background
         # writeback task.  So we force them all to be dirty
         assert_equal(md1.mappings, make_mappings_dirty(md2.mappings))
+      end
+    end
+  end
+
+  #--------------------------------
+
+  def error_table(nr_sectors)
+    Table.new(ErrorTarget.new(nr_sectors))
+  end
+
+  # FIXME: these tests currently need manual inspection of kernel
+  # pr_alerts to confirm they're working.  Need to automate by adding
+  # discard bitset support to the tools.
+
+  # We need to make sure we test various different discard bitset
+  # sizes.  To make the origin big enough we use an error target.
+  def test_resize_origin_with_teardown
+    osize1 = gig(4)
+    osize2 = meg(128)
+
+    with_dev(error_table(tera(4))) do |origin|
+      s = CacheStack.new(@dm, @metadata_dev, origin,
+                         :format => true,
+                         :cache_blocks => 1024,
+                         :data_dev => origin,
+                         :data_size => osize1,
+                         :policy => Policy.new('mq', :migration_threshold => 0))
+      s.activate do
+        s.cache.discard(0, meg(64))
+        s.cache.discard(meg(96), meg(64))
+      end
+
+      s = CacheStack.new(@dm, @metadata_dev, origin,
+                         :format => false,
+                         :cache_blocks => 1024,
+                         :data_dev => origin,
+                         :data_size => osize2,
+                         :policy => Policy.new('mq', :migration_threshold => 0))
+      s.activate do
+      end
+    end
+  end
+
+  def test_resize_origin_with_reload
+    osize1 = meg(128)
+    osize2 = gig(4)
+
+    with_dev(error_table(tera(4))) do |origin|
+      s = CacheStack.new(@dm, @metadata_dev, origin,
+                         :format => true,
+                         :cache_blocks => 1024,
+                         :data_dev => origin,
+                         :data_size => osize1,
+                         :policy => Policy.new('mq', :migration_threshold => 0))
+      s.activate do
+        s.cache.discard(0, meg(64))
+        s.cache.discard(meg(96), meg(32))
+        s.resize_origin(osize2)
       end
     end
   end
