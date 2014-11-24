@@ -117,6 +117,7 @@ class CacheStack
         @data_tvm.resize('origin', new_size)
         @origin.load(@data_tvm.table('origin'))
       end
+      @cache.load(cache_table)
     end
   end
 
