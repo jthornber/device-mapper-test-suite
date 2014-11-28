@@ -33,7 +33,8 @@ class PassthroughTests < ThinpTestCase
 
   def test_passthrough_never_promotes
     s = make_stack(:data_size => gig(1),
-                   :io_mode => :passthrough)
+                   :io_mode => :passthrough,
+                   :block_size => k(64))
     s.activate do
       100.times {wipe_device(s.cache, 640)}
 
@@ -45,7 +46,8 @@ class PassthroughTests < ThinpTestCase
 
   def test_passthrough_demotes_writes
     s = make_stack(:format => false,
-                   :io_mode => :passthrough)
+                   :io_mode => :passthrough,
+                   :block_size => k(64))
     s.activate_support_devs do
       s.prepare_populated_cache()
 
@@ -60,7 +62,8 @@ class PassthroughTests < ThinpTestCase
 
   def test_passthrough_does_not_demote_reads
     s = make_stack(:format => false,
-                   :io_mode => :passthrough)
+                   :io_mode => :passthrough,
+                   :block_size => k(64))
     s.activate_support_devs do
       s.prepare_populated_cache()
       s.activate do
@@ -75,7 +78,7 @@ class PassthroughTests < ThinpTestCase
   def test_passthrough_fails_with_dirty_blocks
     s = make_stack(:format => false,
                    :io_mode => :passthrough,
-                   :block_size => 128)
+                   :block_size => k(64))
     s.activate_support_devs do
       s.prepare_populated_cache(:dirty_percentage => 100)
       expect do
