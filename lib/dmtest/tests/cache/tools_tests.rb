@@ -55,7 +55,9 @@ class ToolsTests < ThinpTestCase
 
     #bring up the metadata device
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
-                           :format => true, :data_size => gig(1))
+                           :format => true,
+                           :data_size => gig(1),
+                           :block_size => k(64))
     stack.activate_support_devs do |stack|
       # restore from xml
       ProcessControl.run("cache_restore -i #{xml_file} -o #{stack.md}")
