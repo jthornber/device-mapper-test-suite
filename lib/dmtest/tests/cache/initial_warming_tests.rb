@@ -1,3 +1,4 @@
+require 'dmtest/blktrace'
 require 'dmtest/git'
 require 'dmtest/log'
 require 'dmtest/utils'

@@ -1,13 +1,13 @@
 require 'dmtest/cache-status'
+require 'dmtest/cache_policy'
+require 'dmtest/cache_stack'
+require 'dmtest/cache_utils'
 require 'dmtest/disk-units'
 require 'dmtest/git'
 require 'dmtest/log'
 require 'dmtest/pool-stack'
 require 'dmtest/tags'
 require 'dmtest/test-utils'
-require 'dmtest/cache_stack'
-require 'dmtest/cache_utils'
-require 'dmtest/cache_policy'
 require 'dmtest/thinp-test'
 require 'dmtest/tvm.rb'
 require 'dmtest/utils'
@@ -69,7 +69,7 @@ class LargeConfigTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_big_stack
+  def test_large_stack
     with_big_stack do |stack|
       fs = FS::file_system(:xfs, stack.cache)
       fs.format

@@ -1,3 +1,6 @@
+require 'dmtest/device-mapper/lexical_operators'
+require 'dmtest/device_mapper'
+
 #----------------------------------------------------------------
 
 class PoolStack

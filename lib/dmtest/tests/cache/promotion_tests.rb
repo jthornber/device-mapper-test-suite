@@ -10,6 +10,7 @@ require 'dmtest/tvm.rb'
 require 'dmtest/cache_stack'
 require 'dmtest/cache_utils'
 require 'dmtest/cache_policy'
+require 'dmtest/blktrace'
 
 require 'rspec/expectations'
 
