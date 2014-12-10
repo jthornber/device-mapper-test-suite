@@ -623,6 +623,23 @@ class DiscardSlowTests < ThinpTestCase
   def test_fs_discard_xfs
     do_discard_test(:xfs)
   end
+
+  def test_discard_after_out_of_space
+    with_standard_pool(@size, :error_if_no_space => true) do |pool|
+      with_new_thin(pool, @size * 2, 0) do |thin|
+        begin
+          wipe_device(thin)
+        rescue
+        end
+        s = PoolStatus.new(pool)
+        s.options[:mode].should == :out_of_data_space
+
+        thin.discard(0, @size)
+        s.used_data_blocks.should == 0
+        s.options[:mode].should == :read_write
+      end
+    end
+  end
 end
 
 #----------------------------------------------------------------
