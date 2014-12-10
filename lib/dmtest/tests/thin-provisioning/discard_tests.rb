@@ -635,6 +635,7 @@ class DiscardSlowTests < ThinpTestCase
         s.options[:mode].should == :out_of_data_space
 
         thin.discard(0, @size)
+        s = PoolStatus.new(pool)
         s.used_data_blocks.should == 0
         s.options[:mode].should == :read_write
       end
