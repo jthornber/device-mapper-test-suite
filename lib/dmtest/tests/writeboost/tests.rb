@@ -258,6 +258,25 @@ module WriteboostTests
 
   #--------------------------------
 
+  def test_wipe_device
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev,
+                         :backing_sz => meg(1024),
+                         :cache_sz => gig(3))
+    s.activate_support_devs do
+      s.cleanup_cache
+      s.table_extra_args = {
+        :enable_writeback_modulator => 1,
+        :allow_writeback => 1
+      }
+
+      s.activate_top_level(true) do
+        report_time("wiping device", STDERR) do
+          wipe_device(s.wb)
+        end
+      end
+    end
+  end
+
   def test_git_extract_cache_quick
     s = @stack_maker.new(@dm, @data_dev, @metadata_dev,
                          :backing_sz => gig(2),
