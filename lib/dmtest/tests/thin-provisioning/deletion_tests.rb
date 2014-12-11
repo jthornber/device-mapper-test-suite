@@ -72,6 +72,26 @@ class DeletionTests < ThinpTestCase
       end
     end
   end
+
+  def test_delete_after_out_of_space
+    with_standard_pool(@size, :error_if_no_space => true) do |pool|
+      with_new_thin(pool, @size * 2, 0) do |thin|
+        begin
+          wipe_device(thin)
+        rescue
+        end
+
+        s = PoolStatus.new(pool)
+        s.options[:mode].should == :out_of_data_space
+      end
+
+      pool.message(0, 'delete 0')
+
+      s = PoolStatus.new(pool)
+      s.used_data_blocks.should == 0
+      s.options[:mode].should == :read_write
+    end
+  end
 end
 
 #----------------------------------------------------------------
