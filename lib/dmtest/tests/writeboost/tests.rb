@@ -342,6 +342,78 @@ module WriteboostTests
     end
   end
 
+  def test_no_read_cache
+    def run(dev)
+      # seqread with 4K holes
+      system("fio --name=test --filename=#{dev.path} --io_limit=16M --rw=read:4K --bs=4K --direct=1")
+    end
+    opts = {
+      :cache_sz => meg(32)
+    }
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs do
+      s.cleanup_cache
+      s.activate_top_level(true) do
+        run(s.wb)
+        st1 = WriteboostStatus.from_raw_status(s.wb.status)
+        run(s.wb)
+        st2 = WriteboostStatus.from_raw_status(s.wb.status)
+        st2.stat(0, 1, 0, 1).should == st1.stat(0, 1, 0, 1)
+      end
+    end
+  end
+
+  def test_read_cache
+    def run(dev)
+      system("fio --name=test --filename=#{dev.path} --io_limit=16M --rw=read:4K --bs=4K --direct=1")
+    end
+    opts = {
+      :cache_sz => meg(32)
+    }
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs do
+      s.cleanup_cache
+      s.table_extra_args = {
+        :read_cache_threshold => 1,
+      }
+      st1 = nil
+      st2 = nil
+      s.activate_top_level(true) do
+        run(s.wb)
+        st1 = WriteboostStatus.from_raw_status(s.wb.status)
+      end
+      s.activate_top_level(true) do
+        run(s.wb)
+        st2 = WriteboostStatus.from_raw_status(s.wb.status)
+      end
+      st2.stat(0, 1, 0, 1).should > st1.stat(0, 1, 0, 1)
+    end
+  end
+
+  def test_read_cache_threshold
+    def run(dev)
+    end
+    opts = {
+      :backing_sz => gig(2),
+    }
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs do
+      s.cleanup_cache
+      s.table_extra_args = {
+        :read_cache_threshold => 127,
+      }
+      s.activate_top_level(true) do
+        system("dd if=#{s.wb.path} iflag=direct of=/dev/null bs=1M count=1000 &
+                dd if=#{s.wb.path} iflag=direct of=/dev/null bs=1M skip=500 count=1000 &
+                wait")
+        st1 = WriteboostStatus.from_raw_status(s.wb.status)
+        system("dd if=#{s.wb.path} iflag=direct of=/dev/null bs=1M count=1000")
+        st2 = WriteboostStatus.from_raw_status(s.wb.status)
+        st2.stat(0, 1, 0, 1).should == st1.stat(0, 1, 0, 1)
+      end
+    end
+  end
+
   #--------------------------------
 
   def test_wipe_device
