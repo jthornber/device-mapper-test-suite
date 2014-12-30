@@ -140,7 +140,6 @@ module WriteboostTests
   # Reading from RAM buffer is really an unlikely path
   # in real-world workload.
   def test_rambuf_read_fullsize
-
     # Cache is bigger than backing.
     # So, no overwrite on cache device occurs.
     # Overwrite may writes back caches on the RAM buffer
@@ -149,7 +148,6 @@ module WriteboostTests
       :backing_sz => meg(16),
       :cache_sz => meg(32),
     }
-
     s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
     s.activate_support_devs() do
       s.cleanup_cache
@@ -159,7 +157,6 @@ module WriteboostTests
         :allow_writeback => 0,
       }
       s.table_extra_args = args
-
       s.activate_top_level(true) do
         st1 = WriteboostStatus.from_raw_status(s.wb.status)
         ps = PatternStomper.new(s.wb.path, k(31), :needs_zero => true)
@@ -172,7 +169,6 @@ module WriteboostTests
   end
 
   def test_do_dbench
-
     def run_dbench(s, option)
       s.activate_top_level(true) do
         fs = FS::file_system(:xfs, s.wb)
@@ -188,9 +184,7 @@ module WriteboostTests
         end
       end
     end
-
     @param[0] = debug_scale? ? 1 : 300
-
     opts = {
       :backing_sz => gig(2),
       :cache_sz => meg(64),
@@ -211,7 +205,6 @@ module WriteboostTests
 
   def test_do_stress
     @param[0] = debug_scale? ? 1 : 60
-
     opts = {
       :cache_sz => meg(128),
     }
@@ -259,24 +252,20 @@ module WriteboostTests
   # This test aims to pass unlikely path in invalidate_prev_cache()
   def test_invalidate_prev_cache
     @param[0] = debug_scale? ? 3 : 30
-
     opts = {
       # The 127th writes incurs queue_current_buffer().
       # Others run into unfavorable path to write back the preivous cache on cache device.
       :backing_sz => 1 * (128 - 1) * k(4),
       :cache_sz => meg(1) + 3 * 128 * k(4), # 1M (super block) + 3 segments
     }
-
     # 512B stride write repeats in 30sec.
     # The offset increases by 4k (E.g. 0, 4096, 8192, ...)
     def run_fio(dev)
       system("fio --name=test --time_based --runtime=#{@param[0]} --filename=#{dev.path} --rw=write:3584 --ioengine=libaio --direct=1 --bs=512")
     end
-
     s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
     s.activate_support_devs do
       s.cleanup_cache
-
       # Stop automated writeback
       s.table_extra_args = {
         :segment_size_order => 10,
@@ -284,12 +273,10 @@ module WriteboostTests
         :allow_writeback => 0,
         :nr_max_batched_writeback => 1,
       }
-
       s.activate_top_level(true) do
         report_time("", STDERR) do
           run_fio(s.wb)
         end
-
         # All writes except the first few handreds result in write hit on the cache device
         # which leads to unfavorable foreground writeback. To see the stat, uncomment this line.
         # print WriteboostStatus.from_raw_status(s.wb.status).format_stat_table
@@ -300,7 +287,6 @@ module WriteboostTests
   # This test shows how badly Writeboost performs with all-sync writes.
   def test_sync_writes
     @param[0] = debug_scale? ? 1 : 4
-
     def run(s)
       s.table_extra_args = {
         :enable_writeback_modulator => 1,
@@ -324,11 +310,9 @@ module WriteboostTests
         end
       end
     end
-
     opts = {
       :cache_sz => meg(2) # The cache device is very small.
     }
-
     s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
     s.activate_support_devs do
       run(s)
@@ -418,9 +402,7 @@ module WriteboostTests
   # - Does just stacking writeboost can always boost write.
   # - How the effect changes according to the nr_max_batched_writeback tunable?
   def test_writeback_sorting_effect
-
     @param[0] = debug_scale? ? 1 : 128
-
     def run_wb(s, batch_size)
       s.cleanup_cache
       s.table_extra_args = {
