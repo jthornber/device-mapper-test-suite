@@ -126,6 +126,7 @@ class WriteboostStack
                 :nr_max_batched_writeback,
                 :update_record_interval,
                 :sync_interval,
+                :read_cache_threshold,
     ]
     def pop
       k, v = @opts.first
