@@ -116,7 +116,8 @@ module WriteboostTests
       yes_writeback_args = {
         :segment_size_order => sso,
         :enable_writeback_modulator => 1,
-        :allow_writeback => 0
+        :allow_writeback => 0,
+        :read_cache_threshold => 31
       }
       s.table_extra_args = yes_writeback_args
       # (2) replays the log on the cache device
@@ -194,6 +195,7 @@ module WriteboostTests
       s.cleanup_cache
       args = {
         :enable_writeback_modulator => 1,
+        :read_cache_threshold => 31, # read-caching enabled
       }
       s.table_extra_args = args
       t = @param[0]
