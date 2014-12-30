@@ -251,6 +251,27 @@ module WriteboostTests
     end
   end
 
+  # Test to see the effect of splitting by seqread
+  def test_split_overhead
+    def run_dd(dev, iosize)
+      system("dd if=#{dev.path} iflag=direct of=/dev/null bs=#{iosize}")
+    end
+    opts = {
+      :backing_sz => gig(2),
+    }
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs do
+      s.cleanup_cache
+      ["4K", "512K", "64M"].each do |iosize|
+        s.activate_top_level(true) do
+          report_time("iosize=#{iosize}", STDERR) do
+            run_dd(s.wb, iosize)
+          end
+        end
+      end
+    end
+  end
+
   # This test aims to pass unlikely path in invalidate_prev_cache()
   def test_invalidate_prev_cache
     @param[0] = debug_scale? ? 3 : 30
