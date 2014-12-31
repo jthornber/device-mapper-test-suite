@@ -414,6 +414,34 @@ module WriteboostTests
     end
   end
 
+  def test_read_cache_verify_data
+    opts = {
+      :cache_sz => meg(32),
+      :backing_sz => meg(1024),
+    }
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs() do
+      ps = PatternStomper.new(s.backing_dev.path, k(4), :needs_zero => true)
+      ps.stamp(2)
+
+      s.cleanup_cache
+      s.table_extra_args = {
+        :read_cache_threshold => 127,
+      }
+      s.activate_top_level(true) do
+        ps_ = ps.fork(s.wb.path)
+        ps_.verify(1) # stage all data. not pour put the cache device
+      end
+      s.activate_top_level(true) do # resume clean caches
+        ps_ = ps.fork(s.wb.path)
+        st1 = WriteboostStatus.from_raw_status(s.wb.status)
+        ps_.verify(1) # verify all chunks. should be all hit
+        st2 = WriteboostStatus.from_raw_status(s.wb.status)
+        st2.stat(0, 1, 0, 1).should > st1.stat(0, 1, 0, 1) # read hit really?
+      end
+    end
+  end
+
   #--------------------------------
 
   def test_wipe_device
