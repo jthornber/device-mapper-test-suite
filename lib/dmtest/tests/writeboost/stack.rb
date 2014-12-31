@@ -24,8 +24,9 @@ class WriteboostStack
   include ThinpTestMixin
   include Utils
 
-  attr_accessor :cache_dev,
-                :plog_dev, # not used now
+  attr_accessor :backing_dev,
+                :cache_dev,
+                :plog_dev,
                 :wb, # :: DMDev
                 :opts, # :: {}
                 :table_extra_args # :: {}
@@ -35,11 +36,16 @@ class WriteboostStack
     @fast_dev_name = fast_dev_name
     @slow_dev_name = slow_dev_name
 
+    @backing_dev = nil
     @cache_dev = nil
     @plog_dev = nil
 
     @opts = opts
     @table_extra_args = {}
+
+    @slow_tvm = TinyVolumeManager::VM.new
+    @slow_tvm.add_allocation_volume(slow_dev_name)
+    @slow_tvm.add_volume(linear_vol('backing_dev', backing_sz))
 
     @fast_tvm = TinyVolumeManager::VM.new
     @fast_tvm.add_allocation_volume(fast_dev_name)
@@ -67,13 +73,14 @@ class WriteboostStack
   end
 
   def activate_support_devs(&block)
-    with_devs(@fast_tvm.table('cache_dev'),
+    with_devs(@slow_tvm.table('backing_dev'),
+              @fast_tvm.table('cache_dev'),
               @fast_tvm.table('plog_dev')
-             ) do |cache_dev, plog_dev|
+             ) do |backing_dev, cache_dev, plog_dev|
 
+      @backing_dev = backing_dev
       @cache_dev = cache_dev
       @plog_dev = plog_dev
-
       ensure_elapsed_time(1, self, &block)
     end
   end
@@ -176,13 +183,15 @@ class WriteboostStackBackingDevice < WriteboostStack
   end
 
   def table
+    # We won't wrap another linear above backing_dev to avoid unreasonable overhead.
+    # Our Writeboost'd devices use once-wrapped linear device.
     Table.new(LinearTarget.new(backing_sz, @slow_dev_name, 0))
   end
 end
 
 class WriteboostStackType0 < WriteboostStack
   def table
-    essentials = [0, @slow_dev_name, @cache_dev]
+    essentials = [0, @backing_dev, @cache_dev]
     args = Args.new(@table_extra_args)
     Table.new(WriteboostTarget.new(backing_sz, essentials + args.to_a))
   end
@@ -190,7 +199,7 @@ end
 
 class WriteboostStackType1 < WriteboostStack
   def table
-    essentials = [1, @slow_dev_name, @cache_dev, @plog_dev]
+    essentials = [1, @backing_dev, @cache_dev, @plog_dev]
     args = Args.new(@table_extra_args)
     Table.new(WriteboostTarget.new(backing_sz, essentials + args.to_a))
   end
