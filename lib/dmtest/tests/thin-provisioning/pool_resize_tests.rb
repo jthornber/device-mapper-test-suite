@@ -435,6 +435,104 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
     end
   end
 
+  #--------------------------------
+  # LVM loads a table before the suspend/resume cycle.  So we need to
+  # test preload scenarios.
+
+  def test_resize_after_OODS_held_io_preload
+    tvm = VM.new
+    tvm.add_allocation_volume(@data_dev)
+
+    @size = @volume_size / 2
+    tvm.add_volume(linear_vol('data', @volume_size / 2))
+
+    with_dev(tvm.table('data')) do |data|
+      wipe_device(@metadata_dev, 8)
+
+      table = Table.new(ThinPoolTarget.new(@size, @metadata_dev, data,
+                                           @data_block_size, @low_water_mark))
+
+      with_dev(table) do |pool|
+        with_new_thin(pool, @volume_size, 0) do |thin|
+          tid = Thread.new(thin) do |thin|
+            # If this errors then the exception _will_ be reported
+            wipe_device(thin)
+          end
+
+          wait_until_out_of_data(pool)
+          in_out_of_data_mode(pool).should be_true
+
+          # Preload the underlying data device
+          @size *= 4
+          tvm.resize('data', @size)
+          data.load(tvm.table('data'))
+
+          # switch to new data dev table
+          data.resume
+
+          # preload the pool
+          table2 = Table.new(ThinPoolTarget.new(@size, @metadata_dev, data,
+                                                @data_block_size, @low_water_mark))
+          pool.load(table2)
+
+          # switch to new pool table
+          pool.resume
+
+          tid.join
+        end
+      end
+    end
+  end
+
+  def test_resize_after_OODS_held_io_timed_out_preload
+    tvm = VM.new
+    tvm.add_allocation_volume(@data_dev)
+
+    @size = @volume_size / 2
+    tvm.add_volume(linear_vol('data', @volume_size / 2))
+
+    with_dev(tvm.table('data')) do |data|
+      wipe_device(@metadata_dev, 8)
+
+      table = Table.new(ThinPoolTarget.new(@size, @metadata_dev, data,
+                                           @data_block_size, @low_water_mark))
+
+      with_dev(table) do |pool|
+        with_new_thin(pool, @volume_size, 0) do |thin|
+          begin
+            wipe_device(thin)
+          rescue
+            failed = true
+          end
+
+          failed.should be_true
+          status = PoolStatus.new(pool)
+          status.options[:mode].should == :read_only
+
+          # Preload the underlying data device
+          @size *= 4
+          tvm.resize('data', @size)
+          data.load(tvm.table('data'))
+
+          # switch to new data dev table
+          data.resume
+
+          # preload the pool
+          table2 = Table.new(ThinPoolTarget.new(@size, @metadata_dev, data,
+                                                @data_block_size, @low_water_mark))
+          pool.load(table2)
+
+          # switch to new pool table
+          pool.resume
+
+          wipe_device(thin)
+        end
+      end
+    end
+  end
+
+
+
   # bz #1095639
   def test_io_to_provisioned_region_with_OODS_held_io
     tvm = VM.new
