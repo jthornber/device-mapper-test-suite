@@ -531,7 +531,67 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
     end
   end
 
+  # bz1184592
+  def test_thin_create_after_OOD
+    tvm = VM.new
+    tvm.add_allocation_volume(@data_dev)
 
+    @size = @volume_size / 2
+    tvm.add_volume(linear_vol('data', @volume_size / 2))
+
+    with_dev(tvm.table('data')) do |data|
+      wipe_device(@metadata_dev, 8)
+
+      table = Table.new(ThinPoolTarget.new(@size, @metadata_dev, data,
+                                           @data_block_size, @low_water_mark))
+
+      with_dev(table) do |pool|
+        with_new_thin(pool, @volume_size, 0) do |thin|
+          begin
+            wipe_device(thin)
+          rescue
+            failed = true
+          end
+
+          failed.should be_true
+          status = PoolStatus.new(pool)
+          status.options[:mode].should == :read_only
+
+          # Create a thin, this should fail
+          begin
+            with_new_thin(pool, @volume_size, 1) do |thin2|
+            end
+          rescue
+            create_failed = true
+          end
+
+          create_failed.should be_true
+
+          # Preload the underlying data device
+          @size *= 4
+          tvm.resize('data', @size)
+          data.load(tvm.table('data'))
+
+          # switch to new data dev table
+          data.resume
+
+          # preload the pool
+          table2 = Table.new(ThinPoolTarget.new(@size, @metadata_dev, data,
+                                                @data_block_size, @low_water_mark))
+          pool.load(table2)
+
+          # switch to new pool table
+          pool.resume
+
+          # retry the create, which should now succeed
+          with_new_thin(pool, @volume_size, 1) do |thin2|
+            wipe_device(thin2)
+          end
+        end
+      end
+    end
+
+  end
 
   # bz #1095639
   def test_io_to_provisioned_region_with_OODS_held_io
