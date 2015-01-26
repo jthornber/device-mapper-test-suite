@@ -116,7 +116,8 @@ module WriteboostTests
       yes_writeback_args = {
         :segment_size_order => sso,
         :enable_writeback_modulator => 1,
-        :allow_writeback => 0
+        :allow_writeback => 0,
+        :read_cache_threshold => 31
       }
       s.table_extra_args = yes_writeback_args
       # (2) replays the log on the cache device
@@ -140,7 +141,6 @@ module WriteboostTests
   # Reading from RAM buffer is really an unlikely path
   # in real-world workload.
   def test_rambuf_read_fullsize
-
     # Cache is bigger than backing.
     # So, no overwrite on cache device occurs.
     # Overwrite may writes back caches on the RAM buffer
@@ -149,7 +149,6 @@ module WriteboostTests
       :backing_sz => meg(16),
       :cache_sz => meg(32),
     }
-
     s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
     s.activate_support_devs() do
       s.cleanup_cache
@@ -159,7 +158,6 @@ module WriteboostTests
         :allow_writeback => 0,
       }
       s.table_extra_args = args
-
       s.activate_top_level(true) do
         st1 = WriteboostStatus.from_raw_status(s.wb.status)
         ps = PatternStomper.new(s.wb.path, k(31), :needs_zero => true)
@@ -172,7 +170,6 @@ module WriteboostTests
   end
 
   def test_do_dbench
-
     def run_dbench(s, option)
       s.activate_top_level(true) do
         fs = FS::file_system(:xfs, s.wb)
@@ -188,9 +185,7 @@ module WriteboostTests
         end
       end
     end
-
     @param[0] = debug_scale? ? 1 : 300
-
     opts = {
       :backing_sz => gig(2),
       :cache_sz => meg(64),
@@ -200,6 +195,7 @@ module WriteboostTests
       s.cleanup_cache
       args = {
         :enable_writeback_modulator => 1,
+        :read_cache_threshold => 31, # read-caching enabled
       }
       s.table_extra_args = args
       t = @param[0]
@@ -211,7 +207,6 @@ module WriteboostTests
 
   def test_do_stress
     @param[0] = debug_scale? ? 1 : 60
-
     opts = {
       :cache_sz => meg(128),
     }
@@ -252,6 +247,197 @@ module WriteboostTests
             run_fio(s.wb, iosize)
           end
         end
+      end
+    end
+  end
+
+  # Test to see the effect of splitting by seqread
+  def test_split_overhead
+    def run_dd(dev, iosize)
+      system("dd if=#{dev.path} iflag=direct of=/dev/null bs=#{iosize}")
+    end
+    opts = {
+      :backing_sz => gig(2),
+    }
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs do
+      s.cleanup_cache
+      ["4K", "512K", "64M"].each do |iosize|
+        s.activate_top_level(true) do
+          report_time("iosize=#{iosize}", STDERR) do
+            run_dd(s.wb, iosize)
+          end
+        end
+      end
+    end
+  end
+
+  # This test aims to pass unlikely path in invalidate_prev_cache()
+  def test_invalidate_prev_cache
+    @param[0] = debug_scale? ? 3 : 30
+    opts = {
+      # The 127th writes incurs queue_current_buffer().
+      # Others run into unfavorable path to write back the preivous cache on cache device.
+      :backing_sz => 1 * (128 - 1) * k(4),
+      :cache_sz => meg(1) + 3 * 128 * k(4), # 1M (super block) + 3 segments
+    }
+    # 512B stride write repeats in 30sec.
+    # The offset increases by 4k (E.g. 0, 4096, 8192, ...)
+    def run_fio(dev)
+      system("fio --name=test --time_based --runtime=#{@param[0]} --filename=#{dev.path} --rw=write:3584 --ioengine=libaio --direct=1 --bs=512")
+    end
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs do
+      s.cleanup_cache
+      # Stop automated writeback
+      s.table_extra_args = {
+        :segment_size_order => 10,
+        :enable_writeback_modulator => 0,
+        :allow_writeback => 0,
+        :nr_max_batched_writeback => 1,
+      }
+      s.activate_top_level(true) do
+        report_time("", STDERR) do
+          run_fio(s.wb)
+        end
+        # All writes except the first few handreds result in write hit on the cache device
+        # which leads to unfavorable foreground writeback. To see the stat, uncomment this line.
+        # print WriteboostStatus.from_raw_status(s.wb.status).format_stat_table
+      end
+    end
+  end
+
+  # This test shows how badly Writeboost performs with all-sync writes.
+  def test_sync_writes
+    @param[0] = debug_scale? ? 1 : 4
+    def run(s)
+      s.table_extra_args = {
+        :enable_writeback_modulator => 1,
+      }
+      s.cleanup_cache
+      s.activate_top_level(true) do
+        fs = FS::file_system(:xfs, s.wb)
+        fs.format
+        dir = "./fio_test"
+        fs.with_mount(dir) do
+          report_time("", STDERR) do
+            Dir.chdir(dir) do
+              # Alway submit barriers per one 512B write
+              # Note: --write_barrier and --io_limit is not available in fio v2.0.8
+              ProcessControl.run("fio --name=test --filename=#{s.wb.path} --rw=randwrite --ioengine=libaio --direct=1 --fsync=1 --write_barrier=1 --io_limit=#{@param[0]}M --bs=512")
+            end
+            ProcessControl.run("sync")
+            drop_caches
+            s.drop_caches # Wait until all cache blocks becomes clean.
+          end
+        end
+      end
+    end
+    opts = {
+      :cache_sz => meg(2) # The cache device is very small.
+    }
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs do
+      run(s)
+    end
+  end
+
+  def test_no_read_cache
+    def run(dev)
+      # seqread with 4K holes
+      system("fio --name=test --filename=#{dev.path} --io_limit=16M --rw=read:4K --bs=4K --direct=1")
+    end
+    opts = {
+      :cache_sz => meg(32)
+    }
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs do
+      s.cleanup_cache
+      s.activate_top_level(true) do
+        run(s.wb)
+        st1 = WriteboostStatus.from_raw_status(s.wb.status)
+        run(s.wb)
+        st2 = WriteboostStatus.from_raw_status(s.wb.status)
+        st2.stat(0, 1, 0, 1).should == st1.stat(0, 1, 0, 1)
+      end
+    end
+  end
+
+  def test_read_cache
+    def run(dev)
+      system("fio --name=test --filename=#{dev.path} --io_limit=16M --rw=read:4K --bs=4K --direct=1")
+    end
+    opts = {
+      :cache_sz => meg(32)
+    }
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs do
+      s.cleanup_cache
+      s.table_extra_args = {
+        :read_cache_threshold => 1,
+      }
+      st1 = nil
+      st2 = nil
+      s.activate_top_level(true) do
+        run(s.wb)
+        st1 = WriteboostStatus.from_raw_status(s.wb.status)
+      end
+      s.activate_top_level(true) do
+        run(s.wb)
+        st2 = WriteboostStatus.from_raw_status(s.wb.status)
+      end
+      st2.stat(0, 1, 0, 1).should > st1.stat(0, 1, 0, 1)
+    end
+  end
+
+  def test_read_cache_threshold
+    def run(dev)
+    end
+    opts = {
+      :backing_sz => gig(2),
+    }
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs do
+      s.cleanup_cache
+      s.table_extra_args = {
+        :read_cache_threshold => 127,
+      }
+      s.activate_top_level(true) do
+        system("dd if=#{s.wb.path} iflag=direct of=/dev/null bs=1M count=1000 &
+                dd if=#{s.wb.path} iflag=direct of=/dev/null bs=1M skip=500 count=1000 &
+                wait")
+        st1 = WriteboostStatus.from_raw_status(s.wb.status)
+        system("dd if=#{s.wb.path} iflag=direct of=/dev/null bs=1M count=1000")
+        st2 = WriteboostStatus.from_raw_status(s.wb.status)
+        st2.stat(0, 1, 0, 1).should == st1.stat(0, 1, 0, 1)
+      end
+    end
+  end
+
+  def test_read_cache_verify_data
+    opts = {
+      :cache_sz => meg(32),
+      :backing_sz => meg(1024),
+    }
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs() do
+      ps = PatternStomper.new(s.backing_dev.path, k(4), :needs_zero => true)
+      ps.stamp(2)
+
+      s.cleanup_cache
+      s.table_extra_args = {
+        :read_cache_threshold => 127,
+      }
+      s.activate_top_level(true) do
+        ps_ = ps.fork(s.wb.path)
+        ps_.verify(1) # stage all data. not pour put the cache device
+      end
+      s.activate_top_level(true) do # resume clean caches
+        ps_ = ps.fork(s.wb.path)
+        st1 = WriteboostStatus.from_raw_status(s.wb.status)
+        ps_.verify(1) # verify all chunks. should be all hit
+        st2 = WriteboostStatus.from_raw_status(s.wb.status)
+        st2.stat(0, 1, 0, 1).should > st1.stat(0, 1, 0, 1) # read hit really?
       end
     end
   end
@@ -339,9 +525,7 @@ module WriteboostTests
   # - Does just stacking writeboost can always boost write.
   # - How the effect changes according to the nr_max_batched_writeback tunable?
   def test_writeback_sorting_effect
-
     @param[0] = debug_scale? ? 1 : 128
-
     def run_wb(s, batch_size)
       s.cleanup_cache
       s.table_extra_args = {

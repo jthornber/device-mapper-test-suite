@@ -11,7 +11,8 @@ class WriteboostStatus
               "writeback_threshold",
               "nr_max_batched_writeback",
               "update_record_interval",
-              "sync_interval"]
+              "sync_interval",
+              "read_cache_threshold"]
 
   STAT_WRITE = 3
   STAT_HIT = 2
@@ -87,7 +88,7 @@ if __FILE__ == $0
   x = (1..24).to_a
 
   y = (25..30).to_a
-  _output = x + [12] + WriteboostStatus::TUNABLES.zip(y).flatten
+  _output = x + [14] + WriteboostStatus::TUNABLES.zip(y).flatten
   output = _output.join(" ")
   # p output
 
