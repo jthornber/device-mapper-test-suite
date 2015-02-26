@@ -244,6 +244,60 @@ class SuspendTests < ThinpTestCase
     end
   end
 
+  #--------------------------------
+
+  # die loopback, die!
+  def with_loopback_pool(&block)
+    dir = "./mnt1"
+    loop_file = "#{dir}/loop_file"
+    loop_dev = "/dev/loop0"
+    loop_size = gig(4)
+
+    fs = FS::file_system(:ext4, @data_dev)
+    fs.format
+    fs.with_mount(dir, :discard => true) do
+      ProcessControl.run("fallocate -l #{loop_size * 512} #{loop_file}")
+      ProcessControl.run("losetup #{loop_dev} #{loop_file}")
+      
+      begin
+        with_custom_data_pool(loop_dev, loop_size, :discard_passdown => true, &block)
+      ensure
+        ProcessControl.run("losetup -d #{loop_dev}")
+      end
+    end
+  end
+
+  # bz #1195506
+  def test_discard_then_delete_thin
+    with_loopback_pool do |pool|
+      with_new_thin(pool, @volume_size, 0) do |thin|
+        tid = Thread.new(thin) do |thin|
+          10.times do
+            wipe_device(thin)
+            thin.discard(0, @volume_size)
+          end
+        end
+
+        sleep 15
+
+        10.times do
+          thin.pause_noflush do
+            failed = false
+            begin
+              # this should fail since the device is active
+              pool.message(0, "delete 0")
+            rescue
+              failed = true
+            end
+
+            failed.should be_true
+          end
+        end
+
+        tid.join
+      end
+    end
+  end
 end
 
 #----------------------------------------------------------------
