@@ -46,6 +46,21 @@ class ReadOnlyTests < ThinpTestCase
     end
   end
 
+  def test_can_read_unprovisioned_regions
+    # we have to create a valid metadata dev first
+    with_standard_pool(@size) do |pool|
+      with_new_thin(pool, @volume_size, 0) do |thin|
+      end
+    end
+
+    # now we open it read-only
+    with_standard_pool(@size, :read_only => true, :format => false) do |pool|
+      with_thin(pool, @volume_size, 0) do |thin|
+        read_device_to_null(thin)
+      end
+    end
+  end
+
   def test_cant_provision_new_blocks
     # we have to create a valid metadata dev first
     with_standard_pool(@size) do |pool|
