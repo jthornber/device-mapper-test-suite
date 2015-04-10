@@ -142,10 +142,20 @@ class DiscardQuickTests < ThinpTestCase
   include DiscardMixin
   include DiskUnits
 
+  def with_discardable_pool(size, opts = Hash.new, &block)
+    with_fake_discard(:granularity => @data_block_size, :max_discard_sectors => meg(4)) do |fd_dev|
+      with_custom_data_pool(fd_dev, size, opts) do |pool|
+        block.call(pool, fd_dev)
+      end
+    end
+  end
+
+  #--------------------------------
+
   def test_discard_empty_device
     @size = dev_size(@data_dev)
     @volume_size = @size
-    with_standard_pool(@size, :discard_passdown => false) do |pool|
+    with_discardable_pool(@size, :discard_passdown => false) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         report_time("discarding volume of size #{@volume_size}", STDERR) do
           thin.discard(0, @volume_size)
@@ -165,7 +175,7 @@ class DiscardQuickTests < ThinpTestCase
   end
 
   def test_discard_fully_provisioned_device
-    with_standard_pool(@size) do |pool|
+    with_discardable_pool(@size) do |pool|
       with_new_thins(pool, @volume_size, 0, 1) do |thin, thin2|
         wipe_device(thin)
         wipe_device(thin2)
@@ -189,19 +199,17 @@ class DiscardQuickTests < ThinpTestCase
     ProcessControl.run("thin_restore -o #{@metadata_dev} -i #{xml_file}")
     STDERR.puts "restored metadata"
 
-    with_fake_discard(:granularity => 128, :max_discard_sectors => 512) do |fd_dev|
-      with_custom_data_pool(fd_dev, @size, :format => false, :discard_passdown => true) do |pool|
-        with_thin(pool, @volume_size, 0) do |thin|
-          STDERR.puts "about to discard"
-          report_time("discarding provisioning volume of size #{@volume_size}", STDERR) do
-            thin.discard(0, @volume_size)
-          end
+    with_discardable_pool(@size, :format => false, :discard_passdown => true) do |pool, data_dev|
+      with_thin(pool, @volume_size, 0) do |thin|
+        STDERR.puts "about to discard"
+        report_time("discarding provisioning volume of size #{@volume_size}", STDERR) do
+          thin.discard(0, @volume_size)
         end
       end
-
-      md = read_metadata
-      assert_no_mappings(md, 0)
     end
+
+    md = read_metadata
+    assert_no_mappings(md, 0)
   end
 
   def test_discard_a_fragmented_device
@@ -229,13 +237,11 @@ class DiscardQuickTests < ThinpTestCase
     ProcessControl.run("thin_check #{@metadata_dev}")
     STDERR.puts "restored metadata"
 
-    with_fake_discard(:granularity => 128, :max_discard_sectors => 512) do |fd_dev|
-      with_custom_data_pool(fd_dev, @size, :format => false, :discard_passdown => true) do |pool|
-        with_thin(pool, @volume_size, 0) do |thin|
-          STDERR.puts "about to discard"
-          report_time("discarding fragmented volume of size #{@volume_size}", STDERR) do
-            thin.discard(0, @volume_size)
-          end
+    with_discardable_pool(@size, :format => false, :discard_passdown => true) do |pool|
+      with_thin(pool, @volume_size, 0) do |thin|
+        STDERR.puts "about to discard"
+        report_time("discarding fragmented volume of size #{@volume_size}", STDERR) do
+          thin.discard(0, @volume_size)
         end
       end
     end
@@ -253,7 +259,7 @@ class DiscardQuickTests < ThinpTestCase
     ProcessControl.run("thin_restore -o #{@metadata_dev} -i #{xml_file}")
     STDERR.puts "restored metadata"
 
-    with_standard_pool(@size, :format => false) do |pool|
+    with_discardable_pool(@size, :format => false) do |pool|
       report_time("deleting provisioning volume of size #{@volume_size}", STDERR) do
         pool.message(0, "delete 0")
       end
@@ -261,7 +267,7 @@ class DiscardQuickTests < ThinpTestCase
   end
 
   def test_discard_single_block
-    with_standard_pool(@size) do |pool|
+    with_discardable_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin)
         assert_used_blocks(pool, @blocks_per_dev)
@@ -279,7 +285,7 @@ class DiscardQuickTests < ThinpTestCase
   # If a block is shared we can unmap the block, but must not pass the
   # discard down to the underlying device.
   def test_discard_to_a_shared_block_doesnt_get_passed_down
-    with_standard_pool(@size) do |pool|
+    with_discardable_pool(@size) do |pool, data_dev|
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin, @data_block_size)
 
@@ -287,7 +293,7 @@ class DiscardQuickTests < ThinpTestCase
 
         with_new_snap(pool, @volume_size, 1, 0, thin) do |snap|
           assert_used_blocks(pool, 1)
-          traces, _ = blktrace(thin, snap, @data_dev) do
+          traces, _ = blktrace(thin, snap, data_dev) do
             thin.discard(0, @data_block_size)
           end
 
@@ -304,19 +310,24 @@ class DiscardQuickTests < ThinpTestCase
   end
 
   def test_discard_to_a_previously_shared_block_does_get_passed_down
-    with_standard_pool(@size) do |pool|
+    with_discardable_pool(@size , :format => true, :discard_passdown => true) do |pool, data_dev|
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin, @data_block_size)
 
         assert_used_blocks(pool, 1)
-
-        pool.message(0, "create_snap 1 0")
-        pool.message(0, "delete 1")
-
-        traces, _ = blktrace(thin, @data_dev) do
-          thin.discard(0, @data_block_size)
+        
+        with_new_snap(pool, @volume_size, 1, 0, thin) do |snap|
+          assert_used_blocks(pool, 1)
         end
 
+        pool.message(0, "delete 1")
+
+        traces, _ = blktrace(thin, data_dev) do
+          thin.discard(0, @data_block_size)
+          sleep 1               # FIXME: shouldn't need this
+        end
+
+        pp traces
         thin_trace, data_trace = traces
         event = Event.new([:discard], 0, @data_block_size)
         assert(thin_trace.member?(event))
@@ -328,7 +339,7 @@ class DiscardQuickTests < ThinpTestCase
   end
 
   def test_discard_partial_blocks
-    with_standard_pool(@size) do |pool|
+    with_discardable_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin)
 
@@ -344,7 +355,7 @@ class DiscardQuickTests < ThinpTestCase
   def test_discard_same_blocks
     @data_block_size = 128
 
-    with_standard_pool(@size) do |pool|
+    with_discardable_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin, 256)
 
@@ -358,7 +369,7 @@ class DiscardQuickTests < ThinpTestCase
   end
 
   def test_discard_with_background_io
-    with_standard_pool(@size) do |pool|
+    with_discardable_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         tid = Thread.new(thin) do |thin|
           wipe_device(thin)
@@ -379,7 +390,7 @@ class DiscardQuickTests < ThinpTestCase
   end
 
   def test_disable_discard
-    with_standard_pool(@size, :discard => false) do |pool|
+    with_discardable_pool(@size, :discard => false) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin, 4)
 
@@ -393,17 +404,17 @@ class DiscardQuickTests < ThinpTestCase
   # we don't allow people to change their minds about top level
   # discard support.
   def test_change_discard_with_reload_fails
-    with_standard_pool(@size, :discard => true) do |pool|
+    with_discardable_pool(@size, :discard => true) do |pool, data_dev|
       assert_raise(ExitError) do
-        table = Table.new(ThinPoolTarget.new(@size, @metadata_dev, @data_dev,
+        table = Table.new(ThinPoolTarget.new(@size, @metadata_dev, data_dev,
                                              @data_block_size, @low_water_mark, false, false, false))
         pool.load(table)
       end
     end
 
-    with_standard_pool(@size, :discard => false) do |pool|
+    with_standard_pool(@size, :discard => false) do |pool, data_dev|
       assert_raise(ExitError) do
-        table = Table.new(ThinPoolTarget.new(@size, @metadata_dev, @data_dev,
+        table = Table.new(ThinPoolTarget.new(@size, @metadata_dev, data_dev,
                                              @data_block_size, @low_water_mark, false, true, false))
         pool.load(table)
       end
@@ -411,7 +422,7 @@ class DiscardQuickTests < ThinpTestCase
   end
 
   def test_discard_origin_does_not_effect_snap
-    with_standard_pool(@size) do |pool|
+    with_discardable_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin)
         assert_used_blocks(pool, @blocks_per_dev)
