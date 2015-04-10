@@ -73,7 +73,7 @@ module BlkTrace
 
     events = Array.new
     # we only match complete ios
-    pattern = /C ([DRW]) (\d+) (\d+)/
+    pattern = /Q ([DRW]) (\d+) (\d+)/
     `blkparse -f \"%a %d %S %N\n\" #{path}`.lines.each do |l|
       m = pattern.match(l)
       events.push(Event.new(to_event_type(m[1]), m[2].to_i, m[3].to_i / 512)) if m
