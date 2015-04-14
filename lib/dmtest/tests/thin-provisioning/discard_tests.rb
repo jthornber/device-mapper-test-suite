@@ -1,4 +1,5 @@
 require 'dmtest/blktrace'
+require 'dmtest/discard_limits'
 require 'dmtest/log'
 require 'dmtest/utils'
 require 'dmtest/fs'
@@ -16,6 +17,7 @@ module DiscardMixin
   include XMLFormat
   include BlkTrace
   include TinyVolumeManager
+  include DiskUnits
 
   def setup
     super
@@ -95,6 +97,26 @@ module DiscardMixin
     base.extend(ClassMethods)
   end
 
+  def with_discardable_pool(size, opts = Hash.new, &block)
+    # FIXME: we should check the data dev has a compatible granularity too
+    discards = DiscardLimits.new(@data_dev)
+    pp discards
+    if discards.supported
+      with_custom_data_pool(@data_dev, size, opts) do |pool|
+        block.call(pool, @data_dev)
+      end
+    else
+      with_fake_discard(:granularity => @data_block_size,
+                        :max_discard_sectors => meg(4)) do |fd_dev|
+        with_custom_data_pool(fd_dev, size, opts) do |pool|
+          block.call(pool, fd_dev)
+        end
+      end
+    end
+  end
+
+  #--------------------------------
+
   module ClassMethods
     def define_test_over_bs(name, *bs, &block)
       bs.each do |block_size|
@@ -141,16 +163,6 @@ end
 class DiscardQuickTests < ThinpTestCase
   include DiscardMixin
   include DiskUnits
-
-  def with_discardable_pool(size, opts = Hash.new, &block)
-    with_fake_discard(:granularity => @data_block_size, :max_discard_sectors => meg(4)) do |fd_dev|
-      with_custom_data_pool(fd_dev, size, opts) do |pool|
-        block.call(pool, fd_dev)
-      end
-    end
-  end
-
-  #--------------------------------
 
   def test_discard_empty_device
     @size = dev_size(@data_dev)
@@ -445,7 +457,7 @@ class DiscardSlowTests < ThinpTestCase
   include DiscardMixin
 
   def test_discard_alternate_blocks
-    with_standard_pool(@size) do |pool|
+    with_discardable_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin)
 
