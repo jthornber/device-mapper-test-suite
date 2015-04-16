@@ -100,7 +100,6 @@ module DiscardMixin
   def with_discardable_pool(size, opts = Hash.new, &block)
     # FIXME: we should check the data dev has a compatible granularity too
     discards = DiscardLimits.new(@data_dev)
-    pp discards
     if discards.supported
       with_custom_data_pool(@data_dev, size, opts) do |pool|
         block.call(pool, @data_dev)
@@ -205,6 +204,8 @@ class DiscardQuickTests < ThinpTestCase
   def test_discard_fully_provisioned_device_benchmark
     @size = [dev_size(@data_dev), gig(80)].min
     @volume_size = @size
+
+    STDERR.puts "@size = #{@size}"
 
     xml_file = "discard_test.xml"
     ProcessControl.run("thinp_xml create --nr-thins 1 --nr-mappings #{@size / @data_block_size} --block-size #{@data_block_size} > #{xml_file}")
@@ -339,7 +340,6 @@ class DiscardQuickTests < ThinpTestCase
           sleep 1               # FIXME: shouldn't need this
         end
 
-        pp traces
         thin_trace, data_trace = traces
         event = Event.new([:discard], 0, @data_block_size)
         assert(thin_trace.member?(event))
@@ -484,14 +484,14 @@ class DiscardSlowTests < ThinpTestCase
         jobs.add_job(2, thin) {|thin| wipe_device(thin)}
         jobs.add_job(2, thin) do |thin|
           1000.times do
-            s = rand(@blocks_per_dev - 1)
             s_len = 1 + rand(1024)
+            s = rand(@blocks_per_dev - s_len)
 
             discard(thin, s, s_len)
           end
         end
 
-        sleep(600)
+        sleep(60)
         jobs.stop
       end
     end
@@ -522,6 +522,7 @@ class DiscardSlowTests < ThinpTestCase
           with_dev(t2) do |upper_pool|
             with_new_thin(upper_pool, @volume_size, 0) do |upper_thin|
               block.call(lower_pool, lower_thin, upper_pool, upper_thin)
+              sleep 1           # FIXME: sometimes the dev is still held open
             end
           end
         end
@@ -710,77 +711,6 @@ class FakeDiscardTests < ThinpTestCase
 
         # verify discard passdown is still enabled
         check_discard_passdown_enabled(pool, fd_dev)
-      end
-    end
-  end
-
-  def test_pool_max_and_granularity_match_np2_block_size_no_passdown
-    # e.g. blocksize = 384k, discard_granularity = 64k
-    # tests data dev's discard_granularity of 64k is ignored and that
-    # the pool's discard_granularity matches the pool's np2 blocksize
-    pool_bs = 768
-    @data_block_size = pool_bs
-    with_fake_discard(:granularity => 128, :max_discard_sectors => pool_bs) do |fd_dev|
-      with_custom_data_pool(fd_dev, @size, :discard_passdown => false,
-                            :block_size => pool_bs) do |pool|
-        assert_equal(pool.queue_limits.discard_granularity, pool_bs * 512)
-        assert_equal(pool.queue_limits.discard_max_bytes, pool_bs * 512)
-        check_discard_passdown_disabled(pool, fd_dev)
-      end
-    end
-  end
-
-  def test_pool_max_and_granularity_match_pow2_block_size_no_passdown
-    # verifies data device's limits are ignored with power of 2 blocksize case
-    pool_bs = 512
-    @data_block_size = pool_bs
-    with_fake_discard(:granularity => 128, :max_discard_sectors => 768) do |fd_dev|
-      with_custom_data_pool(fd_dev, @size, :discard_passdown => false,
-                            :block_size => pool_bs) do |pool|
-        assert_equal(pool.queue_limits.discard_granularity, pool_bs * 512)
-        assert_equal(pool.queue_limits.discard_max_bytes, pool_bs * 512)
-        check_discard_passdown_disabled(pool, fd_dev)
-      end
-    end
-  end
-
-  def test_data_max_smaller_than_block_size_disables_passdown
-    pool_bs = 512
-    @data_block_size = pool_bs
-    with_fake_discard(:granularity => 128, :max_discard_sectors => 256) do |fd_dev|
-      with_custom_data_pool(fd_dev, @size, :discard_passdown => true,
-                            :block_size => pool_bs) do |pool|
-        assert_equal(pool.queue_limits.discard_granularity, pool_bs * 512)
-        assert_equal(pool.queue_limits.discard_max_bytes, pool_bs * 512)
-        check_discard_passdown_disabled(pool, fd_dev)
-      end
-    end
-  end
-
-  def test_data_granularity_larger_than_block_size_disables_passdown
-    pool_bs = 256
-    @data_block_size = pool_bs
-    with_fake_discard(:granularity => 512, :max_discard_sectors => 512) do |fd_dev|
-      with_custom_data_pool(fd_dev, @size, :discard_passdown => true,
-                            :block_size => pool_bs) do |pool|
-        assert_equal(pool.queue_limits.discard_granularity, pool_bs * 512)
-        assert_equal(pool.queue_limits.discard_max_bytes, pool_bs * 512)
-        check_discard_passdown_disabled(pool, fd_dev)
-      end
-    end
-  end
-
-  def test_data_granularity_not_factor_of_block_size_disables_passdown
-    # e.g. blocksize = 384k, discard_granularity = 256k
-    # (this also tests largest_power_factor adjusts granularity, to 128k)
-    pool_bs = 768
-    @data_block_size = pool_bs
-    with_fake_discard(:granularity => 512, :max_discard_sectors => 100 * 512) do |fd_dev|
-      with_custom_data_pool(fd_dev, @size, :discard_passdown => true,
-                            :block_size => pool_bs) do |pool|
-        assert_equal(pool.queue_limits.discard_granularity, pool_bs * 512)
-        assert_equal(pool.queue_limits.discard_max_bytes, pool_bs * 512)
-        check_discard_passdown_disabled(pool, fd_dev)
       end
     end
   end

@@ -4,7 +4,7 @@ class DiscardLimits
   attr_reader :dev, :supported, :granularity, :max_bytes
 
   def initialize(dev)
-    @dev = Pathname.new(dev).basename
+    @dev = Pathname.new(dev).realpath.basename
     @granularity = read_param(:granularity)
     @max_bytes = read_param(:max_bytes)
     @supported = @max_bytes > 0
