@@ -10,8 +10,8 @@ class WriteboostStatus
               "enable_writeback_modulator",
               "writeback_threshold",
               "nr_max_batched_writeback",
-              "update_record_interval",
-              "sync_interval",
+              "update_sb_record_interval",
+              "sync_data_interval",
               "read_cache_threshold"]
 
   STAT_WRITE = 3

@@ -447,7 +447,7 @@ module WriteboostTests
   def test_wipe_device
     s = @stack_maker.new(@dm, @data_dev, @metadata_dev,
                          :backing_sz => meg(1024),
-                         :cache_sz => gig(3))
+                         :cache_sz => meg(1800))
     s.activate_support_devs do
       s.cleanup_cache
       s.table_extra_args = {
@@ -466,7 +466,7 @@ module WriteboostTests
   def test_wipe_device_small_blocks
     s = @stack_maker.new(@dm, @data_dev, @metadata_dev,
                          :backing_sz => meg(1024),
-                         :cache_sz => gig(3))
+                         :cache_sz => meg(1800))
     s.activate_support_devs do
       s.cleanup_cache
       s.table_extra_args = {
@@ -485,7 +485,7 @@ module WriteboostTests
   def test_wipe_device_tiny_blocks
     s = @stack_maker.new(@dm, @data_dev, @metadata_dev,
                          :backing_sz => meg(1024),
-                         :cache_sz => gig(3))
+                         :cache_sz => meg(1800))
     s.activate_support_devs do
       s.cleanup_cache
       s.table_extra_args = {
@@ -594,22 +594,12 @@ class WriteboostTestsBackingDevice < ThinpTestCase
   end
 end
 
-class WriteboostTestsType0 < ThinpTestCase
+class WriteboostTestsCaching < ThinpTestCase
   include WriteboostTests
 
   def setup
     super
-    @stack_maker = WriteboostStackType0
-    @param = []
-  end
-end
-
-class WriteboostTestsType1 < ThinpTestCase
-  include WriteboostTests
-
-  def setup
-    super
-    @stack_maker = WriteboostStackType1
+    @stack_maker = WriteboostStackCaching
     @param = []
   end
 end

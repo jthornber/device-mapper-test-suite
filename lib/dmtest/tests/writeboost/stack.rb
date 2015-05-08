@@ -26,7 +26,6 @@ class WriteboostStack
 
   attr_accessor :backing_dev,
                 :cache_dev,
-                :plog_dev,
                 :wb, # :: DMDev
                 :opts, # :: {}
                 :table_extra_args # :: {}
@@ -38,7 +37,6 @@ class WriteboostStack
 
     @backing_dev = nil
     @cache_dev = nil
-    @plog_dev = nil
 
     @opts = opts
     @table_extra_args = {}
@@ -50,20 +48,14 @@ class WriteboostStack
     @fast_tvm = TinyVolumeManager::VM.new
     @fast_tvm.add_allocation_volume(fast_dev_name)
     @fast_tvm.add_volume(linear_vol('cache_dev', cache_sz))
-    @fast_tvm.add_volume(linear_vol('plog_dev', plog_sz))
   end
 
   def backing_sz
     @opts.fetch(:backing_sz, dev_size(@slow_dev_name))
   end
 
-  # cache_sz + plog_sz < 1GB
   def cache_sz
-    @opts.fetch(:cache_sz, meg(989))
-  end
-
-  def plog_sz
-    @opts.fetch(:plog_sz, meg(10))
+    @opts.fetch(:cache_sz, gig(1))
   end
 
   def cleanup_cache
@@ -74,13 +66,11 @@ class WriteboostStack
 
   def activate_support_devs(&block)
     with_devs(@slow_tvm.table('backing_dev'),
-              @fast_tvm.table('cache_dev'),
-              @fast_tvm.table('plog_dev')
-             ) do |backing_dev, cache_dev, plog_dev|
+              @fast_tvm.table('cache_dev')
+             ) do |backing_dev, cache_dev|
 
       @backing_dev = backing_dev
       @cache_dev = cache_dev
-      @plog_dev = plog_dev
       ensure_elapsed_time(1, self, &block)
     end
   end
@@ -119,7 +109,7 @@ class WriteboostStack
     # may never return because of dirty caches remain on RAM
     # buffer that is submitted from upper layer after
     # drop_caches started.
-    @wb.message(0, "sync_interval", 1)
+    @wb.message(0, "sync_data_interval", 1)
     @wb.message(0, "drop_caches")
   end
 
@@ -131,8 +121,8 @@ class WriteboostStack
                 :enable_writeback_modulator,
                 :writeback_threshold,
                 :nr_max_batched_writeback,
-                :update_record_interval,
-                :sync_interval,
+                :update_sb_record_interval,
+                :sync_data_interval,
                 :read_cache_threshold,
     ]
     def pop
@@ -189,17 +179,9 @@ class WriteboostStackBackingDevice < WriteboostStack
   end
 end
 
-class WriteboostStackType0 < WriteboostStack
+class WriteboostStackCaching < WriteboostStack
   def table
-    essentials = [0, @backing_dev, @cache_dev]
-    args = Args.new(@table_extra_args)
-    Table.new(WriteboostTarget.new(backing_sz, essentials + args.to_a))
-  end
-end
-
-class WriteboostStackType1 < WriteboostStack
-  def table
-    essentials = [1, @backing_dev, @cache_dev, @plog_dev]
+    essentials = [@backing_dev, @cache_dev]
     args = Args.new(@table_extra_args)
     Table.new(WriteboostTarget.new(backing_sz, essentials + args.to_a))
   end
