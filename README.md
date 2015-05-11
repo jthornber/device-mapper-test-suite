@@ -118,6 +118,7 @@ Options are:
 
 * bcache
 * cache
+* writeboost
 * enhance_io
 * fake-discard
 * infrastructure
