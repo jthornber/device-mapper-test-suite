@@ -449,6 +449,23 @@ class DiscardQuickTests < ThinpTestCase
       assert_used_blocks(pool, @blocks_per_dev)
     end
   end
+
+  def test_discard_past_the_end_fails
+    with_discardable_pool(@size) do |pool|
+      with_new_thin(pool, @volume_size, 0) do |thin|
+        wipe_device(thin)
+
+        failed = false
+        begin
+          thin.discard(0, 2 * @volume_size)
+        rescue
+          failed = true
+        end
+
+        assert(failed)
+      end
+    end
+  end
 end
 
 #----------------------------------------------------------------
