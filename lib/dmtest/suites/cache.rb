@@ -17,3 +17,6 @@ require 'dmtest/tests/cache/residency_tests'
 require 'dmtest/tests/cache/resize_tests'
 require 'dmtest/tests/cache/tools_tests'
 require 'dmtest/tests/cache/vdbench_tests'
+
+require 'dmtest/tests/cache/smq_tests'
+
