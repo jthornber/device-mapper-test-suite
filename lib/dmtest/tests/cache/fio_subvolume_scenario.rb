@@ -5,9 +5,9 @@ module FioSubVolumeScenario
     outfile = opts.fetch(:outfile, AP("fio.out"))
     cfgfile = opts.fetch(:cfgfile, LP("tests/cache/fio.config"))
     fs = FS::file_system(fs_type, dev)
-    fs.format
+    fs.format(:discard => false)
 
-    fs.with_mount('./fio_test', :discard => true) do
+    fs.with_mount('./fio_test', :discard => false) do
       Dir.chdir('./fio_test') do
         ProcessControl.run("fio #{cfgfile} --output=#{outfile}")
       end

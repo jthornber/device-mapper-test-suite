@@ -24,7 +24,7 @@ class CacheTests < ThinpTestCase
   include FioSubVolumeScenario
   extend TestUtils
 
-  POLICY_NAMES = %w(mq)
+  POLICY_NAMES = %w(mq smq)
 
   def setup
     super
@@ -37,22 +37,6 @@ class CacheTests < ThinpTestCase
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev, opts)
     stack.activate do |stack|
       block.call(stack.cache)
-    end
-  end
-
-  #--------------------------------
-
-  tag :cache_target
-  def test_dt_cache
-    with_standard_cache(:format => true, :data_size => gig(1)) do |cache|
-      dt_device(cache)
-    end
-  end
-
-  tag :linear_target
-  def test_dt_linear
-    with_standard_linear(:data_size => gig(1)) do |linear|
-      dt_device(linear)
     end
   end
 
@@ -87,15 +71,15 @@ class CacheTests < ThinpTestCase
 
   tag :cache_target
   def test_fio_database_funtime
-    with_standard_cache(:cache_size => meg(1024),
+    with_standard_cache(:cache_size => meg(1024 * 2),
                         :format => true,
                         :block_size => 256,
                         :data_size => gig(10),
-                        :policy => Policy.new('mq')) do |cache|
-      cache.message(0, "sequential_threshold 32768") # 16M
+                        :policy => Policy.new('smq')) do |cache|
       do_fio(cache, :ext4,
              :outfile => AP("fio_dm_cache.out"),
              :cfgfile => LP("tests/cache/database-funtime.fio"))
+      pp CacheStatus.new(cache)
     end
   end
 
@@ -114,7 +98,9 @@ class CacheTests < ThinpTestCase
   tag :linear_target
   def test_fio_linear
     with_standard_linear do |linear|
-      do_fio(linear, :ext4)
+      do_fio(linear, :ext4,
+             :outfile => AP("fio_dm_linear.out"),
+             :cfgfile => LP("tests/cache/database-funtime.fio"))
     end
   end
 
@@ -186,15 +172,34 @@ class CacheTests < ThinpTestCase
     stack.activate do |stack|
       git_prepare(stack.cache, :ext4)
       git_extract(stack.cache, :ext4, TAGS[0..i])
+      pp CacheStatus.new(stack.cache)
     end
   end
 
   tag :cache_target
   def test_git_extract_cache_quick
-    do_git_extract_cache_quick(:policy => Policy.new('mq', :migration_threshold => 512),
-                               :cache_size => meg(1024),
+    do_git_extract_cache_quick(:policy => Policy.new('smq', :migration_threshold => 1024),
+                               :cache_size => meg(64),
                                :block_size => 512,
-                               :data_size => gig(2))
+                               :data_size => gig(4))
+  end
+
+  def test_git_extract_cache_quick_across_cache_size
+    [64, 256, 512, 1024, 1024 + 512, 2048, 2048 + 1024].each do |cache_size|
+      report_time("cache size = #{cache_size}, policy = smq", STDERR) do
+        do_git_extract_cache_quick(:policy => Policy.new('smq', :migration_threshold => 1024),
+                                   :cache_size => meg(cache_size),
+                                   :block_size => 512,
+                                   :data_size => gig(16))
+      end
+
+#      report_time("cache size = #{cache_size}, policy = mq", STDERR) do
+#        do_git_extract_cache_quick(:policy => Policy.new('mq', :migration_threshold => 1024),
+#                                   :cache_size => meg(cache_size),
+#                                   :block_size => 512,
+#                                   :data_size => gig(16))
+#      end
+    end
   end
 
   def test_git_extract_cache_quick_across_migration_threshold
@@ -268,7 +273,7 @@ class CacheTests < ThinpTestCase
   end
 
   def test_git_extract_linear_quick
-    with_standard_linear(:data_size => gig(2)) do |linear|
+    with_standard_linear(:data_size => gig(16)) do |linear|
       git_prepare(linear, :ext4)
       git_extract(linear, :ext4, TAGS[0..5])
     end
@@ -303,6 +308,72 @@ class CacheTests < ThinpTestCase
       end
     end
   end
+
+  def test_suspend_resume_under_load
+    with_standard_cache(:format => true) do |cache|
+      tid1 = Thread.new(cache) do |cache|
+        git_prepare(cache, :ext4)
+      end
+
+      lock = Mutex.new
+      lock.lock
+      tid2 = Thread.new(cache) do |cache|
+        table = cache.active_table
+
+        while !lock.try_lock
+          sleep 1
+          cache.pause do
+          end
+
+          STDERR.write "."
+        end
+
+        STDERR.puts "\nio thread complete"
+      end
+
+      tid1.join
+      lock.unlock
+      tid2.join
+    end
+  end
+
+  def run_bonnie(dev)
+    fs = FS::file_system(:ext4, dev)
+    fs.format
+    fs.with_mount("./kernel_builds", :discard => true) do
+      ProcessControl::run("bonnie++ -d ./kernel_builds -r 0 -u root -s 2048")
+    end
+  end
+
+  def test_reload_resume_under_load
+    with_standard_cache(:format => true) do |cache|
+      tid1 = Thread.new(cache) do |cache|
+        run_bonnie(cache)
+      end
+
+      lock = Mutex.new
+      lock.lock
+      tid2 = Thread.new(cache) do |cache|
+        table = cache.active_table
+
+        while !lock.try_lock
+          cache.load(table)
+          sleep 1               # window for the two metadata areas to diverge
+          cache.pause do
+          end
+
+          STDERR.write "."
+        end
+
+        STDERR.puts "\nio thread complete"
+      end
+
+      tid1.join
+      lock.unlock
+      tid2.join
+    end
+  end
+
 
   def test_table_reload
     with_standard_cache(:format => true) do |cache|
@@ -372,24 +443,6 @@ class CacheTests < ThinpTestCase
   end
 
   #--------------------------------
-
-  def wait_for_all_clean(cache)
-    tid = Thread.new(cache) do |cache|
-      loop do
-        sleep(1)
-        status = CacheStatus.new(cache)
-        STDERR.puts "#{status.nr_dirty} dirty blocks"
-        break if status.nr_dirty == 0
-      end
-    end
-
-    cache.event_tracker.wait(cache) do |cache|
-      status = CacheStatus.new(cache)
-      status.nr_dirty == 0
-    end
-
-    tid.join
-  end
 
   def test_cleaner_policy
     with_standard_cache(:format => true) do |cache|

@@ -185,7 +185,7 @@ class SMQComparisonTests < ThinpTestCase
   end
 
   def test_git_extract_only_long
-    do_git_extract_only(:policy => Policy.new('smq', :migration_threshold => 1024),
+    do_git_extract_only(:policy => Policy.new('mq', :migration_threshold => 1024),
                         :cache_size => meg(3072),
                         :block_size => k(32),
                         :data_size => gig(16),

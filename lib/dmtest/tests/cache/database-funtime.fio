@@ -1,4 +1,6 @@
 [randrw]
+norandommap
+random_distribution=zipf:0.8
 rw=randrw
 rwmixread=80
 size=1g
