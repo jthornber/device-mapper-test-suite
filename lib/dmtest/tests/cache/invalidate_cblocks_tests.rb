@@ -23,7 +23,7 @@ class InvalidateCBlocksTests < ThinpTestCase
 
   def setup
     super
-    @data_block_size = k(32)
+    @data_block_size = k(64)
     @cache_blocks = 10
     @nr_blocks = 100
     @nr_snapshots = 20

@@ -4,12 +4,10 @@ require 'dmtest/tests/cache/fio_tests'
 
 require 'dmtest/tests/cache/background_writeback_tests'
 require 'dmtest/tests/cache/bursty_write_tests'
-#require 'dmtest/tests/cache/cache_tests'
+require 'dmtest/tests/cache/invalidate_cblocks_tests'
+
 #require 'dmtest/tests/cache/beer_tests'
 #require 'dmtest/tests/cache/hint_width_tests'
-#require 'dmtest/tests/cache/initial_warming_tests'
-#require 'dmtest/tests/cache/invalidate_cblocks_tests'
-#require 'dmtest/tests/cache/invalidation_tests'
 #require 'dmtest/tests/cache/io_use_tests'
 #require 'dmtest/tests/cache/large_cache_tests'
 #require 'dmtest/tests/cache/small_cache_tests'
@@ -22,3 +20,7 @@ require 'dmtest/tests/cache/bursty_write_tests'
 #require 'dmtest/tests/cache/resize_tests'
 #require 'dmtest/tests/cache/tools_tests'
 #require 'dmtest/tests/cache/vdbench_tests'
+
+# Obsolete
+#require 'dmtest/tests/cache/initial_warming_tests'
+#require 'dmtest/tests/cache/invalidation_tests'
