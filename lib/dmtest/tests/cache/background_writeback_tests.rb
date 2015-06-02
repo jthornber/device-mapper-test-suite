@@ -75,7 +75,6 @@ class BackgroundWritebackTests < ThinpTestCase
         end
       end
 
-      pp traces
       assert_equal(cache_size / block_size, filter_writes(traces[0]).size)
     end
   end

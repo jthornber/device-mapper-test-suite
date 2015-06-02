@@ -3,7 +3,7 @@ require 'dmtest/tests/cache/git_extract_tests'
 require 'dmtest/tests/cache/fio_tests'
 
 require 'dmtest/tests/cache/background_writeback_tests'
-#require 'dmtest/tests/cache/bursty_write_tests'
+require 'dmtest/tests/cache/bursty_write_tests'
 #require 'dmtest/tests/cache/cache_tests'
 #require 'dmtest/tests/cache/beer_tests'
 #require 'dmtest/tests/cache/hint_width_tests'
