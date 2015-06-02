@@ -17,7 +17,6 @@ require 'rspec/expectations'
 #----------------------------------------------------------------
 
 class SmallConfigTests < ThinpTestCase
-  include GitExtract
   include Tags
   include Utils
   include DiskUnits
@@ -25,16 +24,17 @@ class SmallConfigTests < ThinpTestCase
   include CacheUtils
   extend TestUtils
 
+  POLICY_NAMES = %w(mq smq)
+
   def setup
     super
     @data_block_size = k(32)
     @cache_blocks = 1024
   end
 
-
   #--------------------------------
 
-  def test_small_stack
+  def small_stack(policy)
     s = make_stack(:format => true,
                    :metadata_size => meg(8),
                    :block_size => k(32),
@@ -44,6 +44,8 @@ class SmallConfigTests < ThinpTestCase
       wipe_device(s.cache)
     end
   end
+
+  define_tests_across(:small_stack, POLICY_NAMES)
 end
 
 #----------------------------------------------------------------
