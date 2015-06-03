@@ -35,11 +35,13 @@ class SmallConfigTests < ThinpTestCase
   #--------------------------------
 
   def small_stack(policy)
-    s = make_stack(:format => true,
-                   :metadata_size => meg(8),
-                   :block_size => k(32),
-                   :cache_size => k(50),
-                   :data_size => k(50))
+    s = CacheStack.new(@dm, @metadata_dev, @data_dev,
+                       :format => true,
+                       :metadata_size => meg(8),
+                       :block_size => k(32),
+                       :cache_size => k(50),
+                       :data_size => k(50),
+                       :policy => Policy.new(policy, :migration_threshold => 1024))
     s.activate do
       wipe_device(s.cache)
     end
