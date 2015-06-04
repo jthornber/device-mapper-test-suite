@@ -9,6 +9,7 @@ require 'dmtest/tests/cache/small_cache_tests'
 require 'dmtest/tests/cache/passthrough_tests'
 require 'dmtest/tests/cache/no_clean_shutdown_tests'
 require 'dmtest/tests/cache/resize_tests'
+require 'dmtest/tests/cache/vdbench_tests'
 
 #require 'dmtest/tests/cache/beer_tests'
 #require 'dmtest/tests/cache/io_use_tests'
@@ -18,7 +19,6 @@ require 'dmtest/tests/cache/resize_tests'
 #require 'dmtest/tests/cache/promotion_tests'
 #require 'dmtest/tests/cache/residency_tests'
 #require 'dmtest/tests/cache/tools_tests'
-#require 'dmtest/tests/cache/vdbench_tests'
 
 # Obsolete
 #require 'dmtest/tests/cache/initial_warming_tests'

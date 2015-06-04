@@ -21,10 +21,12 @@ class VDBenchTests < ThinpTestCase
   include CacheUtils
   extend TestUtils
 
+  POLICY_NAMES = %w(mq smq)
+  IO_MODES = [:writethrough, :writeback]
+
   def setup
     super
     @data_block_size = k(32)
-    @cache_blocks = gig(3) / k(32)
   end
 
   def write_vdbench_param_file
@@ -50,11 +52,11 @@ EOF
 
   #--------------------------------
 
-  def test_vdbench
-
-    s = make_stack(:data_size => gig(100),
-                   :cache_blocks => @cache_blocks,
-                   :io_mode => :writethrough)
+  def vdbench(policy, io_mode)
+    s = CacheStack.new(@dm, @metadata_dev, @data_dev,
+                       :data_size => gig(100),
+                       :cache_size => gig(1),
+                       :io_mode => io_mode)
     s.activate do
       fs = FS.file_system(:xfs, s.cache)
       fs.format
@@ -69,6 +71,8 @@ EOF
       end
     end
   end
+
+  define_tests_across(:vdbench, POLICY_NAMES, IO_MODES)
 end
 
 #----------------------------------------------------------------
