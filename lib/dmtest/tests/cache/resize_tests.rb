@@ -10,6 +10,7 @@ require 'dmtest/tvm.rb'
 require 'dmtest/cache_stack'
 require 'dmtest/cache_policy'
 require 'dmtest/cache_utils'
+require 'dmtest/test-utils'
 
 require 'thinp_xml/cache_xml'
 
@@ -19,6 +20,9 @@ class ResizeTests < ThinpTestCase
   include GitExtract
   include Tags
   include CacheUtils
+  extend TestUtils
+
+  POLICY_NAMES = %w(mq smq)
 
   def setup
     super
@@ -27,8 +31,11 @@ class ResizeTests < ThinpTestCase
   end
 
   def setup_metadata(nr_blocks)
-    s = make_stack(:format => false,
-                   :cache_blocks => nr_blocks)
+    s = CacheStack.new(@dm, @metadata_dev, @data_dev,
+                       :format => false,
+                       :block_size => @data_block_size,
+                       :cache_size => nr_blocks * @data_block_size,
+                       :policy => Policy.new('smq', :migration_threshold => 1024))
     s.activate_support_devs do
       s.prepare_populated_cache
       md = dump_metadata(s.md)
@@ -49,12 +56,18 @@ class ResizeTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_no_resize_retains_mappings_all_clean
+  def mk_stack(policy, nr_blocks)
+    CacheStack.new(@dm, @metadata_dev, @data_dev,
+                   :format => false,
+                   :block_size => @data_block_size,
+                   :cache_size => nr_blocks * @data_block_size,
+                   :policy => Policy.new(policy,
+                                         :migration_threshold => 0))
+  end
+
+  def no_resize_retains_mappings_all_clean(policy)
     [23, 513, 1023, 4095].each do |nr_blocks|
-      s = make_stack(:format => false,
-                     :cache_blocks => nr_blocks,
-                     :policy => Policy.new('mq',
-                                           :migration_threshold => 0))
+      s = mk_stack(policy, nr_blocks)
       s.activate_support_devs do
         s.prepare_populated_cache()
         md1 = dump_metadata(s.md)
@@ -67,12 +80,13 @@ class ResizeTests < ThinpTestCase
     end
   end
 
-  def test_no_resize_retains_mappings_all_dirty
+  define_tests_across(:no_resize_retains_mappings_all_clean, POLICY_NAMES)
+
+  #--------------------------------
+
+  def no_resize_retains_mappings_all_dirty(policy)
     [23, 513, 1023, 4095].each do |nr_blocks|
-      s = make_stack(:format => false,
-                     :cache_blocks => nr_blocks,
-                     :policy => Policy.new('mq',
-                                           :migration_threshold => 0))
+      s = mk_stack(policy, nr_blocks)
       s.activate_support_devs do
         s.prepare_populated_cache(:dirty_percentage => 100)
         md1 = dump_metadata(s.md)
@@ -89,6 +103,8 @@ class ResizeTests < ThinpTestCase
     end
   end
 
+  define_tests_across(:no_resize_retains_mappings_all_dirty, POLICY_NAMES)
+
   #--------------------------------
 
   def error_table(nr_sectors)
@@ -101,51 +117,55 @@ class ResizeTests < ThinpTestCase
 
   # We need to make sure we test various different discard bitset
   # sizes.  To make the origin big enough we use an error target.
-  def test_resize_origin_with_teardown
+  def resize_origin_with_teardown(policy)
+    nr_blocks = 1024
     osize1 = gig(4)
     osize2 = meg(128)
 
-    with_dev(error_table(tera(4))) do |origin|
-      s = CacheStack.new(@dm, @metadata_dev, origin,
-                         :format => true,
-                         :cache_blocks => 1024,
-                         :data_dev => origin,
-                         :data_size => osize1,
-                         :policy => Policy.new('mq', :migration_threshold => 0))
-      s.activate do
-        s.cache.discard(0, meg(64))
-        s.cache.discard(meg(96), meg(64))
-      end
+    s = CacheStack.new(@dm, @metadata_dev, @data_dev,
+                       :format => true,
+                       :block_size => @data_block_size,
+                       :cache_size => nr_blocks * @data_block_size,
+                       :data_size => osize1,
+                       :policy => Policy.new(policy, :migration_threshold => 0))
+    s.activate do
+      s.cache.discard(0, meg(64))
+      s.cache.discard(meg(96), meg(64))
+    end
 
-      s = CacheStack.new(@dm, @metadata_dev, origin,
-                         :format => false,
-                         :cache_blocks => 1024,
-                         :data_dev => origin,
-                         :data_size => osize2,
-                         :policy => Policy.new('mq', :migration_threshold => 0))
-      s.activate do
-      end
+    s = CacheStack.new(@dm, @metadata_dev, @data_dev,
+                       :format => false,
+                       :block_size => @data_block_size,
+                       :cache_size => nr_blocks * @data_block_size,
+                       :data_size => osize2,
+                       :policy => Policy.new(policy, :migration_threshold => 0))
+    s.activate do
     end
   end
 
-  def test_resize_origin_with_reload
+  define_tests_across(:resize_origin_with_teardown, POLICY_NAMES)
+
+  #--------------------------------
+  
+  def resize_origin_with_reload(policy)
     osize1 = meg(128)
     osize2 = gig(4)
+    nr_blocks = 1024
 
-    with_dev(error_table(tera(4))) do |origin|
-      s = CacheStack.new(@dm, @metadata_dev, origin,
+      s = CacheStack.new(@dm, @metadata_dev, @data_dev,
                          :format => true,
-                         :cache_blocks => 1024,
-                         :data_dev => origin,
+                         :block_size => @data_block_size,
+                         :cache_size => nr_blocks * @data_block_size,
                          :data_size => osize1,
-                         :policy => Policy.new('mq', :migration_threshold => 0))
-      s.activate do
-        s.cache.discard(0, meg(64))
-        s.cache.discard(meg(96), meg(32))
-        s.resize_origin(osize2)
-      end
+                         :policy => Policy.new(policy, :migration_threshold => 0))
+    s.activate do
+      s.cache.discard(0, meg(64))
+      s.cache.discard(meg(96), meg(32))
+      s.resize_origin(osize2)
     end
   end
+
+  define_tests_across(:resize_origin_with_reload, POLICY_NAMES)
 
   #--------------------------------
 

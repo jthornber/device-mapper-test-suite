@@ -29,9 +29,13 @@ class NoCleanShutdownTests < ThinpTestCase
   #--------------------------------
 
   def test_no_resize_retains_mappings_all_clean
+    block_size = k(64)
     [23, 513, 1023, 4095].each do |nr_blocks|
-      s = make_stack(:format => false,
-                     :cache_blocks => nr_blocks)
+      s = CacheStack.new(@dm, @metadata_dev, @data_dev, 
+                         :format => false,
+                         :block_size => block_size,
+                         :cache_size => nr_blocks * block_size,
+                         :policy => Policy.new('smq'))
       s.activate_support_devs do
         s.prepare_populated_cache(:clean_shutdown => false)
         md1 = dump_metadata(s.md)
