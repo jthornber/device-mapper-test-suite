@@ -25,31 +25,34 @@ class IOUseTests < ThinpTestCase
   include CacheUtils
   extend TestUtils
 
-  def test_no_io_when_idle
+  POLICY_NAMES = %w(mq smq)
+  IO_MODES = [:writethrough, :writeback]
+
+  def no_io_when_idle(policy, io_mode)
     s = CacheStack.new(@dm, @metadata_dev, @data_dev,
                        :data_size => gig(2),
                        :block_size => k(64),
                        :cache_size => gig(1),
-                       :io_mode => :writethrough,
-                       :policy => Policy.new('mq'))
-    s.activate do
-      # Warm the cache dev up
-      git_prepare(s.cache, :ext4)
-      git_extract(s.cache, :ext4, TAGS[0..5])
+                       :io_mode => io_mode,
+                       :policy => Policy.new(policy))
+    s.activate_support_devs do
+      s.prepare_populated_cache(:dirty_percentage => 0)
+      s.activate_top_level do
+        sleep 10                # give udev time to examine the devs
 
-      sleep 10
+        STDERR.puts "beginning idle period"
+        traces, _ = blktrace(@metadata_dev, @data_dev) do
+          sleep 30
+        end
+        STDERR.puts "done"
 
-      STDERR.puts "beginning idle period"
-      traces, _ = blktrace(@metadata_dev, @data_dev) do
-        sleep 30
+        assert(traces[0].empty?)
+        assert(traces[1].empty?)
       end
-      STDERR.puts "done"
-
-      STDERR.puts "traces: #{traces}"
-      assert(traces[0].empty?)
-      assert(traces[1].empty?)
     end
   end
+
+  define_tests_across(:no_io_when_idle, POLICY_NAMES, IO_MODES)
 end
 
 #----------------------------------------------------------------
