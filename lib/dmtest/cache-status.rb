@@ -5,31 +5,41 @@ require 'dmtest/log'
 class CacheStatus
   attr_accessor :md_block_size, :md_used, :md_total, :cache_block_size, :residency, :cache_total
   attr_accessor :read_hits, :read_misses, :write_hits, :write_misses
-  attr_accessor :demotions, :promotions, :nr_dirty, :features, :core_args, :policy_name, :policy_args
+  attr_accessor :demotions, :promotions, :nr_dirty, :features, :core_args, :policy_name, :policy_args, :mode, :fail
 
   PATTERN ='\d+\s+\d+\s+cache\s+(.*)'
 
   def initialize(cache_dev)
-    m = cache_dev.status.match(PATTERN)
-    raise "couldn't parse cache status" if m.nil?
+    status = cache_dev.status
 
-    @a = m[1].split
+    # it's possible the cache has fallen back to failure mode
+    if status.match(/\s*Fail\s*/)
+      @fail = true
+    else
+      m = status.match(PATTERN)
+      if m.nil?
+        raise "couldn't parse cache status"
+      else
+        @a = m[1].split
 
-    shift_int :md_block_size
-    shift_ratio :md_used, :md_total
-    shift_int :cache_block_size
-    shift_ratio :residency, :cache_total
-    shift_int :read_hits
-    shift_int :read_misses
-    shift_int :write_hits
-    shift_int :write_misses
-    shift_int :demotions
-    shift_int :promotions
-    shift_int :nr_dirty
-    shift_features :features
-    shift_pairs :core_args
-    shift :policy_name
-    shift_pairs :policy_args
+        shift_int :md_block_size
+        shift_ratio :md_used, :md_total
+        shift_int :cache_block_size
+        shift_ratio :residency, :cache_total
+        shift_int :read_hits
+        shift_int :read_misses
+        shift_int :write_hits
+        shift_int :write_misses
+        shift_int :demotions
+        shift_int :promotions
+        shift_int :nr_dirty
+        shift_features :features
+        shift_pairs :core_args
+        shift :policy_name
+        shift_pairs :policy_args
+        shift_mode :mode
+      end
+    end
   end
 
   private
@@ -96,6 +106,17 @@ class CacheStatus
 
   def set_val(symbol, v)
     self.send("#{symbol}=".intern, v)
+  end
+
+  def shift_mode(symbol)
+    case shift_(symbol)
+    when 'ro' then
+      set_val(symbol, :read_only)
+    when 'rw' then
+      set_val(symbol, :read_write)
+    else
+      raise "unknown metadata mode"
+    end
   end
 end
 
