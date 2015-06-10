@@ -36,7 +36,7 @@ class NeedsCheckTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_commit_failure_sets_needs_check
+  def commit_failure_sets_needs_check(&make_bad_md_table)
     superblock_size = k(4)
     metadata_size = meg(4)
     metadata_body_size = metadata_size - superblock_size
@@ -55,8 +55,7 @@ class NeedsCheckTests < ThinpTestCase
 
       good_md_table = Table.new(LinearTarget.new(superblock_size, metadata_superblock, 0),
                                 LinearTarget.new(metadata_body_size, metadata_body, 0))
-      bad_md_table = Table.new(LinearTarget.new(superblock_size, metadata_superblock, 0),
-                               ErrorTarget.new(metadata_body_size))
+      bad_md_table = make_bad_md_table.call(metadata_superblock, metadata_body)
 
       wipe_device(metadata_superblock)
 
@@ -105,6 +104,20 @@ class NeedsCheckTests < ThinpTestCase
           assert(write_mode?(cache))
         end
       end
+    end
+  end
+
+  def test_commit_failure_sets_needs_check_error_target
+    commit_failure_sets_needs_check do |metadata_superblock, metadata_body|
+      Table.new(LinearTarget.new(dev_size(metadata_superblock), metadata_superblock, 0),
+                ErrorTarget.new(dev_size(metadata_body)))
+    end
+  end
+
+  def test_commit_failure_sets_needs_check_flakey_target
+    commit_failure_sets_needs_check do |metadata_superblock, metadata_body|
+      Table.new(LinearTarget.new(dev_size(metadata_superblock), metadata_superblock, 0),
+                FlakeyTarget.new(dev_size(metadata_body), metadata_body, 0, 0, 60))
     end
   end
 end
