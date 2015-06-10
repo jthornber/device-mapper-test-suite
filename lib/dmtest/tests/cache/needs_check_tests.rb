@@ -37,60 +37,73 @@ class NeedsCheckTests < ThinpTestCase
   #--------------------------------
 
   def test_commit_failure_sets_needs_check
+    superblock_size = k(4)
+    metadata_size = meg(4)
+    metadata_body_size = metadata_size - superblock_size
+
     tvm = VM.new
     tvm.add_allocation_volume(@metadata_dev)
-    tvm.add_volume(linear_vol('metadata', meg(4)))
+    tvm.add_volume(linear_vol('metadata_superblock', superblock_size))
+    tvm.add_volume(linear_vol('metadata_body', metadata_body_size))
     tvm.add_volume(linear_vol('ssd', meg(512)))
     tvm.add_volume(linear_vol('origin', gig(1)))
 
-    with_devs(tvm.table('metadata'), tvm.table('ssd'), tvm.table('origin')) do |metadata, ssd, origin|
-      wipe_device(metadata, 8)
+    with_devs(tvm.table('metadata_superblock'),
+              tvm.table('metadata_body'),
+              tvm.table('ssd'),
+              tvm.table('origin')) do |metadata_superblock, metadata_body, ssd, origin|
 
-      table = Table.new(CacheTarget.new(dev_size(origin), metadata, ssd, origin,
-                                        @data_block_size, [], 'smq', {}))
+      good_md_table = Table.new(LinearTarget.new(superblock_size, metadata_superblock, 0),
+                                LinearTarget.new(metadata_body_size, metadata_body, 0))
+      bad_md_table = Table.new(LinearTarget.new(superblock_size, metadata_superblock, 0),
+                               ErrorTarget.new(metadata_body_size))
 
-      with_dev(table) do |cache|
-        wipe_device(cache, 128)
+      wipe_device(metadata_superblock)
 
-        begin
+      with_dev(good_md_table) do |metadata|
+        table = Table.new(CacheTarget.new(dev_size(origin), metadata, ssd, origin,
+                                          @data_block_size, [], 'smq', {}))
+
+        with_dev(table) do |cache|
+          wipe_device(cache, 128)
+
           cache.pause do
-            # Establish flakey metadata.  We need the superblock to
-            # remain working.
-            superblock_size = 8
-            flakey_table = Table.new(LinearTarget.new(superblock_size, @metadata_dev, 0),
-                                     FlakeyTarget.new(dev_size(@metadata_dev) - superblock_size,
-                                                      @metadata_dev, superblock_size, 0, 60))
             metadata.pause do
-              metadata.load(flakey_table)
+              metadata.load(bad_md_table)
             end
           end
 
           wipe_device(cache, 256)
-          cache.pause {}        # the suspend will trigger a commit, which will fail
 
+          cache.pause {}        # the suspend will trigger a commit, which will fail
           assert(read_only_or_fail_mode?(cache))
-        ensure
-          # Put the metadata dev back
+
+          # Put the metadata dev back so cache_check completes
           metadata.pause do
-            metadata.load(tvm.table('metadata'))
+            metadata.load(good_md_table)
           end
         end
       end
 
-      # Attempting to bring up a needs_check cache will fail
-      # (until we add proper read-only support).
-      begin
-        with_dev(table) do |cache|
-          assert(read_only_mode?(cache))
+      with_dev(good_md_table) do |metadata|
+        table = Table.new(CacheTarget.new(dev_size(origin), metadata, ssd, origin,
+                                          @data_block_size, [], 'smq', {}))
+        
+        begin
+          with_dev(table) do |cache|
+            # We shouldn't be able to bring up the cache because the
+            # needs_check flag is set.
+            assert(false)
+          end
+        rescue
         end
-      rescue
-      end
 
-      ProcessControl.run("cache_check --clear-needs-check-flag #{metadata}")
+        ProcessControl.run("cache_check --clear-needs-check-flag #{metadata}")
 
-      # Now we should be able to run in write mode
-      with_dev(table) do |cache|
-        assert(write_mode?(cache))
+        # Now we should be able to run in write mode
+        with_dev(table) do |cache|
+          assert(write_mode?(cache))
+        end
       end
     end
   end
