@@ -14,8 +14,8 @@ module FS
       @mount_point = nil
     end
 
-    def format
-      ProcessControl.run(mkfs_cmd)
+    def format(opts = {})
+      ProcessControl.run(mkfs_cmd(opts))
     end
 
     def mount(mount_point, opts = Hash.new)
@@ -45,13 +45,21 @@ module FS
   class Ext4 < BaseFS
     def mount_cmd(mount_point, opts); "mount #{dev} #{mount_point} #{opts[:discard] ? "-o discard" : ''}"; end
     def check_cmd; "fsck.ext4 -fn #{dev}"; end
-    def mkfs_cmd; "mkfs.ext4 -E lazy_itable_init=1 #{dev}"; end
+
+    def mkfs_cmd(opts)
+      discard_arg = opts.fetch(:discard, true) ? 'discard' : 'nodiscard'
+      "mkfs.ext4 -E lazy_itable_init=1,#{discard_arg} #{dev}"
+    end
   end
 
   class XFS < BaseFS
     def mount_cmd(mount_point, opts); "mount -o nouuid#{opts[:discard] ? ",discard" : ''} #{dev} #{mount_point}"; end
     def check_cmd; "xfs_repair -n #{dev}"; end
-    def mkfs_cmd; "mkfs.xfs -f #{dev}"; end
+
+    def mkfs_cmd(opts)
+      discard_arg = opts.fetch(:discard, true) ? '' : ' -K'
+      "mkfs.xfs -f #{dev}#{discard_arg}"
+    end
   end
 
   FS_CLASSES = {
