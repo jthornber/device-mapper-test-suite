@@ -87,6 +87,63 @@ class NeedsCheckTests < ThinpTestCase
       end
     end
   end
+
+  # Kernel crashing if metadata dev is entirely replaced with error
+  # target
+  def test_bz1230271
+    tvm = VM.new
+    tvm.add_allocation_volume(@metadata_dev)
+    tvm.add_volume(linear_vol('metadata', dev_size(@metadata_dev)))
+
+    volume_size = gig(3)
+
+    with_dev(tvm.table('metadata')) do |metadata|
+      wipe_device(metadata, 8)
+
+      table = Table.new(ThinPoolTarget.new(volume_size, metadata, @data_dev,
+                                           @data_block_size, 0))
+
+      with_dev(table) do |pool|
+        with_new_thin(pool, volume_size, 0) do |thin|
+          wipe_device(thin, 128)
+
+          begin
+            thin.pause do
+              pool.pause do
+                bad_table = Table.new(ErrorTarget.new(dev_size(@metadata_dev)))
+                metadata.pause do
+                  metadata.load(bad_table)
+                end
+              end
+            end
+
+            wipe_device(thin, 256)
+            assert(read_only_or_fail_mode?(pool))
+          ensure
+            # Put the metadata dev back
+            metadata.pause do
+              metadata.load(tvm.table('metadata'))
+            end
+          end
+        end
+      end
+    end
+
+    #   # We can bring up the pool, but it will have immediately fallen
+    #   # back to read_only mode.
+    #   with_dev(table) do |pool|
+    #     assert(read_only_mode?(pool))
+    #   end
+
+    #   # FIXME: use tools to clear needs_check mode
+    #   ProcessControl.run("thin_check --clear-needs-check-flag #{metadata}")
+
+    #   # Now we should be able to run in write mode
+    #   with_dev(table) do |pool|
+    #     assert(write_mode?(pool))
+    #   end
+    # end    
+  end
 end
 
 #----------------------------------------------------------------
