@@ -41,10 +41,10 @@ module GitExtract
             v2.6.29 v2.6.30 v2.6.31 v2.6.32 v2.6.33 v2.6.34 v2.6.35 v2.6.36 v2.6.37
             v2.6.38 v2.6.39 v3.0 v3.1 v3.2)
 
-  def git_prepare_(dev, fs_type)
+  def git_prepare_(dev, fs_type, format_opts = {})
     fs = FS::file_system(fs_type, dev)
     STDERR.puts "formatting ..."
-    fs.format
+    fs.format(format_opts)
 
     fs.with_mount('./kernel_builds', :discard => false) do
       Dir.chdir('./kernel_builds') do
@@ -56,6 +56,10 @@ module GitExtract
 
   def git_prepare(dev, fs_type)
     report_time("git_prepare", STDERR) {git_prepare_(dev, fs_type)}
+  end
+
+  def git_prepare_no_discard(dev, fs_type)
+    report_time("git_prepare", STDERR) {git_prepare_(dev, fs_type, :discard => false)}
   end
 
   def git_extract(dev, fs_type, tags = TAGS)
