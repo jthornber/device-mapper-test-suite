@@ -83,6 +83,31 @@ module GitExtract
       end
     end
   end
+
+  def git_extract_each(dev, fs_type, tags = TAGS, &block)
+    fs = FS::file_system(fs_type, dev)
+    fs.with_mount('./kernel_builds', :discard => false) do
+      Dir.chdir('./kernel_builds') do
+        repo = Git.new('linux')
+
+        repo.in_repo do
+          report_time("extract all versions", STDERR) do
+            tags.each do |tag|
+              STDERR.puts "Checking out #{tag} ..."
+              report_time("checking out #{tag}") do
+                repo.checkout(tag)
+                ProcessControl.run('sync')
+                if block
+                  block.call
+                end
+                drop_caches
+              end
+            end
+          end
+        end
+      end
+    end
+  end
 end
 
 #----------------------------------------------------------------
