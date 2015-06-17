@@ -133,6 +133,10 @@ class CacheStack
     @opts.fetch(:policy, Policy.new('default'))
   end
 
+  def change_policy(new_policy)
+    @opts[:policy] = new_policy
+  end
+
   def io_mode
     @opts[:io_mode] ? [ @opts[:io_mode] ] : []
   end

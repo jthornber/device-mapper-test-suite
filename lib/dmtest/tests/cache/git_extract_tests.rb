@@ -249,6 +249,40 @@ class GitExtractTests < ThinpTestCase
       end
     end
   end
+
+  #--------------------------------
+
+  def test_alternate_between_mq_and_smq
+    stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
+                           :policy => Policy.new('mq', :migration_threshold => 1024),
+                           :cache_size => meg(1024),
+                           :block_size => k(32),
+                           :data_size => gig(4))
+
+    stack.activate do |stack|
+      git_prepare(stack.cache, :ext4)
+
+      smq = false
+      git_extract_each(stack.cache, :ext4, TAGS[0..10]) do
+
+        pp CacheStatus.new(stack.cache)
+
+        stack.cache.pause do
+          if smq
+            STDERR.puts "switching to mq"
+            stack.change_policy(Policy.new('mq', :migration_threshold => 1024))
+          else
+            STDERR.puts "switching to smq"
+            stack.change_policy(Policy.new('smq', :migration_threshold => 1024))
+          end
+
+          stack.cache.load(stack.cache_table)
+        end
+
+        smq = !smq
+      end
+    end
+  end
 end
 
 #----------------------------------------------------------------
