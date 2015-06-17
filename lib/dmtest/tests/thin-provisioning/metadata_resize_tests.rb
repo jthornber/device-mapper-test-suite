@@ -64,6 +64,33 @@ class MetadataResizeTests < ThinpTestCase
     end
   end
 
+  def test_resize_no_io_with_extra_checking
+    md_size = meg(1)
+    data_size = meg(100)
+    @tvm.add_volume(linear_vol('metadata', md_size))
+    @tvm.add_volume(linear_vol('data', data_size))
+
+    with_devs(@tvm.table('metadata'),
+              @tvm.table('data')) do |md, data|
+      wipe_device(md, 8)
+
+      [1, 3, 7, 31, 67, 511, 1023].map {|s| meg(s)}.each do |step|
+        @tvm.resize('metadata', md_size + step)
+        md.pause do
+          table = @tvm.table('metadata')
+          md.load(table)
+        end
+
+        table = Table.new(ThinPoolTarget.new(data_size, md, data, @data_block_size, @low_water_mark))
+        with_dev(table) do |pool|
+          status = PoolStatus.new(pool)
+          status.total_metadata_blocks.should == (md_size + step) / 8
+          md_size += step
+        end
+      end
+    end
+  end
+
   def test_resize_with_io
     data_size = gig(1)
     @tvm.add_volume(linear_vol('metadata', meg(1)))
