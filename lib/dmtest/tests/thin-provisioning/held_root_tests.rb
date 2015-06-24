@@ -88,7 +88,7 @@ class HeldRootTests < ThinpTestCase
 
     # tearing down the pool so we can force a thin_check
 
-    with_standard_pool(@size) do |pool|
+    with_standard_pool(@size, :format => false) do |pool|
       with_thins(pool, @volume_size, 0, 1) do |thin1, thin2|
         pool.message(0, "release_metadata_snap")
 
