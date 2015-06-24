@@ -33,7 +33,7 @@ module MetadataUtils
 
     status = PoolStatus.new(pool)
     Utils::with_temp_file('metadata_xml') do |file|
-      ProcessControl::run("thin_dump -m #{status.held_root} #{dev} > #{file.path}")
+      ProcessControl::run("thin_dump -m#{status.held_root} #{dev} > #{file.path}")
       file.rewind
       metadata = read_xml(file)
     end
