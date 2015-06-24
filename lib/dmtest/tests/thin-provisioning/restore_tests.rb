@@ -72,7 +72,7 @@ class RestoreTests < ThinpTestCase
 
     restore_mappings(4, n, allocator)
     dump_metadata(@metadata_dev) do |xml1|
-      with_standard_pool(dev_size(@data_dev)) do |pool|
+      with_standard_pool(dev_size(@data_dev), :format => false) do |pool|
         with_thin(pool, n * 128, 0) {|thin| wipe_device(thin)}
       end
 
@@ -102,7 +102,7 @@ class RestoreTests < ThinpTestCase
       wipe_device(@metadata_dev)
       restore_metadata(xml_path1, @metadata_dev)
       
-      with_standard_pool(@size) do |pool|
+      with_standard_pool(@size, :format => false) do |pool|
         with_thin(pool, @volume_size, 0) {|thin| wipe_device(thin, 1000)}
       end
 
