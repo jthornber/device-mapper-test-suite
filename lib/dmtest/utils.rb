@@ -76,13 +76,26 @@ module Utils
     end
   end
 
-  def Utils.with_temp_file(name)
-    f = Tempfile.new(name)
-    begin
-      yield(f)
-    ensure
-      f.close
-      f.unlink
+  # You can pass :leave => true if you want the temp file left for
+  # debugging.
+  def Utils.with_temp_file(name, opts = {})
+    if opts.fetch(:leave, false)
+      # debug path
+      path = "#{name}-#{Time::now.to_i}"
+      f = File.open(name, "w")
+      begin
+        yield(f)
+      ensure
+        f.close
+      end
+    else
+      f = Tempfile.new(name)
+      begin
+        yield(f)
+      ensure
+        f.close
+        f.unlink
+      end
     end
   end
 
