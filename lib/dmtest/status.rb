@@ -63,10 +63,11 @@ class PoolStatus
 
   def initialize(pool)
     status = pool.status
+
     m = status.match(/(\d+)\s(\d+)\/(\d+)\s(\d+)\/(\d+)\s(\S+)(\s.*)/)
     if m.nil?
       # it's possible the pool's fallen back to failure mode
-      if status.match(/\s*Fail\s*/)
+      if status.match(/\s*Error\s*/)
         @fail = true
       else
         raise "couldn't get pool status"
