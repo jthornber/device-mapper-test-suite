@@ -49,6 +49,20 @@ class FIOTests < ThinpTestCase
   end
 
   define_tests_across(:fio_across_cache_size, POLICY_NAMES)
+
+  #--------------------------------
+
+  def origin_same_size_as_ssd(policy_name)
+    report_time("fio", STDERR) do
+      do_fio__(:policy => Policy.new(policy_name, :migration_threshold => 1024),
+               :metadata_size => meg(128),
+               :cache_size => gig(10),
+               :block_size => k(32),
+               :data_size => gig(10))
+    end
+  end
+
+  define_tests_across(:origin_same_size_as_ssd, POLICY_NAMES)
 end
 
 #----------------------------------------------------------------
