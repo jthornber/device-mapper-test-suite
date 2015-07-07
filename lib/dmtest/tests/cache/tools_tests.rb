@@ -69,6 +69,35 @@ class ToolsTests < ThinpTestCase
       end
     end
   end
+
+  #--------------------------------
+
+  def forbidden_on_live_metadata(cmd)
+    stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
+                           :format => true,
+                           :data_size => gig(1),
+                           :block_size => k(64))
+    stack.activate do |stack|
+      assert_raises(ProcessControl::ExitError) do
+        ProcessControl.run(cmd)
+      end
+    end
+  end
+
+  def test_you_cannot_run_check_on_live_metadata
+    forbidden_on_live_metadata("cache_check #{@metadata_dev}")
+  end
+
+  def test_you_cannot_run_restore_on_a_live_metadata
+    xml_file = 'metadata.xml'
+    ProcessControl.run("cache_xml create --nr-cache-blocks uniform[100..500] --nr-mappings uniform[50..100] > #{xml_file}")
+
+    forbidden_on_live_metadata("cache_restore -i #{xml_file} -o #{@metadata_dev}")
+  end
+
+  def test_you_cannot_dump_live_metadata
+    forbidden_on_live_metadata("cache_dump #{@metadata_dev}")
+  end
 end
 
 #----------------------------------------------------------------
