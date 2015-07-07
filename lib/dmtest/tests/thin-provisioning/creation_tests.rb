@@ -62,9 +62,8 @@ class CreationTests < ThinpTestCase
     data_block_size = 524288
     volume_size = 524288
     lwm = 5
-    table = Table.new(ThinPoolTarget.new(size, @metadata_dev, @data_dev,
-                                         data_block_size, lwm))
-    with_dev(table) do |pool|
+
+    with_standard_pool(@size, :data_block_size => data_block_size) do |pool|
       with_new_thin(pool, volume_size, 0) {|thin| dt_device(thin)}
     end
   end
