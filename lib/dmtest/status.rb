@@ -4,7 +4,7 @@ require 'dmtest/log'
 
 class PoolStatus
   attr_reader :transaction_id, :used_metadata_blocks, :total_metadata_blocks, :used_data_blocks
-  attr_reader :total_data_blocks, :held_root, :options, :fail
+  attr_reader :total_data_blocks, :held_root, :needs_check, :options, :fail
 
   def parse_held_root(txt)
     case txt
@@ -13,6 +13,15 @@ class PoolStatus
 
     else
       txt.to_i
+    end
+  end
+
+  def parse_needs_check(txt)
+    case txt
+    when '-' then
+      false
+    else
+      true
     end
   end
 
@@ -64,7 +73,7 @@ class PoolStatus
   def initialize(pool)
     status = pool.status
 
-    m = status.match(/(\d+)\s(\d+)\/(\d+)\s(\d+)\/(\d+)\s(\S+)(\s.*)/)
+    m = status.match(/(\d+)\s(\d+)\/(\d+)\s(\d+)\/(\d+)\s(\S+)(\s.*)\s(\S+)/)
     if m.nil?
       # it's possible the pool's fallen back to failure mode
       if status.match(/\s*Error\s*/)
@@ -81,6 +90,7 @@ class PoolStatus
       @total_data_blocks = m[5].to_i
       @held_root = parse_held_root(m[6])
       @options = parse_opts(m[7])
+      @needs_check = parse_needs_check(m[8])
     end
   end
 end
