@@ -507,7 +507,8 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
 
           failed.should be_true
           status = PoolStatus.new(pool)
-          status.options[:mode].should == :read_only
+          status.options[:mode].should == :out_of_data_space
+          status.options[:error_if_no_space].should be_true
 
           # Preload the underlying data device
           @size *= 4
