@@ -5,7 +5,7 @@ require 'dmtest/log'
 class CacheStatus
   attr_accessor :md_block_size, :md_used, :md_total, :cache_block_size, :residency, :cache_total
   attr_accessor :read_hits, :read_misses, :write_hits, :write_misses
-  attr_accessor :demotions, :promotions, :nr_dirty, :features, :core_args, :policy_name, :policy_args, :mode, :fail
+  attr_accessor :demotions, :promotions, :nr_dirty, :features, :core_args, :policy_name, :policy_args, :mode, :needs_check, :fail
 
   PATTERN ='\d+\s+\d+\s+cache\s+(.*)'
 
@@ -38,6 +38,7 @@ class CacheStatus
         shift :policy_name
         shift_pairs :policy_args
         shift_mode :mode
+        shift_needs_check :needs_check
       end
     end
   end
@@ -116,6 +117,17 @@ class CacheStatus
       set_val(symbol, :read_write)
     else
       raise "unknown metadata mode"
+    end
+  end
+
+  def shift_needs_check(symbol)
+    case shift_(symbol)
+    when 'needs_check' then
+      set_val(symbol, true)
+    when '-' then
+      set_val(symbol, false)
+    else
+      raise "unknown needs_check value"
     end
   end
 end
