@@ -256,6 +256,9 @@ class PoolResizeWithSpaceTests < ThinpTestCase
 
         # load identical table, should result in error about inability
         # to switch pool to write mode due to 'needs_check'.
+        status = PoolStatus.new(pool)
+        status.needs_check.should be_true
+
         table = pool.active_table
         pool.pause do
           pool.load(table)
