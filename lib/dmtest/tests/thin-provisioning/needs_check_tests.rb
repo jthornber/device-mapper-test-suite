@@ -76,9 +76,11 @@ class NeedsCheckTests < ThinpTestCase
       # back to read_only mode.
       with_dev(table) do |pool|
         assert(read_only_mode?(pool))
+        status = PoolStatus.new(pool)
+        status.needs_check.should be_true
       end
 
-      # FIXME: use tools to clear needs_check mode
+      # use tools to clear needs_check mode
       ProcessControl.run("thin_check --clear-needs-check-flag #{metadata}")
 
       # Now we should be able to run in write mode
