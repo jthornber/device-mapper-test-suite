@@ -38,6 +38,29 @@ class ThinDeltaTests < ThinpTestCase
     dump_metadata(@metadata_dev) do |xml_path|
     end
   end
+
+  def test_metadata_snap_with_live_pool
+    with_standard_pool(@size) do |pool|
+      with_new_thin(pool, @volume_size, 0) do |thin1|
+        stomper1 = PatternStomper.new(thin1.path, @data_block_size, :needs_zero => false)
+        stomper1.stamp(50)
+
+        with_new_snap(pool, @volume_size, 1, 0, thin1) do |thin2|
+          stomper2 = stomper1.fork(thin2.path)
+          stomper2.stamp(50)
+        end
+
+        stomper1.stamp(50)
+
+        pool.message(0, "reserve_metadata_snap")
+        ProcessControl.run("thin_delta --snap1 0 --snap2 1 -m #{@metadata_dev}")
+
+        status = PoolStatus.new(pool)
+        ProcessControl.run("thin_delta --snap1 0 --snap2 1 -m#{status.held_root} #{@metadata_dev}")
+        pool.message(0, "release_metadata_snap")
+      end
+    end
+  end
 end
 
 #----------------------------------------------------------------
