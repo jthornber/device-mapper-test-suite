@@ -340,9 +340,8 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
 
       failed.should be_true
       status = PoolStatus.new(pool)
-      status.options[:mode].should == :read_only
-
-      # FIXME: the needs_check flag should _not_ be set.
+      status.options[:mode].should == :out_of_data_space
+      status.needs_check.should be_false
     end
   end
 
