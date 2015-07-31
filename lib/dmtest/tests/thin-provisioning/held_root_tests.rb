@@ -127,4 +127,25 @@ class HeldRootTests < ThinpTestCase
     assert_equal(nr_blocks, left[0].length)
     assert_equal(nr_blocks, right[0].length)
   end
+
+  def test_thin_check_passes_with_a_held_root
+    with_standard_pool(@size) do |pool|
+      with_new_thin(pool, @volume_size, 0) do |thin1|
+        stomper1 = PatternStomper.new(thin1.path, @data_block_size, :needs_zero => false)
+        stomper1.stamp(50)
+
+        with_new_snap(pool, @volume_size, 1, 0, thin1) do |thin2|
+          stomper2 = stomper1.fork(thin2.path)
+          stomper2.stamp(50)
+        end
+
+        stomper1.stamp(50)
+
+        pool.message(0, "reserve_metadata_snap")
+        held_metadata = read_held_root(pool, @metadata_dev)
+      end
+
+      # Tearing down the pool triggers a thin_check automatically
+    end
+  end
 end
