@@ -8,6 +8,7 @@ require 'dmtest/tags'
 require 'dmtest/thinp-test'
 require 'dmtest/thread-utils'
 require 'dmtest/xml_format'
+require 'dmtest/test-utils'
 require 'set'
 
 #----------------------------------------------------------------
@@ -328,7 +329,7 @@ class DiscardQuickTests < ThinpTestCase
         wipe_device(thin, @data_block_size)
 
         assert_used_blocks(pool, 1)
-        
+
         with_new_snap(pool, @volume_size, 1, 0, thin) do |snap|
           assert_used_blocks(pool, 1)
         end
@@ -472,6 +473,7 @@ end
 
 class DiscardSlowTests < ThinpTestCase
   include DiscardMixin
+  extend TestUtils
 
   def test_discard_alternate_blocks
     with_discardable_pool(@size) do |pool|
@@ -682,6 +684,39 @@ class DiscardSlowTests < ThinpTestCase
       end
     end
   end
+
+  def discard_with_fstrim_passdown(passdown)
+    dir = "./mnt1"
+    @size = gig(4)
+    file_size = @size / 20
+    files = (0..9).reduce([]) {|memo, obj| memo << "file_#{obj}"}
+
+    with_standard_pool(@size, :error_if_no_space => true, :discard_passdown => passdown) do |pool|
+      with_new_thin(pool, @size * 2, 0) do |thin|
+        fs = FS::file_system(:xfs, thin)
+        fs.format
+        fs.with_mount(dir, :discard => true) do
+          Dir.chdir(dir) do
+            files.each do |f|
+              ProcessControl.run("dd if=/dev/zero of=#{f} bs=1M count=#{file_size / meg(1)}")
+            end
+
+            files.each do |f|
+              ProcessControl.run("rm #{f}")
+            end
+          end
+
+          ProcessControl.run("fstrim -v #{dir}")
+
+          s = PoolStatus.new(pool)
+          s.used_data_blocks.should < 1000
+          s.options[:mode].should == :read_write
+        end
+      end
+    end
+  end
+
+  define_tests_across(:discard_with_fstrim_passdown, [true, false])
 end
 
 #----------------------------------------------------------------
