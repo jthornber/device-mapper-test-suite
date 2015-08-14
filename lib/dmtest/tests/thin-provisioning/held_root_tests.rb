@@ -80,9 +80,13 @@ class HeldRootTests < ThinpTestCase
         time_wipe("provisioned: thin1", thin1)
 
         pool.message(0, "reserve_metadata_snap")
+      end
+    end
+
+    with_standard_pool(@size, :format => false) do |pool|
+      with_thins(pool, @volume_size, 0, 1) do |thin1, thin2|
         time_wipe("provisioned, held: thin1", thin1)
         time_wipe("fully provision, held: thin2", thin2)
-        time_wipe("provisioned, held: thin2", thin2)
       end
     end
 
