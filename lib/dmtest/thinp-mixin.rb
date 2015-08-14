@@ -52,11 +52,11 @@ module ThinpTestMixin
 
     @data_block_size = config.fetch(:data_block_size, 128)
 
-    @size = config.fetch(:data_size, 20971520)
+    @size = gig(10)
     @size /= @data_block_size
     @size *= @data_block_size
 
-    @volume_size = config.fetch(:volume_size, 2097152)
+    @volume_size = gig(1)
 
     @tiny_size = @data_block_size
     @low_water_mark = config.fetch(:low_water_mark, 5)
