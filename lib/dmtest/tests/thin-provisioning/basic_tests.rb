@@ -4,6 +4,7 @@ require 'dmtest/utils'
 require 'dmtest/fs'
 require 'dmtest/tags'
 require 'dmtest/thinp-test'
+require 'dmtest/test-utils'
 
 #----------------------------------------------------------------
 
@@ -11,6 +12,7 @@ class BasicTests < ThinpTestCase
   include Tags
   include Utils
   include BlkTrace
+  extend TestUtils
 
   def setup
     super
@@ -18,12 +20,12 @@ class BasicTests < ThinpTestCase
 
   tag :thinp_target
 
-  def test_overwrite_a_linear_device
+  define_test :test_overwrite_a_linear_device do
     linear_table = Table.new(LinearTarget.new(@volume_size, @data_dev, 0))
     with_dev(linear_table) {|linear_dev| dt_device(linear_dev)}
   end
 
-  def test_ext4_weirdness
+  define_test :ext4_weirdness do
     with_standard_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         thin_fs = FS::file_system(:ext4, thin)
@@ -36,7 +38,7 @@ class BasicTests < ThinpTestCase
 
   tag :thinp_target, :slow
 
-  def test_overwriting_various_thin_devices
+  define_test :overwriting_various_thin_devices do
     # we keep tearing down the pool and setting it back up so that we
     # can trigger a thin_repair check at each stage.
 
@@ -61,7 +63,7 @@ class BasicTests < ThinpTestCase
     end
   end
 
-  def test_dd_benchmark
+  define_test :dd_benchmark do
     with_standard_pool(@size) do |pool|
 
       info "wipe an unprovisioned thin device"
@@ -78,7 +80,7 @@ class BasicTests < ThinpTestCase
     end
   end
 
-  def test_pool_without_thin_devices_does_not_commit
+  define_test :pool_without_thin_devices_does_not_commit do
     with_standard_pool(@size) do |pool|
       traces, _ = blktrace(@metadata_dev) do
         sleep 10
@@ -87,7 +89,6 @@ class BasicTests < ThinpTestCase
       assert(traces[0].empty?)
     end
   end
-
 end
 
 #----------------------------------------------------------------

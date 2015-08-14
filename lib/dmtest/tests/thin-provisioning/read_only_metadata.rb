@@ -13,8 +13,9 @@ class ReadOnlyMetadataTests < ThinpTestCase
   include Tags
   include TinyVolumeManager
   include Utils
+  extend TestUtils
 
-  def test_with_ro_dev_works
+  define_test :with_ro_dev_works do
     tvm = VM.new
 
     tvm.add_allocation_volume(@metadata_dev)
@@ -54,7 +55,7 @@ class ReadOnlyMetadataTests < ThinpTestCase
     end
   end
 
-  def test_ro_pool_succeeds_with_ro_metadata
+  define_test :ro_pool_succeeds_with_ro_metadata do
     tvm = VM.new
 
     tvm.add_allocation_volume(@metadata_dev)

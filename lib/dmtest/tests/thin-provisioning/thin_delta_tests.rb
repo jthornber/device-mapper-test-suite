@@ -12,6 +12,7 @@ class ThinDeltaTests < ThinpTestCase
   include Tags
   include Utils
   include MetadataGenerator
+  extend TestUtils
 
   # We prepare two thin devices that share some blocks.
   def prepare_md
@@ -30,7 +31,7 @@ class ThinDeltaTests < ThinpTestCase
     end
   end
 
-  def test_delta
+  define_test :delta do
     prepare_md
 
     ProcessControl.run("thin_delta --snap1 0 --snap2 1 #{@metadata_dev}")
@@ -39,7 +40,7 @@ class ThinDeltaTests < ThinpTestCase
     end
   end
 
-  def test_metadata_snap_with_live_pool
+  define_test :metadata_snap_with_live_pool do
     with_standard_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin1|
         stomper1 = PatternStomper.new(thin1.path, @data_block_size, :needs_zero => false)

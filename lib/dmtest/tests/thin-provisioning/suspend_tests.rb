@@ -18,14 +18,15 @@ class SuspendTests < ThinpTestCase
   include Tags
   include Utils
   include DiskUnits
+  extend TestUtils
 
-  def test_suspend_pool_no_thins
+  define_test :suspend_pool_no_thins do
     with_standard_pool(@size) do |pool|
       pool.pause {}
     end
   end
 
-  def test_suspend_pool_no_active_thins
+  define_test :suspend_pool_no_active_thins do
     with_standard_pool(@size) do |pool|
       with_new_thins(pool, @volume_size, 0, 1) do |thin1, thin2|
       end
@@ -34,7 +35,7 @@ class SuspendTests < ThinpTestCase
     end
   end
 
-  def test_suspend_pool_active_thins_no_io
+  define_test :suspend_pool_active_thins_no_io do
     with_standard_pool(@size) do |pool|
       with_new_thins(pool, @volume_size, 0, 1) do |thin1, thin2|
         pool.pause {}
@@ -42,7 +43,7 @@ class SuspendTests < ThinpTestCase
     end
   end
 
-  def test_suspend_pool_suspended_thin
+  define_test :suspend_pool_suspended_thin do
     with_standard_pool(@size) do |pool|
       with_new_thins(pool, @volume_size, 0, 1) do |thin1, thin2|
         thin1.pause do
@@ -52,7 +53,7 @@ class SuspendTests < ThinpTestCase
     end
   end
 
-  def test_suspend_pool_resume_thin
+  define_test :suspend_pool_resume_thin do
     with_standard_pool(@size) do |pool|
       with_new_thins(pool, @volume_size, 0, 1) do |thin1, thin2|
         pool.pause do
@@ -78,7 +79,7 @@ class SuspendTests < ThinpTestCase
     end
   end
 
-  def test_suspend_pool_concurrent_suspend
+  define_test :suspend_pool_concurrent_suspend do
     with_standard_pool(@size) do |pool|
       with_new_thins(pool, @volume_size, 0, 1) do |thin1, thin2|
         pool.suspend
@@ -107,7 +108,7 @@ class SuspendTests < ThinpTestCase
     end
   end
 
-  def test_suspend_pool_after_suspend_thin
+  define_test :suspend_pool_after_suspend_thin do
     with_standard_pool(@size) do |pool|
       with_new_thins(pool, @volume_size, 0, 1) do |thin1, thin2|
         thin1.pause do
@@ -138,7 +139,7 @@ class SuspendTests < ThinpTestCase
   # (blocks waiting for internal suspend to clear)  # dmsetup resume pool
   #
   # dmsetup resume thin1
-  def test_wait_on_bit_during_suspend
+  define_test :wait_on_bit_during_suspend do
     with_standard_pool(@size) do |pool|
       with_new_thins(pool, @volume_size, 0, 1) do |thin1, thin2|
         # trigger internal suspend of pool's active thin targets
@@ -179,7 +180,7 @@ class SuspendTests < ThinpTestCase
   # (blocks waiting for internal suspend to clear)  # dmsetup resume pool
   #
   # (finally thin1 resumes)
-  def test_wait_on_bit_during_resume
+  define_test :wait_on_bit_during_resume do
     with_standard_pool(@size) do |pool|
       with_new_thins(pool, @volume_size, 0, 1) do |thin1, thin2|
         thin1.suspend
@@ -211,7 +212,7 @@ class SuspendTests < ThinpTestCase
     end
   end
 
-  def test_nested_internal_suspend_using_inactive_table
+  define_test :nested_internal_suspend_using_inactive_table do
     with_standard_pool(@size) do |pool|
       with_new_thins(pool, @volume_size, 0, 1) do |thin1, thin2|
         # load duplicate thin table into thin1's inactive slot
@@ -268,7 +269,7 @@ class SuspendTests < ThinpTestCase
   end
 
   # bz #1195506
-  def test_discard_then_delete_thin
+  define_test :discard_then_delete_thin do
     with_loopback_pool do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         tid = Thread.new(thin) do |thin|

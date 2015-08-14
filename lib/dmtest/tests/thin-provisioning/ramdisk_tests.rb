@@ -10,6 +10,7 @@ require 'dmtest/thinp-test'
 class RamDiskTests < ThinpTestCase
   include Tags
   include Utils
+  extend TestUtils
 
   def setup
     super
@@ -52,21 +53,21 @@ class RamDiskTests < ThinpTestCase
 
   tag :thinp_target
 
-  def test_overwrite_a_linear_device
+  define_test :overwrite_a_linear_device do
     linear_table = Table.new(LinearTarget.new(@volume_size, @data_dev, 0))
     with_dev(linear_table) {|linear_dev| wipe_device(linear_dev)}
   end
 
-  def test_read_a_linear_device
+  define_test :read_a_linear_device do
     linear_table = Table.new(LinearTarget.new(@volume_size, @data_dev, 0))
     with_dev(linear_table) {|linear_dev| read_device_to_null(linear_dev)}
   end
 
-  def test_read_ramdisk
+  define_test :read_ramdisk do
     read_device_to_null('/dev/ram1')
   end
 
-  def test_dd_benchmark
+  define_test :dd_benchmark do
     with_standard_pool(@size, :zero => true) do |pool|
       info "wipe an unprovisioned thin device"
       with_new_thin(pool, @volume_size, 0) {|thin| wipe_device(thin)}
@@ -82,18 +83,18 @@ class RamDiskTests < ThinpTestCase
     end
   end
 
-  def test_raw_aio_stress
+  define_test :raw_aio_stress do
     aio_stress(@data_dev)
   end
 
-  def test_linear_aio_stress
+  define_test :linear_aio_stress do
     linear_table = Table.new(LinearTarget.new(@volume_size, @data_dev, 0))
     with_dev(linear_table) do |linear_dev|
       aio_stress(linear_dev)
     end
   end
 
-  def test_stacked_linear_aio_stress
+  define_test :stacked_linear_aio_stress do
     linear_table = Table.new(LinearTarget.new(@volume_size, @data_dev, 0))
     with_dev(linear_table) do |linear_dev|
       linear_table2 = Table.new(LinearTarget.new(@volume_size, linear_dev, 0))
@@ -103,7 +104,7 @@ class RamDiskTests < ThinpTestCase
     end
   end
 
-  def test_thin_aio_stress
+  define_test :thin_aio_stress do
     with_standard_pool(@size, :zero => true) do |pool|
       info "wipe an unprovisioned thin device"
       with_new_thin(pool, @volume_size, 0) do |thin|
@@ -118,13 +119,13 @@ class RamDiskTests < ThinpTestCase
     end
   end
 
-  def test_pool_aio_stress
+  define_test :pool_aio_stress do
     with_standard_pool(@size, :zero => true) do |pool|
       aio_stress(pool)
     end
   end
 
-  def test_linear_stacked_on_pool_aio_stress
+  define_test :linear_stacked_on_pool_aio_stress do
     with_standard_pool(@size, :zero => true) do |pool|
       table = Table.new(LinearTarget.new(@size, pool, 0))
       with_dev(table) do |linear|

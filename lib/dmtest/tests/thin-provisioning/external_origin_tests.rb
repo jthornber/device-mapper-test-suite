@@ -93,6 +93,7 @@ class ExternalOriginTests < ThinpTestCase
   include TinyVolumeManager
   include Utils
   include DiskUnits
+  extend TestUtils
 
   def setup
     super
@@ -126,19 +127,19 @@ class ExternalOriginTests < ThinpTestCase
     end
   end
 
-  def test_snap_equal_size
+  define_test :snap_equal_size do
     do_pattern_stamp_test
   end
 
-  def test_snap_smaller_than_origin
+  define_test :snap_smaller_than_origin do
     do_pattern_stamp_test(:thin_size => meg(512))
   end
 
-  def test_snap_bigger_than_origin
+  define_test :snap_bigger_than_origin do
     do_pattern_stamp_test(:thin_size => gig(2))
   end
 
-  def test_snap_fractional_tail_block
+  define_test :snap_fractional_tail_block do
     do_pattern_stamp_test(:origin_size => gig(1) + 16)
   end
 end

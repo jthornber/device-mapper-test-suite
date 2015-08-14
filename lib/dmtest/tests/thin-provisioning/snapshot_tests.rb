@@ -16,6 +16,7 @@ class SnapshotTests < ThinpTestCase
   include Tags
   include Utils
   include DiskUnits
+  extend TestUtils
 
   def setup
     super
@@ -93,31 +94,31 @@ class SnapshotTests < ThinpTestCase
 
   tag :thinp_target
 
-  def test_thin_overwrite_ext4
+  define_test :thin_overwrite_ext4 do
     do_overwrite(:ext4)
   end
 
-  def test_thin_overwrite_xfs
+  define_test :thin_overwrite_xfs do
     do_overwrite(:xfs)
   end
 
-  def test_create_snap_ext4
+  define_test :create_snap_ext4 do
     do_create_snap(:ext4)
   end
 
-  def test_create_snap_xfs
+  define_test :create_snap_xfs do
     do_create_snap(:xfs)
   end
 
-  def test_break_sharing_ext4
+  define_test :break_sharing_ext4 do
     do_break_sharing(:ext4)
   end
 
-  def test_break_sharing_xfs
+  define_test :break_sharing_xfs do
     do_break_sharing(:xfs)
   end
 
-  def test_pool_utilization_block
+  define_test :pool_utilization_block do
     thin_size = gig(1)
 
     # meg(63) would fail, since we'd need extra blocks for the
@@ -137,7 +138,7 @@ class SnapshotTests < ThinpTestCase
     end
   end
 
-  def test_many_snapshots_of_same_volume
+  define_test :many_snapshots_of_same_volume do
     with_standard_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         dt_device(thin)
@@ -159,7 +160,7 @@ class SnapshotTests < ThinpTestCase
 
   tag :thinp_target, :slow
 
-  def test_parallel_io_to_shared_thins
+  define_test :parallel_io_to_shared_thins do
     with_standard_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin)
@@ -177,7 +178,7 @@ class SnapshotTests < ThinpTestCase
 
   # This test is specifically aimed at exercising the auxillery ref
   # count tree in the metadata.
-  def test_ref_count_tree
+  define_test :ref_count_tree do
     with_standard_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) {|thin| wipe_device(thin)}
 
@@ -193,7 +194,7 @@ class SnapshotTests < ThinpTestCase
     end
   end
 
-  def test_pattern_stomp
+  define_test :pattern_stomp do
     with_standard_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         origin_stomper = PatternStomper.new(thin.path, @data_block_size, :needs_zero => false)

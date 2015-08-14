@@ -4,6 +4,7 @@ require 'dmtest/process'
 require 'dmtest/utils'
 require 'dmtest/tags'
 require 'dmtest/thinp-test'
+require 'dmtest/test-utils'
 
 #----------------------------------------------------------------
 
@@ -11,6 +12,7 @@ class ReadOnlyTests < ThinpTestCase
   include Tags
   include TinyVolumeManager
   include Utils
+  extend TestUtils
 
   def setup
     super
@@ -20,7 +22,7 @@ class ReadOnlyTests < ThinpTestCase
     @data_block_size = 2 * 1024 * 8 # 8 M
   end
 
-  def test_create_read_only
+  define_test :create_read_only do
     # we have to create a valid metadata dev first
     with_standard_pool(@size) do |pool|
     end
@@ -30,7 +32,7 @@ class ReadOnlyTests < ThinpTestCase
     end
   end
 
-  def test_can_access_fully_mapped_device
+  define_test :can_access_fully_mapped_device do
     # we have to create a valid metadata dev first
     with_standard_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
@@ -46,7 +48,7 @@ class ReadOnlyTests < ThinpTestCase
     end
   end
 
-  def test_can_read_unprovisioned_regions
+  define_test :can_read_unprovisioned_regions do
     # we have to create a valid metadata dev first
     with_standard_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
@@ -61,7 +63,7 @@ class ReadOnlyTests < ThinpTestCase
     end
   end
 
-  def test_cant_provision_new_blocks
+  define_test :cant_provision_new_blocks do
     # we have to create a valid metadata dev first
     with_standard_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
@@ -78,7 +80,7 @@ class ReadOnlyTests < ThinpTestCase
     end
   end
 
-  def test_cant_create_new_thins
+  define_test :cant_create_new_thins do
     # we have to create a valid metadata dev first
     with_standard_pool(@size) do |pool|
     end
@@ -92,7 +94,7 @@ class ReadOnlyTests < ThinpTestCase
     end
   end
 
-  def test_cant_delete_thins
+  define_test :cant_delete_thins do
     # we have to create a valid metadata dev first
     with_standard_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
@@ -107,7 +109,7 @@ class ReadOnlyTests < ThinpTestCase
     end
   end
 
-  def test_commit_failure_causes_fallback
+  define_test :commit_failure_causes_fallback do
     with_standard_pool(@size) do |pool|
       with_new_thins(pool, @volume_size, 0, 1) do |t1, t2|
       end

@@ -27,6 +27,11 @@ module TestUtils
     end
   end
 
+  def define_test(method, &block)
+    method_name = "test_#{method}"
+    define_method(method_name, &block)
+  end
+
   private
   def cartprod(*args)
     result = [[]]

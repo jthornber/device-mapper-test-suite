@@ -13,6 +13,7 @@ class NeedsCheckTests < ThinpTestCase
   include Utils
   include TinyVolumeManager
   include DiskUnits
+  extend TestUtils
 
   def setup
     super
@@ -29,7 +30,7 @@ class NeedsCheckTests < ThinpTestCase
 
   tag :thinp_target
 
-  def test_commit_failure_sets_needs_check
+  define_test :commit_failure_sets_needs_check do
     tvm = VM.new
     tvm.add_allocation_volume(@metadata_dev)
     tvm.add_volume(linear_vol('metadata', dev_size(@metadata_dev)))
@@ -92,7 +93,7 @@ class NeedsCheckTests < ThinpTestCase
 
   # Kernel crashing if metadata dev is entirely replaced with error
   # target
-  def test_bz1230271
+  define_test :bz1230271 do
     tvm = VM.new
     tvm.add_allocation_volume(@metadata_dev)
     tvm.add_volume(linear_vol('metadata', dev_size(@metadata_dev)))

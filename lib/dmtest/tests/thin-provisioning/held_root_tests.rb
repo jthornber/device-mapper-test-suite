@@ -12,6 +12,7 @@ class HeldRootTests < ThinpTestCase
   include Tags
   include Utils
   include XMLFormat
+  extend TestUtils
 
   def get_root(pool)
     status = PoolStatus.new(pool)
@@ -29,7 +30,7 @@ class HeldRootTests < ThinpTestCase
 
   #--------------------------------------------------------------
 
-  def test_hold_release_cycle_empty_pool
+  define_test :hold_release_cycle_empty_pool do
     with_standard_pool(@size) do |pool|
       assert_root_unset(pool)
       pool.message(0, "reserve_metadata_snap")
@@ -39,7 +40,7 @@ class HeldRootTests < ThinpTestCase
     end
   end
 
-  def test_cannot_hold_twice
+  define_test :cannot_hold_twice do
     with_standard_pool(@size) do |pool|
       pool.message(0, "reserve_metadata_snap")
       assert_raise(ExitError) do
@@ -48,7 +49,7 @@ class HeldRootTests < ThinpTestCase
     end
   end
 
-  def test_cannot_release_twice
+  define_test :cannot_release_twice do
     with_standard_pool(@size) do |pool|
       pool.message(0, "reserve_metadata_snap")
       pool.message(0, "release_metadata_snap")
@@ -59,7 +60,7 @@ class HeldRootTests < ThinpTestCase
     end
   end
 
-  def test_no_initial_hold
+  define_test :no_initial_hold do
     with_standard_pool(@size) do |pool|
       assert_raise(ExitError) do
         pool.message(0, "release_metadata_snap")
@@ -73,7 +74,7 @@ class HeldRootTests < ThinpTestCase
     end
   end
 
-  def test_held_root_benchmark
+  define_test :held_root_benchmark do
     with_standard_pool(@size) do |pool|
       with_new_thins(pool, @volume_size, 0, 1) do |thin1, thin2|
         time_wipe("fully provision: thin1", thin1)
@@ -102,7 +103,7 @@ class HeldRootTests < ThinpTestCase
     end
   end
 
-  def test_held_dump
+  define_test :held_dump do
     held_metadata = nil
 
     with_standard_pool(@size) do |pool|
@@ -132,7 +133,7 @@ class HeldRootTests < ThinpTestCase
     assert_equal(nr_blocks, right[0].length)
   end
 
-  def test_thin_check_passes_with_a_held_root
+  define_test :thin_check_passes_with_a_held_root do
     with_standard_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin1|
         stomper1 = PatternStomper.new(thin1.path, @data_block_size, :needs_zero => false)

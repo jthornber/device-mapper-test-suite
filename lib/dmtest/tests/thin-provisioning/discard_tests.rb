@@ -163,8 +163,9 @@ end
 class DiscardQuickTests < ThinpTestCase
   include DiscardMixin
   include DiskUnits
+  extend TestUtils
 
-  def test_discard_empty_device
+  define_test :discard_empty_device do
     @size = dev_size(@data_dev)
     @volume_size = @size
     with_discardable_pool(@size, :discard_passdown => false) do |pool|
@@ -186,7 +187,7 @@ class DiscardQuickTests < ThinpTestCase
     assert_no_mappings(md, 0)
   end
 
-  def test_discard_fully_provisioned_device
+  define_test :discard_fully_provisioned_device do
     with_discardable_pool(@size) do |pool|
       with_new_thins(pool, @volume_size, 0, 1) do |thin, thin2|
         wipe_device(thin)
@@ -202,7 +203,7 @@ class DiscardQuickTests < ThinpTestCase
     assert_fully_mapped(md, 1)
   end
 
-  def test_discard_fully_provisioned_device_benchmark
+  define_test :discard_fully_provisioned_device_benchmark do
     @size = [dev_size(@data_dev), gig(80)].min
     @volume_size = @size
 
@@ -226,7 +227,7 @@ class DiscardQuickTests < ThinpTestCase
     assert_no_mappings(md, 0)
   end
 
-  def test_discard_a_fragmented_device
+  define_test :discard_a_fragmented_device do
     @size = [dev_size(@data_dev), gig(80)].min
     @volume_size = @size
 
@@ -264,7 +265,7 @@ class DiscardQuickTests < ThinpTestCase
     assert_no_mappings(md, 0)
   end
 
-  def test_delete_fully_provisioned_device
+  define_test :delete_fully_provisioned_device do
     @size = [dev_size(@data_dev), gig(80)].min
     @volume_size = @size
 
@@ -280,7 +281,7 @@ class DiscardQuickTests < ThinpTestCase
     end
   end
 
-  def test_discard_single_block
+  define_test :discard_single_block do
     with_discardable_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin)
@@ -298,7 +299,7 @@ class DiscardQuickTests < ThinpTestCase
 
   # If a block is shared we can unmap the block, but must not pass the
   # discard down to the underlying device.
-  def test_discard_to_a_shared_block_doesnt_get_passed_down
+  define_test :discard_to_a_shared_block_doesnt_get_passed_down do
     with_discardable_pool(@size) do |pool, data_dev|
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin, @data_block_size)
@@ -323,7 +324,7 @@ class DiscardQuickTests < ThinpTestCase
     end
   end
 
-  def test_discard_to_a_previously_shared_block_does_get_passed_down
+  define_test :discard_to_a_previously_shared_block_does_get_passed_down do
     with_discardable_pool(@size , :format => true, :discard_passdown => true) do |pool, data_dev|
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin, @data_block_size)
@@ -351,7 +352,7 @@ class DiscardQuickTests < ThinpTestCase
     end
   end
 
-  def test_discard_partial_blocks
+  define_test :discard_partial_blocks do
     with_discardable_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin)
@@ -365,7 +366,7 @@ class DiscardQuickTests < ThinpTestCase
     assert_fully_mapped(md, 0)
   end
 
-  def test_discard_same_blocks
+  define_test :discard_same_blocks do
     @data_block_size = 128
 
     with_discardable_pool(@size) do |pool|
@@ -381,7 +382,7 @@ class DiscardQuickTests < ThinpTestCase
     end
   end
 
-  def test_discard_with_background_io
+  define_test :discard_with_background_io do
     with_discardable_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         tid = Thread.new(thin) do |thin|
@@ -402,7 +403,7 @@ class DiscardQuickTests < ThinpTestCase
     end
   end
 
-  def test_disable_discard
+  define_test :disable_discard do
     with_discardable_pool(@size, :discard => false) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin, 4)
@@ -416,7 +417,7 @@ class DiscardQuickTests < ThinpTestCase
 
   # we don't allow people to change their minds about top level
   # discard support.
-  def test_change_discard_with_reload_fails
+  define_test :change_discard_with_reload_fails do
     with_discardable_pool(@size, :discard => true) do |pool, data_dev|
       assert_raise(ExitError) do
         table = Table.new(ThinPoolTarget.new(@size, @metadata_dev, data_dev,
@@ -434,7 +435,7 @@ class DiscardQuickTests < ThinpTestCase
     end
   end
 
-  def test_discard_origin_does_not_effect_snap
+  define_test :discard_origin_does_not_effect_snap do
     with_discardable_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin)
@@ -451,7 +452,7 @@ class DiscardQuickTests < ThinpTestCase
     end
   end
 
-  def test_discard_past_the_end_fails
+  define_test :discard_past_the_end_fails do
     with_discardable_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin)
@@ -475,7 +476,7 @@ class DiscardSlowTests < ThinpTestCase
   include DiscardMixin
   extend TestUtils
 
-  def test_discard_alternate_blocks
+  define_test :discard_alternate_blocks do
     with_discardable_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin)
@@ -516,7 +517,7 @@ class DiscardSlowTests < ThinpTestCase
     end
   end
 
-  def test_discard_random_sectors
+  define_test :discard_random_sectors do
     do_discard_random_sectors(10 * 60)
   end
 
@@ -589,42 +590,42 @@ class DiscardSlowTests < ThinpTestCase
     end
   end
 
-  def test_discard_lower_both_upper_both
+  define_test :discard_lower_both_upper_both do
     do_discard_levels(:lower => true,
                       :lower_passdown => true,
                       :upper => true,
                       :upper_passdown => true)
   end
 
-  def test_discard_lower_none_upper_both
+  define_test :discard_lower_none_upper_both do
     do_discard_levels(:lower => false,
                       :lower_passdown => false,
                       :upper => true,
                       :upper_passdown => true)
   end
 
-  def test_discard_lower_both_upper_none
+  define_test :discard_lower_both_upper_none do
     do_discard_levels(:lower => true,
                       :lower_passdown => true,
                       :upper => false,
                       :upper_passdown => false)
   end
 
-  def test_discard_lower_none_upper_none
+  define_test :discard_lower_none_upper_none do
     do_discard_levels(:lower => false,
                       :lower_passdown => false,
                       :upper => false,
                       :upper_passdown => false)
   end
 
-  def test_discard_lower_both_upper_discard
+  define_test :discard_lower_both_upper_discard do
     do_discard_levels(:lower => true,
                       :lower_passdown => true,
                       :upper => true,
                       :upper_passdown => false)
   end
 
-  def test_discard_lower_discard_upper_both
+  define_test :discard_lower_discard_upper_both do
     do_discard_levels(:lower => true,
                       :lower_passdown => false,
                       :upper => true,
@@ -659,15 +660,15 @@ class DiscardSlowTests < ThinpTestCase
     end
   end
 
-  def test_fs_discard_ext4
+  define_test :fs_discard_ext4 do
     do_discard_test(:ext4)
   end
 
-  def test_fs_discard_xfs
+  define_test :fs_discard_xfs do
     do_discard_test(:xfs)
   end
 
-  def test_discard_after_out_of_space
+  define_test :discard_after_out_of_space do
     with_standard_pool(@size, :error_if_no_space => true) do |pool|
       with_new_thin(pool, @size * 2, 0) do |thin|
         begin
@@ -723,6 +724,7 @@ end
 
 class FakeDiscardTests < ThinpTestCase
   include DiscardMixin
+  extend TestUtils
 
   def check_discard_thin_working(thin)
     wipe_device(thin, @data_block_size)
@@ -733,7 +735,7 @@ class FakeDiscardTests < ThinpTestCase
     assert_discards(traces[0], 0,  @data_block_size)
   end
 
-  def test_enable_passdown
+  define_test :enable_passdown do
     with_fake_discard(:granularity => 128, :max_discard_sectors => 512) do |fd_dev|
       with_custom_data_pool(fd_dev, @size, :discard_passdown => true) do |pool|
         check_discard_passdown_enabled(pool, fd_dev)
@@ -741,7 +743,7 @@ class FakeDiscardTests < ThinpTestCase
     end
   end
 
-  def test_disable_passdown
+  define_test :disable_passdown do
     with_fake_discard(:granularity => 128, :max_discard_sectors => 512) do |fd_dev|
       with_custom_data_pool(fd_dev, @size, :discard_passdown => false) do |pool|
         check_discard_passdown_disabled(pool, fd_dev)
@@ -749,7 +751,7 @@ class FakeDiscardTests < ThinpTestCase
     end
   end
 
-  def test_pool_granularity_matches_data_dev
+  define_test :pool_granularity_matches_data_dev do
     # when discard_passdown is enabled
     pool_bs = 512
     @data_block_size = pool_bs

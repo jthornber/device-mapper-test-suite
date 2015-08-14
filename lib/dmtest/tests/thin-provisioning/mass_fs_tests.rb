@@ -12,6 +12,7 @@ class MassFsTests < ThinpTestCase
   include Tags
   include TinyVolumeManager
   include Utils
+  extend TestUtils
 
   def setup
     super
@@ -84,50 +85,50 @@ class MassFsTests < ThinpTestCase
 
   tag :linear_target, :slow
 
-  def test_mass_linear_create_apply_remove_device
+  define_test :mass_linear_create_apply_remove_device do
     _mass_linear_create_apply_remove(:device, "rsync", @max)
   end
 
-  def test_mass_linear_create_apply_remove_ext4
+  define_test :mass_linear_create_apply_remove_ext4 do
     _mass_linear_create_apply_remove(:ext4, "rsync", @max)
   end
 
-  def test_mass_linear_create_apply_remove_xfs
+  define_test :mass_linear_create_apply_remove_xfs do
     _mass_linear_create_apply_remove(:xfs, "rsync", @max)
   end
 
 
   tag :thin_target, :slow, :bulk
 
-  def test_mass_create_apply_remove_rsync_ext4
+  define_test :mass_create_apply_remove_rsync_ext4 do
     _mass_create_apply_remove(:ext4, "rsync", @max)
   end
 
-  def test_mass_create_apply_remove_rsync_xfs
+  define_test :mass_create_apply_remove_rsync_xfs do
     _mass_create_apply_remove(:xfs, "rsync", @max)
   end
 
-  def test_mass_create_apply_remove_dtseq_ext4
+  define_test :mass_create_apply_remove_dtseq_ext4 do
     _mass_create_apply_remove(:ext4, "sequential", @max)
   end
 
-  def test_mass_create_apply_remove_dtseq_xfs
+  define_test :mass_create_apply_remove_dtseq_xfs do
     _mass_create_apply_remove(:xfs, "sequential", @max)
   end
 
-  def test_mass_create_apply_remove_dtrandom_ext4
+  define_test :mass_create_apply_remove_dtrandom_ext4 do
     _mass_create_apply_remove(:ext4, "random", @max)
   end
 
-  def test_mass_create_apply_remove_dtrandom_xfs
+  define_test :mass_create_apply_remove_dtrandom_xfs do
     _mass_create_apply_remove(:xfs, "random", @max)
   end
 
-  def test_mass_create_apply_remove_dtseq_device
+  define_test :mass_create_apply_remove_dtseq_device do
     _mass_create_apply_remove(:device, "sequential", @max)
   end
 
-  def test_mass_create_apply_remove_dtrandom_device
+  define_test :mass_create_apply_remove_dtrandom_device do
     _mass_create_apply_remove(:device, "random", @max)
   end
 
@@ -154,35 +155,35 @@ class MassFsTests < ThinpTestCase
 
   tag :thin_target, :slow, :config_load
 
-  def test_mass_create_apply_remove_with_config_load_rsync_ext4
+  define_test :mass_create_apply_remove_with_config_load_rsync_ext4 do
     _mass_create_apply_remove_with_config_load(:ext4, "rsync" , @max)
   end
 
-  def test_mass_create_apply_remove_with_config_load_rsync_xfs
+  define_test :mass_create_apply_remove_with_config_load_rsync_xfs do
     _mass_create_apply_remove_with_config_load(:xfs, "rsync" , @max)
   end
 
-  def test_mass_create_apply_remove_with_config_load_dtseq_ext4
+  define_test :mass_create_apply_remove_with_config_load_dtseq_ext4 do
     _mass_create_apply_remove_with_config_load(:ext4, "sequential" , @max)
   end
 
-  def test_mass_create_apply_remove_with_config_load_dtrandom_ext4
+  define_test :mass_create_apply_remove_with_config_load_dtrandom_ext4 do
     _mass_create_apply_remove_with_config_load(:ext4, "random" , @max)
   end
 
-  def test_mass_create_apply_remove_with_config_load_dtseq_xfs
+  define_test :mass_create_apply_remove_with_config_load_dtseq_xfs do
     _mass_create_apply_remove_with_config_load(:xfs, "sequential", @max)
   end
 
-  def test_mass_create_apply_remove_with_config_load_dtrandom_xfs
+  define_test :mass_create_apply_remove_with_config_load_dtrandom_xfs do
     _mass_create_apply_remove_with_config_load(:xfs, "random", @max)
   end
 
-  def test_mass_create_apply_remove_with_config_load_dtseq_device
+  define_test :mass_create_apply_remove_with_config_load_dtseq_device do
     _mass_create_apply_remove_with_config_load(:device, "sequential", @max)
   end
 
-  def test_mass_create_apply_remove_with_config_load_dtrandom_device
+  define_test :mass_create_apply_remove_with_config_load_dtrandom_device do
     _mass_create_apply_remove_with_config_load(:device, "random", @max)
   end
 end

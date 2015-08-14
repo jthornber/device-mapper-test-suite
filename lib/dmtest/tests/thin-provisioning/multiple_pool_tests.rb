@@ -10,6 +10,7 @@ class MultiplePoolTests < ThinpTestCase
   include Tags
   include TinyVolumeManager
   include Utils
+  extend TestUtils
 
   def setup
     super
@@ -25,7 +26,7 @@ class MultiplePoolTests < ThinpTestCase
 
   tag :thinp_target, :quick
 
-  def test_two_pools_pointing_to_the_same_metadata_fails
+  define_test :two_pools_pointing_to_the_same_metadata_fails do
     assert_raise(ExitError) do
       with_standard_pool(@size) do |pool1|
         with_standard_pool(@size) do |pool2|
@@ -37,7 +38,7 @@ class MultiplePoolTests < ThinpTestCase
 
   tag :thinp_target, :slow
 
-  def test_two_pools_can_create_thins
+  define_test :two_pools_can_create_thins do
     # carve up the data device into two metadata volumes and two data
     # volumes.
     tvm = VM.new
@@ -97,7 +98,7 @@ class MultiplePoolTests < ThinpTestCase
     end
   end
 
-  def test_stacked_pools
+  define_test :stacked_pools do
     with_pool_volume(@data_dev, @volume_size) do |layer1|
       with_pool_volume(layer1) do |layer2|
         with_pool_volume(layer2) {|layer3| dt_device(layer3)}

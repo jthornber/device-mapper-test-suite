@@ -2,6 +2,7 @@ require 'dmtest/benchmarking'
 require 'dmtest/bufio'
 require 'dmtest/device-mapper/lexical_operators'
 require 'dmtest/device_mapper'
+require 'dmtest/disk-units'
 require 'dmtest/log'
 require 'dmtest/metadata-utils'
 require 'dmtest/pool-stack'
@@ -33,6 +34,7 @@ module ThinpTestMixin
   include MetadataUtils
   include ProcessControl
   include TinyVolumeManager
+  include DiskUnits
 
   # A little shim to convert to the new config
   def get_config

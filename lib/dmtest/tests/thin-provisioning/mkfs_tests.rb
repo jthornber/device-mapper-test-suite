@@ -11,6 +11,7 @@ class MkfsTests < ThinpTestCase
   include Tags
   include TinyVolumeManager
   include Utils
+  extend TestUtils
 
   def setup
     super
@@ -43,12 +44,12 @@ class MkfsTests < ThinpTestCase
     end
   end
 
-  def test_mkfs_ext4
+  define_test :mkfs_ext4 do
     mkfs_linear(:ext4)
     mkfs_thin(:ext4)
   end
 
-  def test_mkfs_xfs
+  define_test :mkfs_xfs do
     mkfs_linear(:xfs)
     mkfs_thin(:xfs)
   end

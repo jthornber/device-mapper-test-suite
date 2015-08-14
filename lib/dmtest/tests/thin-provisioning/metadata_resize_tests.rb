@@ -17,6 +17,7 @@ class MetadataResizeTests < ThinpTestCase
   include Tags
   include Utils
   include TinyVolumeManager
+  extend TestUtils
 
   def setup
     super
@@ -31,7 +32,7 @@ class MetadataResizeTests < ThinpTestCase
 
   # FIXME: replace all these explicit pool tables with stacks
 
-  def test_resize_no_io
+  define_test :resize_no_io do
     md_size = meg(1)
     data_size = meg(100)
     @tvm.add_volume(linear_vol('metadata', md_size))
@@ -64,7 +65,7 @@ class MetadataResizeTests < ThinpTestCase
     end
   end
 
-  def test_resize_no_io_with_extra_checking
+  define_test :resize_no_io_with_extra_checking do
     md_size = meg(1)
     data_size = meg(100)
     @tvm.add_volume(linear_vol('metadata', md_size))
@@ -91,7 +92,7 @@ class MetadataResizeTests < ThinpTestCase
     end
   end
 
-  def test_resize_with_io
+  define_test :resize_with_io do
     data_size = gig(1)
     @tvm.add_volume(linear_vol('metadata', meg(1)))
     @tvm.add_volume(linear_vol('data', data_size))
@@ -128,7 +129,7 @@ class MetadataResizeTests < ThinpTestCase
     end
   end
 
-  def test_resize_after_exhaust
+  define_test :resize_after_exhaust do
     metadata_reserve = meg(32)
     data_size = [@tvm.free_space - metadata_reserve, gig(10)].min
     thin_size = data_size / 2   # because some data blocks may be misplaced during the abort
@@ -183,7 +184,7 @@ class MetadataResizeTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_exhausting_metadata_space_aborts_to_ro_mode
+  define_test :exhausting_metadata_space_aborts_to_ro_mode do
     md_blocks = 8
     md_size = 64 * md_blocks
     data_size = gig(2)
@@ -249,7 +250,7 @@ class MetadataResizeTests < ThinpTestCase
   #--------------------------------
 
   # This scenario was reported by Kabi
-  def test_thin_remove_works_after_resize
+  define_test :thin_remove_works_after_resize do
     md_size = meg(2)
     data_size = meg(100)
     @tvm.add_volume(linear_vol('metadata', md_size))

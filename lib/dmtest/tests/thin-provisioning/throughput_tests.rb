@@ -13,6 +13,7 @@ class ThroughputTests < ThinpTestCase
   include Utils
   include DiskUnits
   include XMLFormat
+  extend TestUtils
 
   def setup
     super
@@ -105,25 +106,25 @@ class ThroughputTests < ThinpTestCase
     end
   end
 
-  def test_provisioning_throughput
+  define_test :provisioning_throughput do
     across_various_block_and_io_sizes do |block_size, io_size|
       throughput_unprovisioned(block_size, io_size)
     end
   end
 
-  def test_snap_breaking_throughput
+  define_test :snap_breaking_throughput do
     across_various_block_and_io_sizes do |block_size, io_size|
       throughput_snapped(block_size, io_size)
     end      
   end
 
-  def test_snap_already_broken_throughput
+  define_test :snap_already_broken_throughput do
     across_various_block_and_io_sizes do |block_size, io_size|
       throughput_snap_broken(block_size, io_size)
     end
   end
 
-  def test_linear_throughput
+  define_test :linear_throughput do
     across_various_io_sizes do |io_size|
       throughput_linear(io_size)
     end
@@ -168,7 +169,7 @@ class ThroughputTests < ThinpTestCase
     end
   end
 
-  def test_multithreaded_layout_reread_throughput
+  define_test :multithreaded_layout_reread_throughput do
     across_various_block_and_io_sizes do |block_size, io_size|
       throughput_multithreaded_layout_reread(block_size, io_size)
     end
@@ -189,7 +190,7 @@ class ThroughputTests < ThinpTestCase
     end
   end
 
-  def test_multithreaded_layout_analysis
+  define_test :multithreaded_layout_analysis do
     File.open("multithreaded_layout_analysis.log", "w") do |file|
       across_various_block_and_io_sizes do |block_size, io_size|
         file.puts "block_size = #{block_size}, io_size = #{io_size}"

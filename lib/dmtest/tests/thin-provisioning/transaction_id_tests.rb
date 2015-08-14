@@ -10,6 +10,7 @@ require 'dmtest/thinp-test'
 class TransactionIdTests < ThinpTestCase
   include Tags
   include Utils
+  extend TestUtils
 
   def trans_id(pool)
     PoolStatus.new(pool).transaction_id
@@ -19,13 +20,13 @@ class TransactionIdTests < ThinpTestCase
     pool.message(0, "set_transaction_id #{old} #{new}")
   end
 
-  def test_initial_trans_id_is_zero
+  define_test :initial_trans_id_is_zero do
     with_standard_pool(@size) do |pool|
       assert_equal 0, trans_id(pool)
     end
   end
 
-  def test_set_trans_id_works
+  define_test :set_trans_id_works do
     with_standard_pool(@size) do |pool|
       0.upto(1000) do |n|
         set_trans_id(pool, n, n + 1)
@@ -33,7 +34,7 @@ class TransactionIdTests < ThinpTestCase
     end
   end
 
-  def test_set_trans_id_check_first_arg
+  define_test :set_trans_id_check_first_arg do
     with_standard_pool(@size) do |pool|
       assert_raise(ExitError) do
         set_trans_id(pool, 500, 1000)

@@ -4,6 +4,7 @@ require 'dmtest/utils'
 require 'dmtest/tags'
 require 'dmtest/disk-units'
 require 'dmtest/thinp-test'
+require 'dmtest/test-utils'
 require 'timeout'
 require 'rspec/expectations'
 
@@ -13,6 +14,7 @@ class CrashTests < ThinpTestCase
   include Tags
   include Utils
   include TinyVolumeManager
+  extend TestUtils
 
   def setup
     super
@@ -26,13 +28,13 @@ class CrashTests < ThinpTestCase
 
   # In all these tests we're interested in whether the thin_check that
   # runs when the pool is taken down, passes.
-  def test_aborting_a_fresh_pool
+  define_test :aborting_a_fresh_pool do
     with_standard_pool(@size) do |pool|
       pool.message(0, "set_mode read-only abort")
     end
   end
 
-  def test_aborting_a_provisioned_thin
+  define_test :aborting_a_provisioned_thin do
     with_standard_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin)
@@ -42,7 +44,7 @@ class CrashTests < ThinpTestCase
     end
   end
 
-  def test_aborting_during_io
+  define_test :aborting_during_io do
     with_standard_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         tid = Thread.new(thin) do |thin|

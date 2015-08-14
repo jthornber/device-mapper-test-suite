@@ -18,6 +18,7 @@ require 'dmtest/thinp-test'
 class FlushTriggersCommitTests < ThinpTestCase
   include Utils
   include BlkTrace
+  extend TestUtils
 
   def flush(dev)
     File.open(dev.path, "w") do |file|
@@ -57,7 +58,7 @@ class FlushTriggersCommitTests < ThinpTestCase
     end
   end
 
-  def test_commit_if_changed
+  define_test :commit_if_changed do
     with_standard_pool(@size) do |pool|
       with_new_thins(pool, @volume_size, 0, 1) do |thin1, thin2|
         do_commit_checks(thin1)
@@ -71,7 +72,7 @@ class FlushTriggersCommitTests < ThinpTestCase
     end
   end
 
-  def test_discard_triggers_commit
+  define_test :discard_triggers_commit do
     with_standard_pool(@size) do |pool|
       with_new_thins(pool, @volume_size, 0, 1) do |thin1, thin2|
         wipe_device(thin1, @data_block_size)

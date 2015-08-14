@@ -16,6 +16,7 @@ class FSBench < ThinpTestCase
   include Tags
   include Utils
   include XMLFormat
+  extend TestUtils
 
   def timed_block(desc, &block)
     lambda {report_time(desc, &block)}
@@ -90,15 +91,15 @@ class FSBench < ThinpTestCase
     end
   end
 
-  def test_bonnie_raw_device
+  define_test :bonnie_raw_device do
     raw_test {bonnie}
   end
 
-  def test_bonnie_thin
+  define_test :bonnie_thin do
     thin_test {bonnie}
   end
 
-  def test_bonnie_rolling_snap
+  define_test :bonnie_rolling_snap do
     dir = Dir.pwd
     n = 0
 
@@ -111,13 +112,13 @@ class FSBench < ThinpTestCase
     rolling_snap_test(&body)
   end
 
-  def test_git_extract_raw
+  define_test :git_extract_raw do
     with_standard_linear do |linear|
       extract(linear)
     end
   end
 
-  def test_git_extract_thin
+  define_test :git_extract_thin do
     with_standard_pool(@size, :zero => false, :block_size => 2048) do |pool|
       with_new_thin(pool, @size, 0) do |thin|
         extract(thin)

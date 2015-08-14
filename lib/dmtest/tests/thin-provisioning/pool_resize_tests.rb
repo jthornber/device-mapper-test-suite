@@ -13,6 +13,7 @@ class PoolAndDataSizeMatchTests < ThinpTestCase
   include Tags
   include Utils
   include TinyVolumeManager
+  extend TestUtils
 
   def setup
     super
@@ -37,7 +38,7 @@ class PoolAndDataSizeMatchTests < ThinpTestCase
 
   tag :thinp_target
 
-  def test_data_cannot_be_smaller_than_pool_on_initial_load
+  define_test :data_cannot_be_smaller_than_pool_on_initial_load do
     with_dev(@tvm.table('data')) do |data|
       table = pool_table(@size * 2, data)
 
@@ -51,7 +52,7 @@ class PoolAndDataSizeMatchTests < ThinpTestCase
     end
   end
 
-  def test_data_cannot_be_smaller_than_pool_on_reload
+  define_test :data_cannot_be_smaller_than_pool_on_reload do
     with_dev(@tvm.table('data')) do |data|
       table = pool_table(@size, data)
       table2 = pool_table(@size * 2, data)
@@ -74,7 +75,7 @@ class PoolAndDataSizeMatchTests < ThinpTestCase
     end
   end
 
-  def test_extra_data_space_must_not_be_used_on_initial_load
+  define_test :extra_data_space_must_not_be_used_on_initial_load do
     with_dev(@tvm.table('data')) do |data|
       table = pool_table(@size / 2, data)
 
@@ -85,7 +86,7 @@ class PoolAndDataSizeMatchTests < ThinpTestCase
     end
   end
 
-  def test_extra_data_space_must_not_be_used_on_suspend
+  define_test :extra_data_space_must_not_be_used_on_suspend do
     with_dev(@tvm.table('data')) do |data|
       table = pool_table(@size / 2, data)
 
@@ -104,7 +105,7 @@ class PoolAndDataSizeMatchTests < ThinpTestCase
     end
   end
 
-  def test_extra_data_space_must_not_be_used_on_reload
+  define_test :extra_data_space_must_not_be_used_on_reload do
     with_dev(@tvm.table('data')) do |data|
       table = pool_table(@size / 2, data)
 
@@ -132,6 +133,7 @@ class PoolReloadWithSpaceTests < ThinpTestCase
   include Tags
   include Utils
   include TinyVolumeManager
+  extend TestUtils
 
   def setup
     super
@@ -143,7 +145,7 @@ class PoolReloadWithSpaceTests < ThinpTestCase
 
   tag :thinp_target
 
-  def test_reload_no_io
+  define_test :reload_no_io do
     table = Table.new(ThinPoolTarget.new(@size, @metadata_dev, @data_dev,
                                          @data_block_size, @low_water_mark))
 
@@ -154,7 +156,7 @@ class PoolReloadWithSpaceTests < ThinpTestCase
     end
   end
 
-  def test_reload_io
+  define_test :reload_io do
     table = Table.new(ThinPoolTarget.new(20971520, @metadata_dev, @data_dev,
                                          @data_block_size, @low_water_mark))
 
@@ -186,6 +188,7 @@ class PoolResizeWithSpaceTests < ThinpTestCase
   include Utils
   include TinyVolumeManager
   include DiskUnits
+  extend TestUtils
 
   def setup
     super
@@ -202,7 +205,7 @@ class PoolResizeWithSpaceTests < ThinpTestCase
 
   tag :thinp_target
 
-  def test_resize
+  define_test :resize do
     target_step = @size / 8
     with_standard_pool(target_step) do |pool|
       2.upto(8) do |n|
@@ -214,7 +217,7 @@ class PoolResizeWithSpaceTests < ThinpTestCase
     end
   end
 
-  def test_commit_failure_sets_needs_check
+  define_test :commit_failure_sets_needs_check do
     tvm = VM.new
     tvm.add_allocation_volume(@metadata_dev)
     tvm.add_volume(linear_vol('metadata', dev_size(@metadata_dev)))
@@ -275,6 +278,7 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
   include Utils
   include TinyVolumeManager
   include DiskUnits
+  extend TestUtils
 
   def setup
     super
@@ -308,7 +312,7 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
 
   tag :thinp_target
 
-  def test_out_of_data_space_errors_immediately_if_requested
+  define_test :out_of_data_space_errors_immediately_if_requested do
     with_standard_pool(@volume_size / 2, :error_if_no_space => true) do |pool|
       failed = false
 
@@ -326,7 +330,7 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
     end
   end
 
-  def test_out_of_data_space_times_out
+  define_test :out_of_data_space_times_out do
     with_standard_pool(@volume_size / 2, :error_if_no_space => false) do |pool|
       failed = false
 
@@ -345,7 +349,7 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
     end
   end
 
-  def test_resize_after_OODS_error_immediately
+  define_test :resize_after_OODS_error_immediately do
     tvm = VM.new
     tvm.add_allocation_volume(@data_dev)
 
@@ -389,7 +393,7 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
     end
   end
 
-  def test_resize_after_OODS_held_io
+  define_test :resize_after_OODS_held_io do
     tvm = VM.new
     tvm.add_allocation_volume(@data_dev)
 
@@ -441,7 +445,7 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
   # LVM loads a table before the suspend/resume cycle.  So we need to
   # test preload scenarios.
 
-  def test_resize_after_OODS_held_io_preload
+  define_test :resize_after_OODS_held_io_preload do
     tvm = VM.new
     tvm.add_allocation_volume(@data_dev)
 
@@ -486,7 +490,7 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
     end
   end
 
-  def test_resize_after_OODS_held_io_timed_out_preload
+  define_test :resize_after_OODS_held_io_timed_out_preload do
     tvm = VM.new
     tvm.add_allocation_volume(@data_dev)
 
@@ -599,7 +603,7 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
   end
 
   # bz #1095639
-  def test_io_to_provisioned_region_with_OODS_held_io
+  define_test :io_to_provisioned_region_with_OODS_held_io do
     tvm = VM.new
     tvm.add_allocation_volume(@data_dev)
 
@@ -656,7 +660,7 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
   #
   # This test isn't great; it only intermittently failed before the
   # bug was fixed.
-  def test_resize_after_OODS_held_io_ext4
+  define_test :resize_after_OODS_held_io_ext4 do
     tvm = VM.new
     tvm.add_allocation_volume(@data_dev)
 
@@ -757,7 +761,7 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
     end
   end
 
-  def test_resize_io
+  define_test :resize_io do
     resize_io_many(8)
   end
 

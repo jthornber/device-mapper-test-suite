@@ -4,6 +4,7 @@ require 'dmtest/process'
 require 'dmtest/utils'
 require 'dmtest/tags'
 require 'dmtest/thinp-test'
+require 'dmtest/test-utils'
 
 #----------------------------------------------------------------
 
@@ -12,6 +13,7 @@ class CreationTests < ThinpTestCase
   include TinyVolumeManager
   include Utils
   include BlkTrace
+  extend TestUtils
 
   def setup
     super
@@ -20,27 +22,27 @@ class CreationTests < ThinpTestCase
 
   tag :thinp_target, :create_lots
 
-  def test_create_lots_of_empty_thins
+  define_test :create_lots_of_empty_thins do
     with_standard_pool(@size) do |pool|
       0.upto(@max) {|id| pool.message(0, "create_thin #{id}")}
     end
   end
 
-  def test_create_lots_of_snaps
+  define_test :create_lots_of_snaps do
     with_standard_pool(@size) do |pool|
       pool.message(0, "create_thin 0")
       1.upto(@max) {|id| pool.message(0, "create_snap #{id} 0")}
     end
   end
 
-  def test_create_lots_of_recursive_snaps
+  define_test :create_lots_of_recursive_snaps do
     with_standard_pool(@size) do |pool|
       pool.message(0, "create_thin 0")
       1.upto(@max) {|id| pool.message(0, "create_snap #{id} #{id - 1}")}
     end
   end
 
-  def test_activate_thin_while_pool_suspended_fails
+  define_test :activate_thin_while_pool_suspended_fails do
     with_standard_pool(@size) do |pool|
       pool.message(0, "create_thin 0")
       pool.pause do
@@ -57,7 +59,7 @@ class CreationTests < ThinpTestCase
     end
   end
 
-  def test_huge_block_size
+  define_test :huge_block_size do
     size = @size
     data_block_size = 524288
     volume_size = 524288
@@ -70,41 +72,41 @@ class CreationTests < ThinpTestCase
 
   tag :thinp_target, :quick
 
-  def test_non_power_of_2_data_block_size_fails
+  define_test :non_power_of_2_data_block_size_fails do
     table = Table.new(ThinPoolTarget.new(@size, @metadata_dev, @data_dev,
                                          @data_block_size + 57, @low_water_mark))
     assert_bad_table(table)
   end
 
-  def test_too_small_data_block_size_fails
+  define_test :too_small_data_block_size_fails do
     table = Table.new(ThinPoolTarget.new(@size, @metadata_dev, @data_dev,
                                          64, @low_water_mark))
     assert_bad_table(table)
   end
 
-  def test_too_large_data_block_size_fails
+  define_test :too_large_data_block_size_fails do
     table = Table.new(ThinPoolTarget.new(@size, @metadata_dev, @data_dev,
                                          2**21 + 1, @low_water_mark))
     assert_bad_table(table)
   end
 
-  def test_largest_data_block_size_succeeds
+  define_test :largest_data_block_size_succeeds do
     table = Table.new(ThinPoolTarget.new(@size, @metadata_dev, @data_dev,
                                          2**21, @low_water_mark))
     with_dev(table) {|pool| {}}
   end
 
-  def test_too_large_a_dev_t_fails
+  define_test :too_large_a_dev_t_fails do
     with_standard_pool(@size) do |pool|
       assert_raises(ExitError) {pool.message(0, "create_thin #{2**24}")}
     end
   end
 
-  def test_largest_dev_t_succeeds
+  define_test :largest_dev_t_succeeds do
     with_standard_pool(@size) {|pool| pool.message(0, "create_thin #{2**24 - 1}")}
   end
 
-  def test_too_small_a_metadata_dev_fails
+  define_test :too_small_a_metadata_dev_fails do
     tvm = VM.new
     tvm.add_allocation_volume(@data_dev)
 

@@ -12,6 +12,7 @@ class RestoreTests < ThinpTestCase
   include Tags
   include Utils
   include MetadataGenerator
+  extend TestUtils
 
   def setup
     super
@@ -28,7 +29,7 @@ class RestoreTests < ThinpTestCase
     end
   end
 
-  def test_dump_is_idempotent
+  define_test :dump_is_idempotent do
     prepare_md
 
     dump_metadata(@metadata_dev) do |xml_path1|
@@ -38,7 +39,7 @@ class RestoreTests < ThinpTestCase
     end
   end
 
-  def test_dump_restore_dump_is_idempotent
+  define_test :dump_restore_dump_is_idempotent do
     prepare_md
 
     dump_metadata(@metadata_dev) do |xml_path1|
@@ -84,15 +85,15 @@ class RestoreTests < ThinpTestCase
     end
   end
 
-  def test_kernel_happy_with_linear_restored_data
+  define_test :kernel_happy_with_linear_restored_data do
     do_kernel_happy_test(:linear_array)
   end
 
-  def test_kernel_happy_with_random_restored_data
+  define_test :kernel_happy_with_random_restored_data do
     do_kernel_happy_test(:shuffled_array)
   end
 
-  def test_kernel_can_use_restored_volume
+  define_test :kernel_can_use_restored_volume do
     # fully provision a dev
     with_standard_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) {|thin| wipe_device(thin)}
@@ -127,7 +128,7 @@ class RestoreTests < ThinpTestCase
   mk_cmd(:thin_dump)
   mk_cmd(:thin_restore)
 
-  def test_thin_check
+  define_test :thin_check do
     thin_check() do |stdout, stderr, e|
       assert(e)
       assert(/No input file provided./.match(stderr))
@@ -170,7 +171,7 @@ class RestoreTests < ThinpTestCase
     end
   end
 
-  def test_thin_dump
+  define_test :thin_dump do
     thin_dump() do |stdout, stderr, e|
       assert(e)
       assert(/No input file provided./.match(stderr))
@@ -184,7 +185,7 @@ class RestoreTests < ThinpTestCase
     end
   end
 
-  def test_thin_restore
+  define_test :thin_restore do
     thin_restore() do |stdout, stderr, e|
       assert(e)
       assert(/No input file provided./.match(stderr))

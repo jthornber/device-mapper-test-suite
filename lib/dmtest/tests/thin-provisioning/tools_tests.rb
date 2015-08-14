@@ -13,6 +13,7 @@ class ToolsTests < ThinpTestCase
   include Utils
   include BlkTrace
   include MetadataGenerator
+  extend TestUtils
 
   def setup
     super
@@ -40,11 +41,11 @@ class ToolsTests < ThinpTestCase
     end
   end
 
-  def test_you_cannot_run_thin_check_on_live_metadata
+  define_test :you_cannot_run_thin_check_on_live_metadata do
     forbidden_on_live_metadata("thin_check #{@metadata_dev}")
   end
 
-  def test_you_cannot_run_thin_restore_on_a_live_metadata
+  define_test :you_cannot_run_thin_restore_on_a_live_metadata do
     metadata = create_metadata(5, 1024, :linear_array)
 
     Utils::with_temp_file('metadata_xml') do |file|
@@ -56,11 +57,11 @@ class ToolsTests < ThinpTestCase
     end
   end
 
-  def test_you_cannot_dump_live_metadata
+  define_test :you_cannot_dump_live_metadata do
     forbidden_on_live_metadata("thin_dump #{@metadata_dev}")
   end
 
-  def test_you_can_dump_a_metadata_snapshot
+  define_test :you_can_dump_a_metadata_snapshot do
     allowed_on_live_metadata("thin_dump --metadata-snap #{@metadata_dev}")
   end
 end
