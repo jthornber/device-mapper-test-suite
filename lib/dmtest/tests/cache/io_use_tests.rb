@@ -6,7 +6,6 @@ require 'dmtest/cache_utils'
 require 'dmtest/disk-units'
 require 'dmtest/git'
 require 'dmtest/log'
-require 'dmtest/tags'
 require 'dmtest/test-utils'
 require 'dmtest/thinp-test'
 require 'dmtest/tvm.rb'
@@ -18,7 +17,6 @@ require 'rspec/expectations'
 
 class IOUseTests < ThinpTestCase
   include GitExtract
-  include Tags
   include Utils
   include BlkTrace
   include DiskUnits

@@ -1,7 +1,6 @@
 require 'dmtest/log'
 require 'dmtest/process'
 require 'dmtest/utils'
-require 'dmtest/tags'
 require 'dmtest/disk-units'
 require 'dmtest/thinp-test'
 require 'timeout'
@@ -10,7 +9,6 @@ require 'rspec/expectations'
 #----------------------------------------------------------------
 
 class PoolAndDataSizeMatchTests < ThinpTestCase
-  include Tags
   include Utils
   include TinyVolumeManager
   extend TestUtils
@@ -130,7 +128,6 @@ end
 #----------------------------------------------------------------
 
 class PoolReloadWithSpaceTests < ThinpTestCase
-  include Tags
   include Utils
   include TinyVolumeManager
   extend TestUtils
@@ -184,7 +181,6 @@ end
 #----------------------------------------------------------------
 
 class PoolResizeWithSpaceTests < ThinpTestCase
-  include Tags
   include Utils
   include TinyVolumeManager
   include DiskUnits
@@ -274,7 +270,6 @@ end
 #----------------------------------------------------------------
 
 class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
-  include Tags
   include Utils
   include TinyVolumeManager
   include DiskUnits

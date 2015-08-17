@@ -2,7 +2,6 @@ require 'dmtest/disk-units'
 require 'dmtest/fs'
 require 'dmtest/log'
 require 'dmtest/pattern_stomper'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 require 'dmtest/tvm'
 require 'dmtest/utils'
@@ -89,7 +88,6 @@ end
 #----------------------------------------------------------------
 
 class ExternalOriginTests < ThinpTestCase
-  include Tags
   include TinyVolumeManager
   include Utils
   include DiskUnits

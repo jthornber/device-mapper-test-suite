@@ -2,14 +2,12 @@ require 'dmtest/log'
 require 'dmtest/process'
 require 'dmtest/utils'
 require 'dmtest/status'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 require 'dmtest/tvm'
 
 #----------------------------------------------------------------
 
 class ImmutableTargetTests < ThinpTestCase
-  include Tags
   include TinyVolumeManager
   include Utils
   extend TestUtils

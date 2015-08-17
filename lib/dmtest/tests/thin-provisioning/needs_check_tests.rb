@@ -1,7 +1,6 @@
 require 'dmtest/log'
 require 'dmtest/process'
 require 'dmtest/utils'
-require 'dmtest/tags'
 require 'dmtest/disk-units'
 require 'dmtest/thinp-test'
 require 'timeout'
@@ -9,7 +8,6 @@ require 'timeout'
 #----------------------------------------------------------------
 
 class NeedsCheckTests < ThinpTestCase
-  include Tags
   include Utils
   include TinyVolumeManager
   include DiskUnits

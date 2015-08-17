@@ -9,7 +9,6 @@ require 'dmtest/tests/thin-provisioning/metadata-generator'
 #----------------------------------------------------------------
 
 class ThinDeltaTests < ThinpTestCase
-  include Tags
   include Utils
   include MetadataGenerator
   extend TestUtils

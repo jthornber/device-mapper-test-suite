@@ -1,13 +1,11 @@
 require 'dmtest/log'
 require 'dmtest/process'
 require 'dmtest/utils'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 
 #----------------------------------------------------------------
 
 class MultiplePoolTests < ThinpTestCase
-  include Tags
   include TinyVolumeManager
   include Utils
   extend TestUtils

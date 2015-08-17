@@ -3,7 +3,6 @@ require 'dmtest/disk-units'
 require 'dmtest/git'
 require 'dmtest/log'
 require 'dmtest/pattern_stomper'
-require 'dmtest/tags'
 require 'dmtest/test-utils'
 require 'dmtest/cache_stack'
 require 'dmtest/cache_utils'
@@ -18,7 +17,6 @@ require 'thinp_xml/cache_xml'
 
 class InvalidateCBlocksTests < ThinpTestCase
   include GitExtract
-  include Tags
   include CacheUtils
   extend TestUtils
 

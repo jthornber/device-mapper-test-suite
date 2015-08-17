@@ -2,17 +2,18 @@ require 'dmtest/blktrace'
 require 'dmtest/log'
 require 'dmtest/utils'
 require 'dmtest/fs'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 require 'dmtest/test-utils'
 
 #----------------------------------------------------------------
 
 class BasicTests < ThinpTestCase
-  include Tags
-  include Utils
-  include BlkTrace
   extend TestUtils
+  include BlkTrace
+  include Utils
+
+  def self.tag(*t)
+  end
 
   def setup
     super
@@ -20,10 +21,17 @@ class BasicTests < ThinpTestCase
 
   tag :thinp_target
 
+  push_requirement do
+    dev_size(@metadata_dev).should_be >= gig(1)
+    dev_size(@data_dev).should_be >= gig(4)
+  end
+
   define_test :test_overwrite_a_linear_device do
     linear_table = Table.new(LinearTarget.new(@volume_size, @data_dev, 0))
     with_dev(linear_table) {|linear_dev| dt_device(linear_dev)}
   end
+
+  pop_requirement
 
   define_test :ext4_weirdness do
     with_standard_pool(@size) do |pool|

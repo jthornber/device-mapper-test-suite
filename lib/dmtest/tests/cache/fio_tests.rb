@@ -1,7 +1,6 @@
 require 'dmtest/log'
 require 'dmtest/utils'
 require 'dmtest/fs'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 require 'dmtest/cache-status'
 require 'dmtest/disk-units'
@@ -15,7 +14,6 @@ require 'dmtest/tests/cache/fio_subvolume_scenario'
 
 class FIOTests < ThinpTestCase
   include FioSubVolumeScenario
-  include Tags
   include Utils
   include DiskUnits
   extend TestUtils

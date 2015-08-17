@@ -1,7 +1,6 @@
 require 'dmtest/log'
 require 'dmtest/process'
 require 'dmtest/utils'
-require 'dmtest/tags'
 require 'dmtest/disk-units'
 require 'dmtest/thinp-test'
 require 'dmtest/test-utils'
@@ -11,7 +10,6 @@ require 'rspec/expectations'
 #----------------------------------------------------------------
 
 class CrashTests < ThinpTestCase
-  include Tags
   include Utils
   include TinyVolumeManager
   extend TestUtils

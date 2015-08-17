@@ -2,7 +2,6 @@ require 'dmtest/git'
 require 'dmtest/log'
 require 'dmtest/utils'
 require 'dmtest/fs'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 require 'dmtest/cache-status'
 require 'dmtest/disk-units'
@@ -20,7 +19,6 @@ require 'pp'
 # obsolete at some point since I'm intending smq to replace mq.
 class SMQComparisonTests < ThinpTestCase
   include GitExtract
-  include Tags
   include Utils
   include DiskUnits
   include FioSubVolumeScenario

@@ -3,7 +3,6 @@ require 'dmtest/fs'
 require 'dmtest/log'
 require 'dmtest/process'
 require 'dmtest/utils'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 require 'dmtest/disk-units'
 
@@ -13,7 +12,6 @@ require 'fileutils'
 #----------------------------------------------------------------
 
 class SnapshotTests < ThinpTestCase
-  include Tags
   include Utils
   include DiskUnits
   extend TestUtils

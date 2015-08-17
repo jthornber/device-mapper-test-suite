@@ -1,6 +1,5 @@
 require 'dmtest/log'
 require 'dmtest/utils'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 require 'dmtest/cache-status'
 require 'dmtest/disk-units'
@@ -12,7 +11,6 @@ require 'dmtest/cache_policy'
 #----------------------------------------------------------------
 
 class ToolsTests < ThinpTestCase
-  include Tags
   include Utils
   include DiskUnits
   extend TestUtils

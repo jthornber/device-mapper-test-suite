@@ -3,13 +3,11 @@ require 'dmtest/git'
 require 'dmtest/log'
 require 'dmtest/utils'
 require 'dmtest/fs'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 
 #----------------------------------------------------------------
 
 class SQLiteTests < ThinpTestCase
-  include Tags
   include Utils
   extend TestUtils
 

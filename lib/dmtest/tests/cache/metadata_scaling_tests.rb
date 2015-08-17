@@ -3,7 +3,6 @@ require 'dmtest/disk-units'
 require 'dmtest/git'
 require 'dmtest/log'
 require 'dmtest/pool-stack'
-require 'dmtest/tags'
 require 'dmtest/test-utils'
 require 'dmtest/cache_stack'
 require 'dmtest/cache_utils'
@@ -18,7 +17,6 @@ require 'rspec/expectations'
 
 class MetadataScalingTests < ThinpTestCase
   include GitExtract
-  include Tags
   include Utils
   include DiskUnits
   include DMThinUtils

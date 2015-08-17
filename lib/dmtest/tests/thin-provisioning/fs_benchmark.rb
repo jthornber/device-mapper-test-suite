@@ -5,7 +5,6 @@ require 'dmtest/utils'
 require 'dmtest/fs'
 require 'dmtest/git'
 require 'dmtest/status'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 require 'dmtest/xml_format'
 
@@ -13,7 +12,6 @@ require 'dmtest/xml_format'
 
 class FSBench < ThinpTestCase
   include GitExtract
-  include Tags
   include Utils
   include XMLFormat
   extend TestUtils

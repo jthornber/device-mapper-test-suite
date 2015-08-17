@@ -2,14 +2,12 @@ require 'dmtest/log'
 require 'dmtest/process'
 require 'dmtest/status'
 require 'dmtest/utils'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 require 'dmtest/tvm'
 
 #----------------------------------------------------------------
 
 class MassFsTests < ThinpTestCase
-  include Tags
   include TinyVolumeManager
   include Utils
   extend TestUtils

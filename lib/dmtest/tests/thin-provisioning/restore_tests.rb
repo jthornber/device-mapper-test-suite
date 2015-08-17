@@ -1,7 +1,6 @@
 require 'dmtest/log'
 require 'dmtest/utils'
 require 'dmtest/fs'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 require 'dmtest/xml_format'
 require 'dmtest/tests/thin-provisioning/metadata-generator'
@@ -9,7 +8,6 @@ require 'dmtest/tests/thin-provisioning/metadata-generator'
 #----------------------------------------------------------------
 
 class RestoreTests < ThinpTestCase
-  include Tags
   include Utils
   include MetadataGenerator
   extend TestUtils

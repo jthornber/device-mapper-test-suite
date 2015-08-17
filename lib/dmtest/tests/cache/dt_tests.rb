@@ -1,7 +1,6 @@
 require 'dmtest/log'
 require 'dmtest/utils'
 require 'dmtest/fs'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 require 'dmtest/cache-status'
 require 'dmtest/disk-units'
@@ -16,7 +15,6 @@ require 'pp'
 #----------------------------------------------------------------
 
 class DTTests < ThinpTestCase
-  include Tags
   include Utils
   include DiskUnits
   extend TestUtils

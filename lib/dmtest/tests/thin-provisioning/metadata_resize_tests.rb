@@ -3,7 +3,6 @@ require 'dmtest/log'
 require 'dmtest/process'
 require 'dmtest/utils'
 require 'dmtest/status'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 require 'dmtest/disk-units'
 require 'rspec/expectations'
@@ -14,7 +13,6 @@ require 'pp'
 
 class MetadataResizeTests < ThinpTestCase
   include DiskUnits
-  include Tags
   include Utils
   include TinyVolumeManager
   extend TestUtils

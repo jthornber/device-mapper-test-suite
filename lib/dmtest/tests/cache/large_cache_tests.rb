@@ -6,7 +6,6 @@ require 'dmtest/disk-units'
 require 'dmtest/git'
 require 'dmtest/log'
 require 'dmtest/pool-stack'
-require 'dmtest/tags'
 require 'dmtest/test-utils'
 require 'dmtest/thinp-test'
 require 'dmtest/tvm.rb'
@@ -18,7 +17,6 @@ require 'rspec/expectations'
 
 class LargeConfigTests < ThinpTestCase
   include GitExtract
-  include Tags
   include Utils
   include DiskUnits
   include DMThinUtils

@@ -2,7 +2,6 @@ require 'dmtest/blktrace'
 require 'dmtest/git'
 require 'dmtest/log'
 require 'dmtest/utils'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 require 'dmtest/cache-status'
 require 'dmtest/disk-units'
@@ -18,7 +17,6 @@ require 'rspec/expectations'
 
 class InitialWarmingTests < ThinpTestCase
   include GitExtract
-  include Tags
   include Utils
   include DiskUnits
   include CacheUtils

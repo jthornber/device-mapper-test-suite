@@ -1,14 +1,12 @@
 require 'dmtest/log'
 require 'dmtest/utils'
 require 'dmtest/fs'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 
 #----------------------------------------------------------------
 
 # Tests prompted by a email on dm-devel from Jagan Reddy
 class RamDiskTests < ThinpTestCase
-  include Tags
   include Utils
   extend TestUtils
 

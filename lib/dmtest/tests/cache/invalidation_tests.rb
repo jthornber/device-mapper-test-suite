@@ -3,7 +3,6 @@ require 'dmtest/disk-units'
 require 'dmtest/git'
 require 'dmtest/log'
 require 'dmtest/pattern_stomper'
-require 'dmtest/tags'
 require 'dmtest/test-utils'
 require 'dmtest/cache_stack'
 require 'dmtest/cache_utils'
@@ -69,7 +68,6 @@ end
 
 class InvalidationTests < ThinpTestCase
   include GitExtract
-  include Tags
   include CacheUtils
   extend TestUtils
 

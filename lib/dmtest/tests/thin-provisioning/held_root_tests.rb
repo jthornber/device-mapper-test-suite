@@ -2,14 +2,12 @@ require 'dmtest/log'
 require 'dmtest/utils'
 require 'dmtest/fs'
 require 'dmtest/status'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 require 'dmtest/xml_format'
 
 #----------------------------------------------------------------
 
 class HeldRootTests < ThinpTestCase
-  include Tags
   include Utils
   include XMLFormat
   extend TestUtils

@@ -2,14 +2,12 @@ require 'dmtest/analysis'
 require 'dmtest/log'
 require 'dmtest/utils'
 require 'dmtest/fs'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 require 'dmtest/disk-units'
 
 #----------------------------------------------------------------
 
 class ThroughputTests < ThinpTestCase
-  include Tags
   include Utils
   include DiskUnits
   include XMLFormat

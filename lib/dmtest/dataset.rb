@@ -3,7 +3,6 @@ require 'dmtest/fs'
 require 'dmtest/log'
 require 'dmtest/process'
 require 'dmtest/utils'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 
 # these added for the dataset stuff
