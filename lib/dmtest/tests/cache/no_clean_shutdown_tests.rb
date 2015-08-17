@@ -19,6 +19,7 @@ class NoCleanShutdownTests < ThinpTestCase
   include GitExtract
   include Tags
   include CacheUtils
+  extend TestUtils
 
   def setup
     super
@@ -28,7 +29,7 @@ class NoCleanShutdownTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_no_resize_retains_mappings_all_clean
+  define_test :no_resize_retains_mappings_all_clean do
     block_size = k(64)
     [23, 513, 1023, 4095].each do |nr_blocks|
       s = CacheStack.new(@dm, @metadata_dev, @data_dev, 

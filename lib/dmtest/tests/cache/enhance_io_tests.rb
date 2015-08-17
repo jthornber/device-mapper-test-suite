@@ -84,7 +84,7 @@ class EnhanceIOTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_fio_sub_volume
+  define_test :fio_sub_volume do
     stack = EnhanceIOStack.new(@dm, @metadata_dev, @data_dev, :cache_size => meg(256))
     stack.activate do |cache|
       wait = lambda {sleep(5)}

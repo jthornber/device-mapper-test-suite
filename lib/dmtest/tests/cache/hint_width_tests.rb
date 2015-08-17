@@ -32,7 +32,7 @@ class HintWidthTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_various_hint_widths_can_be_reloaded
+  define_test :various_hint_widths_can_be_reloaded do
     [4, 32, 96, 128].each do |hint_size|
 
       stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
@@ -53,7 +53,7 @@ class HintWidthTests < ThinpTestCase
     end
   end
 
-  def test_hint_size_is_dumped_correctly
+  define_test :hint_size_is_dumped_correctly do
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
                            :format => true, :data_size => gig(1), :policy => Policy.new('hints', :hint_size => 96))
     stack.activate_support_devs do |stack|

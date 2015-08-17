@@ -69,7 +69,7 @@ class LargeConfigTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_large_stack
+  define_test :large_stack do
     with_big_stack do |stack|
       fs = FS::file_system(:xfs, stack.cache)
       fs.format
@@ -81,7 +81,7 @@ class LargeConfigTests < ThinpTestCase
 
   # Designed to be run on really big systems that really do have the
   # backing store
-  def test_dt_in_chunks
+  define_test :dt_in_chunks do
     promotions = 0
 
     s = make_stack(:format => true,
@@ -138,7 +138,7 @@ class LargeConfigTests < ThinpTestCase
 
   # If I run with 4G ram then the OOM killer kicks in.  14G is enough
   # memory to reproduce the bug.
-  def test_bug_1080894
+  define_test :bug_1080894 do
     fast_size = 4504174592
     origin_size = 6442450944
 

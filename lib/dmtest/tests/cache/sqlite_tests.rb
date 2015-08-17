@@ -11,6 +11,7 @@ require 'dmtest/thinp-test'
 class SQLiteTests < ThinpTestCase
   include Tags
   include Utils
+  extend TestUtils
 
   def setup
     super
@@ -136,19 +137,19 @@ class SQLiteTests < ThinpTestCase
     end
   end
 
-  def test_sqlite_insert_12k_global_transaction
+  define_test :sqlite_insert_12k_global_transaction do
     @cache_policies.each do |policy|
       with_sqlite(policy, nil) { sql_inserts_global_transaction }
     end
   end
 
-  def test_sqlite_insert_12k_multiple_transaction
+  define_test :sqlite_insert_12k_multiple_transaction do
     @cache_policies.each do |policy|
       with_sqlite(policy, nil) { sql_inserts_multiple_transaction }
     end
   end
 
-  def test_sqlite_insert_12k_no_transaction
+  define_test :sqlite_insert_12k_no_transaction do
     @cache_policies.each do |policy|
       with_sqlite(policy, nil) { sql_inserts_no_transaction }
     end

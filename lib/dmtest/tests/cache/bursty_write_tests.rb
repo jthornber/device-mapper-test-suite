@@ -39,7 +39,7 @@ class BurstyWriteTests < ThinpTestCase
     end
   end
 
-  def test_smallfile_linear
+  define_test :smallfile_linear do
     with_standard_linear(:data_size => gig(4)) do |linear|
       do_smallfile(linear)
     end

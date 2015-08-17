@@ -43,14 +43,14 @@ class CacheTests < ThinpTestCase
   #--------------------------------
 
   tag :cache_target
-  def test_dd_cache
+  define_test :dd_cache do
     with_standard_cache(:format => true, :data_size => gig(1)) do |cache|
       wipe_device(cache)
     end
   end
 
   tag :linear_target
-  def test_dd_linear
+  define_test :dd_linear do
     with_standard_linear(:data_size => gig(1)) do |linear|
       wipe_device(linear)
     end
@@ -59,7 +59,7 @@ class CacheTests < ThinpTestCase
   #--------------------------------
 
   tag :cache_target
-  def test_fio_cache
+  define_test :fio_cache do
     with_standard_cache(:cache_size => meg(512),
                         :format => true,
                         :block_size => 512,
@@ -70,7 +70,7 @@ class CacheTests < ThinpTestCase
   end
 
   tag :cache_target
-  def test_fio_database_funtime
+  define_test :fio_database_funtime do
     with_standard_cache(:cache_size => meg(1024 * 2),
                         :format => true,
                         :block_size => 256,
@@ -83,7 +83,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_fio_sub_volume
+  define_test :fio_sub_volume do
     with_standard_cache(:cache_size => meg(256),
                         :format => true,
                         :block_size => 512,
@@ -96,7 +96,7 @@ class CacheTests < ThinpTestCase
   end
 
   tag :linear_target
-  def test_fio_linear
+  define_test :fio_linear do
     with_standard_linear do |linear|
       do_fio(linear, :ext4,
              :outfile => AP("fio_dm_linear.out"),
@@ -120,14 +120,14 @@ class CacheTests < ThinpTestCase
   end
 
   tag :cache_target
-  def test_format_cache
+  define_test :format_cache do
     with_standard_cache(:format => true, :policy => Policy.new('mq')) do |cache|
       do_format(cache, :ext4)
     end
   end
 
   tag :linear_target
-  def test_format_linear
+  define_test :format_linear do
     with_standard_linear do |linear|
       do_format(linear, :ext4)
     end
@@ -148,7 +148,7 @@ class CacheTests < ThinpTestCase
   end
 
   tag :cache_target
-  def test_bonnie_cache
+  define_test :bonnie_cache do
     with_standard_cache(:cache_size => meg(256),
                         :format => true,
                         :block_size => 512,
@@ -158,7 +158,7 @@ class CacheTests < ThinpTestCase
   end
 
   tag :linear_target
-  def test_bonnie_linear
+  define_test :bonnie_linear do
     with_standard_linear do |linear|
       do_bonnie(linear, :ext4)
     end
@@ -177,14 +177,14 @@ class CacheTests < ThinpTestCase
   end
 
   tag :cache_target
-  def test_git_extract_cache_quick
+  define_test :git_extract_cache_quick do
     do_git_extract_cache_quick(:policy => Policy.new('smq', :migration_threshold => 1024),
                                :cache_size => meg(64),
                                :block_size => 512,
                                :data_size => gig(4))
   end
 
-  def test_git_extract_cache_quick_across_cache_size
+  define_test :git_extract_cache_quick_across_cache_size do
     [64, 256, 512, 1024, 1024 + 512, 2048, 2048 + 1024].each do |cache_size|
       report_time("cache size = #{cache_size}, policy = smq", STDERR) do
         do_git_extract_cache_quick(:policy => Policy.new('smq', :migration_threshold => 1024),
@@ -202,7 +202,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_git_extract_cache_quick_across_migration_threshold
+  define_test :git_extract_cache_quick_across_migration_threshold do
     [0, 128, 512, 1024, 2048].each do |migration_threshold|
       report_time("migration_threshold = #{migration_threshold}") do
         do_git_extract_cache_quick(:policy => Policy.new('mq',
@@ -242,7 +242,7 @@ class CacheTests < ThinpTestCase
 
   define_tests_across(:git_extract_cache_quick, POLICY_NAMES)
 
-  def test_git_extract_cache
+  define_test :git_extract_cache do
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev, :format => true)
     stack.activate do |stack|
       git_prepare(stack.cache, :ext4)
@@ -265,14 +265,14 @@ class CacheTests < ThinpTestCase
   define_tests_across(:cache_sizing_effect, POLICY_NAMES)
 
   tag :linear_target
-  def test_git_extract_linear
+  define_test :git_extract_linear do
     with_standard_linear do |linear|
       git_prepare(linear, :ext4)
       git_extract(linear, :ext4)
     end
   end
 
-  def test_git_extract_linear_quick
+  define_test :git_extract_linear_quick do
     with_standard_linear(:data_size => gig(16)) do |linear|
       git_prepare(linear, :ext4)
       git_extract(linear, :ext4, TAGS[0..5])
@@ -281,7 +281,7 @@ class CacheTests < ThinpTestCase
 
   tag :cache_target
   # Checks we can remount an fs
-  def test_metadata_persists
+  define_test :metadata_persists do
     with_standard_cache(:format => true) do |cache|
       fs = FS::file_system(:ext4, cache)
       fs.format
@@ -297,7 +297,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_suspend_resume
+  define_test :suspend_resume do
     with_standard_cache(:format => true) do |cache|
       git_prepare(cache, :ext4)
 
@@ -309,7 +309,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_suspend_resume_under_load
+  define_test :suspend_resume_under_load do
     with_standard_cache(:format => true) do |cache|
       tid1 = Thread.new(cache) do |cache|
         git_prepare(cache, :ext4)
@@ -345,7 +345,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_reload_resume_under_load
+  define_test :reload_resume_under_load do
     with_standard_cache(:format => true) do |cache|
       tid1 = Thread.new(cache) do |cache|
         run_bonnie(cache)
@@ -375,7 +375,7 @@ class CacheTests < ThinpTestCase
   end
 
 
-  def test_table_reload
+  define_test :table_reload do
     with_standard_cache(:format => true) do |cache|
       table = cache.active_table
 
@@ -387,7 +387,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_table_reload_changed_policy
+  define_test :table_reload_changed_policy do
     with_standard_cache(:format => true, :policy => Policy.new('mq')) do |cache|
       table = cache.active_table
 
@@ -410,7 +410,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_cache_grow
+  define_test :cache_grow do
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
                            :format => true,
                            :cache_size => meg(16))
@@ -434,7 +434,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_unknown_policy_fails
+  define_test :unknown_policy_fails do
     assert_raise(ExitError) do
       with_standard_cache(:format => true,
                           :policy => Policy.new('time_traveller')) do |cache|
@@ -444,7 +444,7 @@ class CacheTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_cleaner_policy
+  define_test :cleaner_policy do
     with_standard_cache(:format => true) do |cache|
       git_prepare(cache, :ext4)
 
@@ -475,7 +475,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_construct_cache
+  define_test :construct_cache do
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev, :format => true)
     stack.activate do |stack|
     end
@@ -484,7 +484,7 @@ class CacheTests < ThinpTestCase
   # We know the kernel uses the same bio for both branches of the
   # writethrough.  To double check the mapping we offset the origin
   # device.
-  def test_writethrough
+  define_test :writethrough do
     data_size = dev_size(@data_dev)
     size = gig(2)
     offset = 512 + 128
@@ -527,7 +527,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_origin_grow
+  define_test :origin_grow do
     # format and set up a git repo on the cache
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
                            :format => true,
@@ -540,7 +540,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_origin_shrink
+  define_test :origin_shrink do
     # format and set up a git repo on the cache
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
                            :format => true,
@@ -553,7 +553,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_status
+  define_test :status do
     opts = Hash.new
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev, opts)
     stack.activate do |stack|
@@ -566,7 +566,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_table
+  define_test :table do
     opts = Hash.new
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev, opts)
     stack.activate do |stack|
@@ -574,7 +574,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_message
+  define_test :message do
     opts = Hash.new
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev, opts)
     stack.activate do |stack|

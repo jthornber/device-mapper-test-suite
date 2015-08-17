@@ -31,7 +31,7 @@ class PassthroughTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_passthrough_never_promotes
+  define_test :passthrough_never_promotes do
     s = make_stack(:data_size => gig(1),
                    :io_mode => :passthrough,
                    :block_size => k(64))
@@ -44,7 +44,7 @@ class PassthroughTests < ThinpTestCase
     end
   end
 
-  def test_passthrough_demotes_writes
+  define_test :passthrough_demotes_writes do
     s = make_stack(:format => false,
                    :io_mode => :passthrough,
                    :block_size => k(64))
@@ -60,7 +60,7 @@ class PassthroughTests < ThinpTestCase
     end
   end
 
-  def test_passthrough_does_not_demote_reads
+  define_test :passthrough_does_not_demote_reads do
     s = make_stack(:format => false,
                    :io_mode => :passthrough,
                    :block_size => k(64))
@@ -75,7 +75,7 @@ class PassthroughTests < ThinpTestCase
     end
   end
 
-  def test_passthrough_fails_with_dirty_blocks
+  define_test :passthrough_fails_with_dirty_blocks do
     s = make_stack(:format => false,
                    :io_mode => :passthrough,
                    :block_size => k(64))

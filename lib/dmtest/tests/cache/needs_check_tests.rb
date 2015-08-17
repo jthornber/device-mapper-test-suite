@@ -15,6 +15,7 @@ class NeedsCheckTests < ThinpTestCase
   include Utils
   include TinyVolumeManager
   include DiskUnits
+  extend TestUtils
 
   def setup
     super
@@ -107,14 +108,14 @@ class NeedsCheckTests < ThinpTestCase
     end
   end
 
-  def test_commit_failure_sets_needs_check_error_target
+  define_test :commit_failure_sets_needs_check_error_target do
     commit_failure_sets_needs_check do |metadata_superblock, metadata_body|
       Table.new(LinearTarget.new(dev_size(metadata_superblock), metadata_superblock, 0),
                 ErrorTarget.new(dev_size(metadata_body)))
     end
   end
 
-  def test_commit_failure_sets_needs_check_flakey_target
+  define_test :commit_failure_sets_needs_check_flakey_target do
     commit_failure_sets_needs_check do |metadata_superblock, metadata_body|
       Table.new(LinearTarget.new(dev_size(metadata_superblock), metadata_superblock, 0),
                 FlakeyTarget.new(dev_size(metadata_body), metadata_body, 0, 0, 60))

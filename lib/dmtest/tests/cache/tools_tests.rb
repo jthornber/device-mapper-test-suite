@@ -29,12 +29,12 @@ class ToolsTests < ThinpTestCase
     end
   end
 
-  def test_formatting_in_kernel_works
+  define_test :formatting_in_kernel_works do
     with_standard_cache(:format => true, :data_size => gig(1)) do |cache|
     end
   end
 
-  def test_can_dump_kernel_metadata
+  define_test :can_dump_kernel_metadata do
     ProcessControl.run("which cache_check")
 
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
@@ -48,7 +48,7 @@ class ToolsTests < ThinpTestCase
     end
   end
 
-  def test_can_restore_from_xml
+  define_test :can_restore_from_xml do
     # generate some xml metadata
     xml_file = 'metadata.xml'
     ProcessControl.run("cache_xml create --nr-cache-blocks uniform[100..500] --nr-mappings uniform[50..100] > #{xml_file}")
@@ -84,18 +84,18 @@ class ToolsTests < ThinpTestCase
     end
   end
 
-  def test_you_cannot_run_check_on_live_metadata
+  define_test :you_cannot_run_check_on_live_metadata do
     forbidden_on_live_metadata("cache_check #{@metadata_dev}")
   end
 
-  def test_you_cannot_run_restore_on_a_live_metadata
+  define_test :you_cannot_run_restore_on_a_live_metadata do
     xml_file = 'metadata.xml'
     ProcessControl.run("cache_xml create --nr-cache-blocks uniform[100..500] --nr-mappings uniform[50..100] > #{xml_file}")
 
     forbidden_on_live_metadata("cache_restore -i #{xml_file} -o #{@metadata_dev}")
   end
 
-  def test_you_cannot_dump_live_metadata
+  define_test :you_cannot_dump_live_metadata do
     forbidden_on_live_metadata("cache_dump #{@metadata_dev}")
   end
 end

@@ -20,6 +20,7 @@ class InvalidateCBlocksTests < ThinpTestCase
   include GitExtract
   include Tags
   include CacheUtils
+  extend TestUtils
 
   def setup
     super
@@ -104,12 +105,12 @@ class InvalidateCBlocksTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_must_be_in_passthrough_mode
+  define_test :must_be_in_passthrough_mode do
     cant_be_in_io_mode(:writeback)
     cant_be_in_io_mode(:writethrough)
   end
 
-  def test_invalidating_all_cblocks_in_an_empty_cache
+  define_test :invalidating_all_cblocks_in_an_empty_cache do
     s = make_stack(:format => true,
                    :block_size => @data_block_size,
                    :cache_blocks => @nr_blocks,
@@ -124,7 +125,7 @@ class InvalidateCBlocksTests < ThinpTestCase
     end
   end
 
-  def test_invalidating_all_cblocks_in_a_full_cache
+  define_test :invalidating_all_cblocks_in_a_full_cache do
     s = make_stack(:format => false,
                    :block_size => @data_block_size,
                    :cache_blocks => @nr_blocks,
@@ -141,7 +142,7 @@ class InvalidateCBlocksTests < ThinpTestCase
     end
   end
 
-  def test_invalidating_multiple_args
+  define_test :invalidating_multiple_args do
     s = make_stack(:format => false,
                    :block_size => @data_block_size,
                    :cache_blocks => @nr_blocks,
@@ -158,7 +159,7 @@ class InvalidateCBlocksTests < ThinpTestCase
     end
   end
 
-  def test_out_of_bounds_range
+  define_test :out_of_bounds_range do
     s = make_stack(:format => false,
                    :block_size => @data_block_size,
                    :cache_blocks => @nr_blocks,
@@ -170,7 +171,7 @@ class InvalidateCBlocksTests < ThinpTestCase
     end.to raise_error
   end
 
-  def test_badly_formed_range
+  define_test :badly_formed_range do
     bad_range('50..60')
     bad_range('50--60')
     bad_range('-60')

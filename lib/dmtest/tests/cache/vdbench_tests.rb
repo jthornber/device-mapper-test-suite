@@ -14,7 +14,7 @@ require 'rspec/expectations'
 
 #----------------------------------------------------------------
 
-class VDBenchTests < ThinpTestCase
+class VDBenchTests < !ThinpTestCase
   include Tags
   include Utils
   include DiskUnits

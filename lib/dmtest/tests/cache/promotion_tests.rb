@@ -167,24 +167,24 @@ class SingleBlockPromotionTests < PromotionsBase
 
   # A discarded device should send writes straight to the cache.  No
   # need to hit a block multiple times.
-  def test_promotions_to_a_discarded_device_occur
+  define_test :promotions_to_a_discarded_device_occur do
     check_promotions_to_a_discarded_device_occur(1, 1)
   end
 
-  def test_promotions_to_a_cold_cache_occur_writes
+  define_test :promotions_to_a_cold_cache_occur_writes do
     check_promotions_to_a_cold_cache_occur_writes(1, 1)
   end
 
-  def test_promotions_to_a_cold_cache_occur_reads
+  define_test :promotions_to_a_cold_cache_occur_reads do
     check_promotions_to_a_cold_cache_occur_reads(1, 1)
   end
 
 
-  def test_promotions_to_a_warm_cache_occur_writes
+  define_test :promotions_to_a_warm_cache_occur_writes do
     check_promotions_to_a_warm_cache_occur_writes(1, 1)
   end
 
-  def test_promotions_to_a_warm_cache_occur_reads
+  define_test :promotions_to_a_warm_cache_occur_reads do
     check_promotions_to_a_warm_cache_occur_reads(1, 1)
   end
 end
@@ -206,24 +206,24 @@ class MultiBlockPromotionTests < PromotionsBase
 
   # A discarded device should send writes straight to the cache.  No
   # need to hit a block multiple times.
-  def test_promotions_to_a_discarded_device_occur
+  define_test :promotions_to_a_discarded_device_occur do
     check_promotions_to_a_discarded_device_occur(@nr_blocks, @nr_blocks)
   end
 
-  def test_promotions_to_a_cold_cache_occur_writes
+  define_test :promotions_to_a_cold_cache_occur_writes do
     check_promotions_to_a_cold_cache_occur_writes(@nr_blocks, @nr_blocks)
   end
 
-  def test_promotions_to_a_cold_cache_occur_reads
+  define_test :promotions_to_a_cold_cache_occur_reads do
     check_promotions_to_a_cold_cache_occur_reads(@nr_blocks, @nr_blocks)
   end
 
 
-  def test_promotions_to_a_warm_cache_occur_writes
+  define_test :promotions_to_a_warm_cache_occur_writes do
     check_promotions_to_a_warm_cache_occur_writes(@nr_blocks, @nr_blocks)
   end
 
-  def test_promotions_to_a_warm_cache_occur_reads
+  define_test :promotions_to_a_warm_cache_occur_reads do
     check_promotions_to_a_warm_cache_occur_reads(@nr_blocks, @nr_blocks)
   end
 end

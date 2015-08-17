@@ -131,14 +131,14 @@ class GitExtractTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_git_extract_linear_quick
+  define_test :git_extract_linear_quick do
     with_standard_linear(:data_size => gig(16)) do |linear|
       git_prepare(linear, :ext4)
       git_extract(linear, :ext4, TAGS[0..5])
     end
   end
 
-  def test_git_extract_linear_long
+  define_test :git_extract_linear_long do
     with_standard_linear(:data_size => gig(16)) do |origin|
       git_prepare(origin, :ext4)
       git_extract(origin, :ext4, TAGS[0..20])
@@ -223,7 +223,7 @@ class GitExtractTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_cache_on_thin
+  define_test :cache_on_thin do
     cache_size = meg(1024)
 
     tvm = TinyVolumeManager::VM.new
@@ -252,7 +252,7 @@ class GitExtractTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_alternate_between_mq_and_smq
+  define_test :alternate_between_mq_and_smq do
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
                            :policy => Policy.new('mq', :migration_threshold => 1024),
                            :cache_size => meg(1024),

@@ -274,13 +274,13 @@ class CacheTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_dt_cache
+  define_test :dt_cache do
     with_standard_cache(:format => true, :data_size => gig(1)) do |cache|
       dt_device(cache)
     end
   end
 
-  def test_dt_linear
+  define_test :dt_linear do
     with_standard_linear(:data_size => gig(1)) do |linear|
       dt_device(linear)
     end
@@ -311,14 +311,14 @@ class CacheTests < ThinpTestCase
     dev.discard(0, dev_size(dev))
   end
 
-  def test_maxiops_cache_no_discard
+  define_test :maxiops_cache_no_discard do
     with_standard_cache(:format => true,
                         :data_size => gig(1)) do |cache|
       maxiops(cache, 10000)
     end
   end
 
-  def test_maxiops_cache_with_discard
+  define_test :maxiops_cache_with_discard do
     size = 512
 
     with_standard_cache(:format => true,
@@ -331,7 +331,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_maxiops_linear
+  define_test :maxiops_linear do
     with_standard_linear(:data_size => gig(1)) do |linear|
       maxiops(linear, 10000)
     end
@@ -339,13 +339,13 @@ class CacheTests < ThinpTestCase
 
   #----------------------------------------------------------------
 
-  def test_dd_cache
+  define_test :dd_cache do
     with_standard_cache(:format => true, :data_size => gig(1)) do |cache|
       wipe_device(cache)
     end
   end
 
-  def test_dd_linear
+  define_test :dd_linear do
     with_standard_linear(:data_size => gig(1)) do |linear|
       wipe_device(linear)
     end
@@ -386,13 +386,13 @@ class CacheTests < ThinpTestCase
   end
 
 
-  def test_git_extract_cache_quick
+  define_test :git_extract_cache_quick do
     do_git_extract_cache_quick(:policy => Policy.new('mq'),
                                :cache_size => meg(256),
                                :data_size => gig(2))
   end
 
-  def test_orion_cache_simple
+  define_test :orion_cache_simple do
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
                            :policy => Policy.new('mq'),
                            :cache_size => meg(256),
@@ -402,7 +402,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_orion_linear_simple
+  define_test :orion_linear_simple do
     with_standard_linear(:data_size => gig(2)) do |linear|
       orion(linear, :ext4)
     end
@@ -437,7 +437,7 @@ class CacheTests < ThinpTestCase
 
   define_tests_across(:git_extract_cache_quick, POLICY_NAMES)
 
-  def test_git_extract_cache
+  define_test :git_extract_cache do
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev, :format => true)
     stack.activate do |stack|
       git_prepare(stack.cache, :ext4)
@@ -463,21 +463,21 @@ class CacheTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_git_extract_linear
+  define_test :git_extract_linear do
     with_standard_linear do |linear|
       git_prepare(linear, :ext4)
       git_extract(linear, :ext4)
     end
   end
 
-  def test_git_extract_linear_quick
+  define_test :git_extract_linear_quick do
     with_standard_linear(:data_size => gig(2)) do |linear|
       git_prepare(linear, :ext4)
       git_extract(linear, :ext4, TAGS[0..5])
     end
   end
 
-  def test_git_extract_eio_quick
+  define_test :git_extract_eio_quick do
     stack = EnhanceIOStack.new(@dm, @metadata_dev, @data_dev, :cache_size => meg(256))
     stack.activate do |cache|
       git_prepare(cache, :ext4)
@@ -485,7 +485,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_git_extract_bcache_quick
+  define_test :git_extract_bcache_quick do
     stack = BcacheStack.new(@dm, @metadata_dev, @data_dev, :cache_size => meg(256))
     stack.activate do |cache|
       git_prepare(cache, :ext4)
@@ -493,13 +493,13 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_fio_linear
+  define_test :fio_linear do
     with_standard_linear do |linear|
       do_fio(linear, :ext4)
     end
   end
 
-  def test_fio_cache
+  define_test :fio_cache do
     with_standard_cache(:cache_size => meg(1024),
                         :format => true,
                         :block_size => 512,
@@ -509,25 +509,25 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_format_linear
+  define_test :format_linear do
     with_standard_linear do |linear|
       do_format(linear, :ext4)
     end
   end
 
-  def test_format_cache
+  define_test :format_cache do
     with_standard_cache(:format => true, :policy => Policy.new('mq')) do |cache|
       do_format(cache, :ext4)
     end
   end
 
-  def test_bonnie_linear
+  define_test :bonnie_linear do
     with_standard_linear do |linear|
       do_bonnie(linear, :ext4)
     end
   end
 
-  def test_bonnie_cache
+  define_test :bonnie_cache do
     with_standard_cache(:cache_size => meg(256),
                         :format => true,
                         :block_size => 512,
@@ -537,7 +537,7 @@ class CacheTests < ThinpTestCase
   end
 
   # Checks we can remount an fs
-  def test_metadata_persists
+  define_test :metadata_persists do
     with_standard_cache(:format => true) do |cache|
       fs = FS::file_system(:ext4, cache)
       fs.format
@@ -554,7 +554,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_suspend_resume
+  define_test :suspend_resume do
     with_standard_cache(:format => true) do |cache|
       git_prepare(cache, :ext4)
 
@@ -566,7 +566,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_table_reload
+  define_test :table_reload do
     with_standard_cache(:format => true) do |cache|
       table = cache.active_table
 
@@ -578,7 +578,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_table_reload_changed_policy
+  define_test :table_reload_changed_policy do
     with_standard_cache(:format => true, :policy => Policy.new('mq')) do |cache|
       table = cache.active_table
 
@@ -601,7 +601,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_cache_grow
+  define_test :cache_grow do
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
                            :format => true,
                            :cache_size => meg(16))
@@ -625,13 +625,13 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_dt_cache
+  define_test :dt_cache do
     with_standard_cache(:format => true, :policy => Policy.new('mq')) do |cache|
       dt_device(cache)
     end
   end
 
-  def test_unknown_policy_fails
+  define_test :unknown_policy_fails do
     assert_raise(ExitError) do
       with_standard_cache(:format => true,
                           :policy => Policy.new('time_traveller')) do |cache|
@@ -647,7 +647,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_cleaner_policy
+  define_test :cleaner_policy do
     with_standard_cache(:format => true) do |cache|
       git_prepare(cache, :ext4)
 
@@ -669,13 +669,13 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_construct_cache
+  define_test :construct_cache do
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev, :format => true)
     stack.activate do |stack|
     end
   end
 
-  def test_writethrough
+  define_test :writethrough do
     size = gig(2)
 
     # wipe the origin to ensure we don't accidentally have the same
@@ -697,7 +697,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_origin_grow
+  define_test :origin_grow do
     # format and set up a git repo on the cache
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
                            :format => true,
@@ -710,7 +710,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_origin_shrink
+  define_test :origin_shrink do
     # format and set up a git repo on the cache
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
                            :format => true,
@@ -830,7 +830,7 @@ class CacheTests < ThinpTestCase
 
   #--------------------------------
   # Test change of target migration threshold
-  def test_message_target_migration_threshold
+  define_test :message_target_migration_threshold do
     do_ctr_message_status_interface(true, :policy => Policy.new('basic'), :migration_threshold => 2000 * 100)
   end
 
@@ -867,7 +867,7 @@ class CacheTests < ThinpTestCase
 
   #--------------------------------
   # No target ctr migration_threshold key pair as yet....
-  def test_ctr_migration_threshold_fails
+  define_test :ctr_migration_threshold_fails do
     assert_raise(ExitError) do
       do_ctr_message_status_interface(false, :policy => Policy.new('basic'), :migration_threshold => 2000 * 100)
     end
@@ -915,7 +915,7 @@ class CacheTests < ThinpTestCase
 
   define_tests_across(:table_check, POLICY_NAMES)
 
-  def test_status
+  define_test :status do
     opts = Hash.new
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev, opts)
     stack.activate do |stack|
@@ -926,7 +926,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_table
+  define_test :table do
     opts = Hash.new
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev, opts)
     stack.activate do |stack|
@@ -934,7 +934,7 @@ class CacheTests < ThinpTestCase
     end
   end
 
-  def test_message
+  define_test :message do
     opts = Hash.new
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev, opts)
     stack.activate do |stack|

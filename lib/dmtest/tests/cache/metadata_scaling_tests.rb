@@ -37,7 +37,7 @@ class MetadataScalingTests < ThinpTestCase
 
   # FIXME: add some assertions
 
-  def test_metadata_use_restored
+  define_test :metadata_use_restored do
     data_size = gig(1)
     block_size = k(64)
 

@@ -52,14 +52,14 @@ class InitialWarmingTests < ThinpTestCase
     end
   end
 
-  def test_tunables_10
+  define_test :tunables_10 do
     git_extract_with_tunables("tunables = 10",
                               :migration_threshold => gig(1),
                               :read_promote_adjustment => 10,
                               :write_promote_adjustment => 10)
   end
 
-  def test_tunables_0
+  define_test :tunables_0 do
     git_extract_with_tunables("tunables = 0", 
                               :migration_threshold => gig(1),
                               :read_promote_adjustment => 0,

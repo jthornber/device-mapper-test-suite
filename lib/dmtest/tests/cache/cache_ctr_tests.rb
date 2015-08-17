@@ -80,6 +80,7 @@ end
 #--------------------------------
 
 class CacheCtrTests < ThinpTestCase
+  extend TestUtils
 
   ##############################################################################
   #
@@ -187,7 +188,7 @@ class CacheCtrTests < ThinpTestCase
 
   #--------------------------------
   # Test change of target migration threshold
-  def test_message_target_migration_threshold
+  define_test :message_target_migration_threshold do
     do_ctr_message_status_interface(true, :policy => Policy.new('basic'), :migration_threshold => 2000 * 100)
   end
 
@@ -224,7 +225,7 @@ class CacheCtrTests < ThinpTestCase
 
   #--------------------------------
   # No target ctr migration_threshold key pair as yet....
-  def test_ctr_migration_threshold_fails
+  define_test :ctr_migration_threshold_fails do
     assert_raise(ExitError) do
       do_ctr_message_status_interface(false, :policy => Policy.new('basic'), :migration_threshold => 2000 * 100)
     end

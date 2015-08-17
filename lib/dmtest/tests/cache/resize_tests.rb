@@ -177,7 +177,7 @@ class ResizeTests < ThinpTestCase
     md2.superblock.nr_cache_blocks.should == new_nr_blocks
   end
 
-  def test_metadata_can_grow
+  define_test :metadata_can_grow do
     [23, 513, 1023, 4095].each {|nr_blocks| grow_test(nr_blocks)}
   end
 
@@ -191,7 +191,7 @@ class ResizeTests < ThinpTestCase
     md2.superblock.nr_cache_blocks.should == new_nr_blocks
   end
 
-  def test_metadata_can_shrink
+  define_test :metadata_can_shrink do
     [23, 345, 513, 876, 1023, 2345, 4095].each {|nr_blocks| shrink_test(nr_blocks)}
   end
 end

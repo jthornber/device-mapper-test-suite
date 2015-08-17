@@ -44,7 +44,7 @@ class SMQComparisonTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_fio_cache
+  define_test :fio_cache do
     with_standard_cache(:cache_size => meg(512),
                         :format => true,
                         :block_size => 512,
@@ -76,17 +76,17 @@ class SMQComparisonTests < ThinpTestCase
     end
   end
 
-  def test_fio_database_across_cache_size_smq
+  define_test :fio_database_across_cache_size_smq do
     do_fio_database_across_cache_size('smq')
   end
 
-  def test_fio_database_across_cache_size_mq
+  define_test :fio_database_across_cache_size_mq do
     do_fio_database_across_cache_size('mq')
   end
 
   #--------------------------------
 
-  def test_fio_sub_volume
+  define_test :fio_sub_volume do
     with_standard_cache(:cache_size => meg(256),
                         :format => true,
                         :block_size => 512,
@@ -99,7 +99,7 @@ class SMQComparisonTests < ThinpTestCase
   end
 
   tag :linear_target
-  def test_fio_linear
+  define_test :fio_linear do
     with_standard_linear do |linear|
       do_fio(linear, :ext4,
              :outfile => AP("fio_dm_linear.out"),
@@ -122,14 +122,14 @@ class SMQComparisonTests < ThinpTestCase
     end
   end
 
-  def test_git_extract_cache
+  define_test :git_extract_cache do
     do_git_extract_cache(:policy => Policy.new('smq', :migration_threshold => 1024),
                          :cache_size => meg(1024),
                          :block_size => k(32),
                          :data_size => gig(16))
   end
 
-  def test_git_extract_cache_long
+  define_test :git_extract_cache_long do
     do_git_extract_cache(:policy => Policy.new('smq', :migration_threshold => 1024),
                          :cache_size => meg(1024),
                          :block_size => k(32),
@@ -148,11 +148,11 @@ class SMQComparisonTests < ThinpTestCase
     end
   end
 
-  def test_git_extract_cache_quick_across_cache_size_smq
+  define_test :git_extract_cache_quick_across_cache_size_smq do
     do_git_extract_cache_quick_across_cache_size('smq')
   end
 
-  def test_git_extract_cache_quick_across_cache_size_mq
+  define_test :git_extract_cache_quick_across_cache_size_mq do
     do_git_extract_cache_quick_across_cache_size('mq')
   end
 
@@ -177,14 +177,14 @@ class SMQComparisonTests < ThinpTestCase
     end
   end
 
-  def test_git_extract_only
+  define_test :git_extract_only do
     do_git_extract_only(:policy => Policy.new('smq', :migration_threshold => 1024),
                         :cache_size => meg(512),
                         :block_size => k(32),
                         :data_size => gig(16))
   end
 
-  def test_git_extract_only_long
+  define_test :git_extract_only_long do
     do_git_extract_only(:policy => Policy.new('mq', :migration_threshold => 1024),
                         :cache_size => meg(3072),
                         :block_size => k(32),
@@ -203,15 +203,15 @@ class SMQComparisonTests < ThinpTestCase
     end
   end
 
-  def test_git_extract_only_across_cache_size_smq
+  define_test :git_extract_only_across_cache_size_smq do
     do_git_extract_only_across_cache_size('smq')
   end
 
-  def test_git_extract_only_across_cache_size_mq
+  define_test :git_extract_only_across_cache_size_mq do
     do_git_extract_only_across_cache_size('mq')
   end
 
-  def test_git_extract_linear_quick
+  define_test :git_extract_linear_quick do
     with_standard_linear(:data_size => gig(16)) do |linear|
       git_prepare(linear, :ext4)
       git_extract(linear, :ext4, TAGS[0..5])
@@ -220,7 +220,7 @@ class SMQComparisonTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_git_extract_linear_long
+  define_test :git_extract_linear_long do
     with_standard_linear(:data_size => gig(16)) do |origin|
       git_prepare(origin, :ext4)
       git_extract(origin, :ext4, TAGS[0..20])
@@ -229,7 +229,7 @@ class SMQComparisonTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_thin_on_cache
+  define_test :thin_on_cache do
     data_size = gig(64)
 
     stack = PoolCacheStack.new(@dm, @metadata_dev, @data_dev,
@@ -297,15 +297,15 @@ class SMQComparisonTests < ThinpTestCase
     end
   end
 
-  def test_thin_on_cache_alternating_thins_smq
+  define_test :thin_on_cache_alternating_thins_smq do
     do_thin_on_cache_alternating_thins('smq')
   end
 
-  def test_thin_on_cache_alternating_thins_mq
+  define_test :thin_on_cache_alternating_thins_mq do
     do_thin_on_cache_alternating_thins('mq')
   end
 
-  def test_pool
+  define_test :pool do
     with_standard_pool(gig(64), :zero => false) do |pool|
       with_new_thin(pool, gig(16), 0) do |thin|
         git_prepare(thin, :ext4)
@@ -314,7 +314,7 @@ class SMQComparisonTests < ThinpTestCase
     end
   end
 
-  def test_cache_on_thin
+  define_test :cache_on_thin do
     cache_size = meg(1024)
 
     tvm = TinyVolumeManager::VM.new

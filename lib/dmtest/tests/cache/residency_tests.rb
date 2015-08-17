@@ -45,7 +45,7 @@ class ResidencyTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_residency_is_persisted
+  define_test :residency_is_persisted do
     s1 = prepare_populated_cache_via_kernel()
 
     stack = standard_stack()

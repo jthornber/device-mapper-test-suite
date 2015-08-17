@@ -71,6 +71,7 @@ class InvalidationTests < ThinpTestCase
   include GitExtract
   include Tags
   include CacheUtils
+  extend TestUtils
 
   def setup
     super
@@ -83,7 +84,7 @@ class InvalidationTests < ThinpTestCase
   #--------------------------------
 
   # This is the scenario driving the NetApp work
-  def test_invalidation_works_on_rollback
+  define_test :invalidation_works_on_rollback do
     # reserve a bit of the metadata device for the thin pool metadata
     tvm = TinyVolumeManager::VM.new
     tvm.add_allocation_volume(@metadata_dev)
@@ -145,7 +146,7 @@ class InvalidationTests < ThinpTestCase
     end
   end
 
-  def test_external_storage_snap_and_rollback
+  define_test :external_storage_snap_and_rollback do
     # reserve a bit of the metadata device for the thin pool metadata
     tvm = TinyVolumeManager::VM.new
     tvm.add_allocation_volume(@metadata_dev)
@@ -171,7 +172,7 @@ class InvalidationTests < ThinpTestCase
     end
   end
 
-  def test_with_io_mode
+  define_test :with_io_mode do
     tvm = TinyVolumeManager::VM.new
     tvm.add_allocation_volume(@data_dev)
     tvm.add_volume(linear_vol('little_data', @nr_blocks * @data_block_size))

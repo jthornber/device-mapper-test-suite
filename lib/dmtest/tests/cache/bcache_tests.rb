@@ -89,7 +89,7 @@ class BcacheTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_git_extract_quick
+  define_test :git_extract_quick do
     stack = BcacheStack.new(@dm, @metadata_dev, @data_dev, :cache_size => meg(256))
     stack.activate do |cache|
       git_prepare(cache, :ext4)
@@ -97,7 +97,7 @@ class BcacheTests < ThinpTestCase
     end
   end
 
-  def test_fio_sub_volume
+  define_test :fio_sub_volume do
     stack = BcacheStack.new(@dm, @metadata_dev, @data_dev,
                             :cache_size => meg(256),
                             :format => true,
@@ -109,7 +109,7 @@ class BcacheTests < ThinpTestCase
     end
   end
 
-  def test_fio_database_funtime
+  define_test :fio_database_funtime do
     stack = BcacheStack.new(@dm, @metadata_dev, @data_dev,
                             :cache_size => meg(1024),
                             :format => true,

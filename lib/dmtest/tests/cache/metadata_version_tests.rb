@@ -24,7 +24,7 @@ class MetadataVersionTests < ThinpTestCase
     @data_block_size = meg(1)
   end
 
-  def test_kernel_detects_bad_metadata_version
+  define_test :kernel_detects_bad_metadata_version do
     # generate some xml metadata
     xml_file = 'metadata.xml'
     ProcessControl.run("cache_xml create --nr-cache-blocks uniform[100..500] --nr-mappings uniform[50..100] > #{xml_file}")
