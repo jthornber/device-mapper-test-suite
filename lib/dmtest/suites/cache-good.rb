@@ -14,14 +14,3 @@ require 'dmtest/tests/cache/metadata_scaling_tests'
 require 'dmtest/tests/cache/io_use_tests'
 require 'dmtest/tests/cache/metadata_version_tests'
 require 'dmtest/tests/cache/needs_check_tests'
-
-#require 'dmtest/tests/cache/large_cache_tests'
-#require 'dmtest/tests/cache/residency_tests'
-#require 'dmtest/tests/cache/tools_tests'
-
-# Obsolete
-#require 'dmtest/tests/cache/initial_warming_tests'
-#require 'dmtest/tests/cache/invalidation_tests'
-#require 'dmtest/tests/cache/hint_width_tests'
-#require 'dmtest/tests/cache/beer_tests'
-#require 'dmtest/tests/cache/promotion_tests'
