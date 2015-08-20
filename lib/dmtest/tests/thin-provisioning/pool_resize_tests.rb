@@ -231,7 +231,12 @@ class PoolResizeWithSpaceTests < ThinpTestCase
         with_new_thin(pool, volume_size, 0) do |thin|
           event_tracker = pool.event_tracker;
 
-          fork {wipe_device(thin)}
+          fork {
+            begin
+              wipe_device(thin)
+            rescue
+            end
+          }
 
           event_tracker.wait do
             status = PoolStatus.new(pool)

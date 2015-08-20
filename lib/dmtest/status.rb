@@ -18,10 +18,10 @@ class PoolStatus
 
   def parse_needs_check(txt)
     case txt
-    when '-' then
-      false
-    else
+    when 'needs_check' then
       true
+    else
+      false
     end
   end
 
