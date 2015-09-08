@@ -407,6 +407,11 @@ class DiscardQuickTests < ThinpTestCase
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin, 4)
 
+        discards = DiscardLimits.new("#{thin}")
+        discards.max_bytes.should == 0
+        discards.granularity.should == 0
+        discards.supported.should be_false
+
         assert_raise(Errno::EOPNOTSUPP) do
           thin.discard(0, @data_block_size)
         end
