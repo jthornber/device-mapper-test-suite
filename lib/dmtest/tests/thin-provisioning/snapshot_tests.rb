@@ -1,5 +1,6 @@
 require 'dmtest/dataset'
 require 'dmtest/fs'
+require 'dmtest/git'
 require 'dmtest/log'
 require 'dmtest/process'
 require 'dmtest/utils'
@@ -14,6 +15,7 @@ require 'fileutils'
 class SnapshotTests < ThinpTestCase
   include Utils
   include DiskUnits
+  include GitExtract
   extend TestUtils
 
   def setup
@@ -207,6 +209,43 @@ class SnapshotTests < ThinpTestCase
 
           origin_stomper.verify(0, 1)
         end
+      end
+    end
+  end
+
+  define_test :many_snaps_with_changes do
+    fs_type = :ext4
+
+    with_standard_pool(gig(100)) do |pool|
+      with_new_thin(pool, gig(20), 0) do |thin|
+        git_prepare(thin, fs_type);
+
+        TAGS.size.times do |n|
+          thin.pause do
+            pool.message(0, "create_snap #{n + 1} 0")
+          end
+
+          git_extract(thin, fs_type, TAGS[n..n])
+        end
+      end
+    end
+  end
+
+  define_test :try_and_create_duplicates do
+    fs_type = :ext4
+
+    with_standard_pool(gig(100)) do |pool|
+      with_new_thin(pool, gig(20), 0) do |thin|
+        git_prepare(thin, fs_type);
+
+        with_new_snap(pool, gig(20), 1, 0, thin) do |snap|
+          git_extract(thin, fs_type, TAGS[10..10])
+          git_extract(thin, fs_type, TAGS[0..2])
+
+          git_extract(thin, fs_type, TAGS[20..20])
+          git_extract(snap, fs_type, TAGS[0..2])
+        end
+
       end
     end
   end
