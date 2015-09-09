@@ -48,7 +48,7 @@ DMTestCommandLine = CommandLine::Parser.new do
   end
 
   command :list do
-    switches :name, :suite, :testcase, :tags
+    switches :name, :suite, :testcase, :tags, :profile
   end
 
   command :serve do
