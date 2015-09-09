@@ -12,9 +12,6 @@ class BasicTests < ThinpTestCase
   include BlkTrace
   include Utils
 
-  def self.tag(*t)
-  end
-
   def setup
     super
   end
