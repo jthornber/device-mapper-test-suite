@@ -79,7 +79,7 @@ class LargeConfigTests < ThinpTestCase
 
   # Designed to be run on really big systems that really do have the
   # backing store
-  define_test :dt_in_chunks do
+  def dt_in_chunks(policy)
     promotions = 0
 
     s = make_stack(:format => true,
@@ -87,11 +87,8 @@ class LargeConfigTests < ThinpTestCase
                    :block_size => meg(4),
                    :cache_size => :all,
                    :data_size => :all,
-                   :policy => Policy.new('mq',
-                                         :migration_threshold => 1000000,
-                                         :read_promote_adjustment => 0,
-                                         :write_promote_adjustment => 0,
-                                         :discard_promote_adjustment => 0))
+                   :policy => Policy.new(policy,
+                                         :migration_threshold => 1000000))
     s.activate do
       s.cache.discard(0, dev_size(s.cache))
 
@@ -122,6 +119,8 @@ class LargeConfigTests < ThinpTestCase
       end
     end
   end
+
+  define_tests_across(:dt_in_chunks, ['mq', 'smq'])
 
   #--------------------------------
 
