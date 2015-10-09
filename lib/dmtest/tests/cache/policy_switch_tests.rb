@@ -47,6 +47,26 @@ class PolicySwitchTests < ThinpTestCase
       switch_policy(stack, 'mq')
     end
   end
+
+  define_test :reload_cleaner do
+    with_standard_stack(:cache_size => gig(4),
+                        :format => true,
+                        :block_size => 128,
+                        :data_size => gig(4),
+                        :io_mode => :writeback,
+                        :policy => Policy.new('cleaner')) do |stack|
+      wipe_device(stack.cache)
+    end
+
+    with_standard_stack(:cache_size => gig(4),
+                        :format => false,
+                        :block_size => 128,
+                        :data_size => gig(4),
+                        :io_mode => :writeback,
+                        :policy => Policy.new('cleaner')) do |stack|
+      wipe_device(stack.cache)
+    end
+  end
 end
 
 #----------------------------------------------------------------
