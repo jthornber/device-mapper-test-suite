@@ -67,6 +67,40 @@ class PolicySwitchTests < ThinpTestCase
       wipe_device(stack.cache)
     end
   end
+
+  #--------------------------------
+
+  def wait_for_all_clean(cache)
+    cache.event_tracker.wait(cache) do |cache|
+      status = CacheStatus.new(cache)
+      STDERR.puts "#{status.nr_dirty} dirty blocks"
+      status.nr_dirty == 0
+    end
+  end
+
+  define_test :decommission_cache do
+    stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
+                           :cache_size => gig(4),
+                           :format => true,
+                           :block_size => 128,
+                           :data_size => gig(4),
+                           :io_mode => :writeback,
+                           :policy => Policy.new('smq'))
+
+    stack.activate_support_devs do
+      stomper = nil
+      stack.activate_top_level do
+        stomper = PatternStomper.new(stack.cache.path, @data_block_size, :needs_zero => false)
+        stomper.stamp(100)
+
+        switch_policy(stack, 'cleaner')
+        wait_for_all_clean(stack.cache)
+      end
+
+      origin_stomper = stomper.fork(stack.origin.path)
+      origin_stomper.verify(0, 1)
+    end
+  end
 end
 
 #----------------------------------------------------------------
