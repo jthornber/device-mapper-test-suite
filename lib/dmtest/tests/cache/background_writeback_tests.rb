@@ -84,6 +84,40 @@ class BackgroundWritebackTests < ThinpTestCase
 
   #--------------------------------
 
+  def cache_remains_clean_through_reload(policy)
+    cache_size = gig(1)
+    block_size = k(64)
+
+    s = CacheStack.new(@dm, @metadata_dev, @data_dev,
+                       :policy => Policy.new(policy, :migration_threshold => 1024),
+                       :format => false,
+                       :cache_size => cache_size,
+                       :block_size => block_size)
+    s.activate_support_devs do
+      s.prepare_populated_cache(:dirty_percentage => 100)
+      s.activate_top_level do
+        # Writeback needs to be done in a timely manner
+        Timeout::timeout(180) do
+          wait_for_all_clean(s.cache)
+        end
+      end
+
+      traces, _ = blktrace(s.origin) do
+        s.activate_top_level do
+          Timeout::timeout(180) do
+            wait_for_all_clean(s.cache)
+          end
+        end
+      end
+
+      assert_equal([], filter_writes(traces[0]))
+    end    
+  end
+
+  define_tests_across(:cache_remains_clean_through_reload, POLICY_NAMES)
+
+  #--------------------------------
+
   private
   def filter_writes(events)
     events.select {|e| e.code.member?(:write)}
