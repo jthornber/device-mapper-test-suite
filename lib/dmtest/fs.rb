@@ -48,7 +48,7 @@ module FS
 
     def mkfs_cmd(opts)
       discard_arg = opts.fetch(:discard, true) ? 'discard' : 'nodiscard'
-      "mkfs.ext4 -E lazy_itable_init=1,#{discard_arg} #{dev}"
+      "mkfs.ext4 -F -E lazy_itable_init=1,#{discard_arg} #{dev}"
     end
   end
 
