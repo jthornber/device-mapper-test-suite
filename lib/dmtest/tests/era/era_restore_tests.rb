@@ -52,7 +52,7 @@ EOF
 
   #--------------------------------
 
-  def test_dump_and_restore_metadata
+  define_test :dump_and_restore_metadata do
     checkpoints = nil
 
     s = make_stack(:format => true)

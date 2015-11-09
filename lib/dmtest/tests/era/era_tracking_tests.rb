@@ -36,7 +36,7 @@ EOF
 </blocks>
 EOF
 
-  def test_wiped_blocks_have_increasing_eras
+  define_test :wiped_blocks_have_increasing_eras do
     s = make_stack(:format => true)
     s.activate_support_devs do
       @checkpoints = []
@@ -60,7 +60,7 @@ EOF
     end
   end
 
-  def test_pausing_does_not_effect_tracking
+  define_test :pausing_does_not_effect_tracking do
     s = make_stack(:format => true)
     s.activate_support_devs do
       @checkpoints = []
@@ -87,7 +87,7 @@ EOF
     end
   end
 
-  def test_many_eras_does_not_exhaust_metadata
+  define_test :many_eras_does_not_exhaust_metadata do
     s = make_stack(:format => true)
     s.activate_support_devs do
        s.activate_top_level do
@@ -112,7 +112,7 @@ EOF
     end
   end
 
-  def test_repeated_dumps_are_identical
+  define_test :repeated_dumps_are_identical do
     s = make_stack(:format => true)
     s.activate_support_devs do
        s.activate_top_level do
@@ -139,7 +139,7 @@ EOF
 
   end
 
-  def test_dumps_do_not_change_without_io
+  definie_test :dumps_do_not_change_without_io do
     s = make_stack(:format => true)
     s.activate_support_devs do
        s.activate_top_level do
@@ -169,7 +169,7 @@ EOF
     end
   end
 
-  def test_reloads_do_not_change_dumps
+  define_test :reloads_do_not_change_dumps do
     output1 = output2 = output3 = nil
 
     s = make_stack(:format => true)
@@ -193,7 +193,7 @@ EOF
     output3.should == output2
   end
 
-  def test_writes_to_already_written_areas_do_not_change_dumps
+  define_test :writes_to_already_written_areas_do_not_change_dumps do
     output1 = output2 = output3 = nil
 
     s = make_stack(:format => true)

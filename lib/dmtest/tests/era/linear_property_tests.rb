@@ -25,7 +25,7 @@ class LinearPropertyTests < ThinpTestCase
 
   #--------------------------------
 
-  def test_prepare_on_origin_then_check_era
+  define_test :prepare_on_origin_then_check_era do
     s = make_stack(:format => true)
     s.activate_support_devs do
       ps = PatternStomper.new(s.origin.path, k(32), :need_zero => true)
@@ -41,7 +41,7 @@ class LinearPropertyTests < ThinpTestCase
     end
   end
 
-  def test_prepare_on_era_then_check_origin
+  define_test :prepare_on_era_then_check_origin do
     s = make_stack(:format => true)
     s.activate_support_devs do
       ps2 = nil
@@ -58,7 +58,7 @@ class LinearPropertyTests < ThinpTestCase
     end
   end
 
-  def test_prepare_era_then_check_after_reload
+  define_test :prepare_era_then_check_after_reload do
     ps = nil
 
     s = make_stack(:format => true)
@@ -73,7 +73,7 @@ class LinearPropertyTests < ThinpTestCase
     end
   end
 
-  def test_dt_a_new_era_device
+  define_test :dt_a_new_era_device do
     s = EraStack.new(@dm, @metadata_dev, @data_dev, :format => true)
     s.activate do
       dt_device(s.era)

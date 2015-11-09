@@ -12,7 +12,7 @@ class EraCreationTests < ThinpTestCase
   include DiskUnits
   extend TestUtils
 
-  def test_bring_up_an_era_target
+  define_test :bring_up_an_era_target do
     s = EraStack.new(@dm, @metadata_dev, @data_dev, :format => true)
     s.activate {}
   end
@@ -32,7 +32,7 @@ class EraCreationTests < ThinpTestCase
     end
   end
 
-  def test_smallest_invalid_origin
+  define_test :smallest_invalid_origin do
     too_big = 137438953472      # 2^31 * 32k blocks
 
     table = Table.new(ErrorTarget.new(too_big))
