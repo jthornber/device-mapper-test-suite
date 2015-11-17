@@ -20,8 +20,8 @@ module TestUtils
 
   def define_tests_across(method, *args)
     cartprod(*args).each do |perm|
-      method_name = "test_#{method}_#{perm.join('_')}"
-      define_method(method_name) do
+      method_name = "#{method}_#{perm.join('_')}"
+      define_test(method_name) do
         send(method, *perm)
       end
     end
