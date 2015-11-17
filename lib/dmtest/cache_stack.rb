@@ -148,10 +148,15 @@ class CacheStack
   end
 
   def with_io_mode(mode, &block)
-    tmp_table = cache_table([mode])
-    @cache.load(tmp_table)
+    @cache.pause do
+      @cache.load(cache_table([mode]))
+    end
+
     block.call
-    @cache.load(cache_table)
+
+    @cache.pause do
+      @cache.load(cache_table)
+    end
   end
 
   def wait_for_clean_cache
