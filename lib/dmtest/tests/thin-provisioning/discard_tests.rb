@@ -698,13 +698,20 @@ class DiscardSlowTests < ThinpTestCase
 
     with_standard_pool(@size, :error_if_no_space => true, :discard_passdown => passdown) do |pool|
       with_new_thin(pool, @size * 2, 0) do |thin|
+        ProcessControl.run("lsblk -D #{thin}") # record the discard limits
+
         fs = FS::file_system(:xfs, thin)
         fs.format
-        fs.with_mount(dir, :discard => true) do
+        fs.with_mount(dir, :discard => false) do
+          s = PoolStatus.new(pool) # record "before" data usage in log
+          data_before = s.used_data_blocks
+
           Dir.chdir(dir) do
             files.each do |f|
-              ProcessControl.run("dd if=/dev/zero of=#{f} bs=1M count=#{file_size / meg(1)}")
+              ProcessControl.run("dd if=/dev/zero of=#{f} bs=1M count=#{file_size / meg(1)} oflag=direct")
             end
+
+            PoolStatus.new(pool) # record "during" data usage in log
 
             files.each do |f|
               ProcessControl.run("rm #{f}")
@@ -714,7 +721,8 @@ class DiscardSlowTests < ThinpTestCase
           ProcessControl.run("fstrim -v #{dir}")
 
           s = PoolStatus.new(pool)
-          s.used_data_blocks.should < 1000
+          # verify that all data blocks were recovered via fstrim (assumes FS alignment allows this)
+          s.used_data_blocks.should == data_before
           s.options[:mode].should == :read_write
         end
       end
