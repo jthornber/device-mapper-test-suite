@@ -826,38 +826,44 @@ class DiscardSlowTests < ThinpTestCase
     end
   end
 
-  def discard_with_fstrim_passdown(passdown)
+  def discard_with_fstrim_passdown(passdown, fs_type)
     dir = "./mnt1"
     @size = gig(4)
     file_size = @size / 20
     files = (0..9).reduce([]) {|memo, obj| memo << "file_#{obj}"}
 
-    with_standard_pool(@size, :error_if_no_space => true, :discard_passdown => passdown) do |pool|
+    with_discardable_pool(@size, :error_if_no_space => true, :discard_passdown => passdown) do |pool|
       with_new_thin(pool, @size * 2, 0) do |thin|
-        fs = FS::file_system(:xfs, thin)
+        fs = FS::file_system(fs_type, thin)
         fs.format
-        fs.with_mount(dir, :discard => true) do
+        fs.with_mount(dir, :discard => false) do
           Dir.chdir(dir) do
             files.each do |f|
-              ProcessControl.run("dd if=/dev/zero of=#{f} bs=1M count=#{file_size / meg(1)}")
+              ProcessControl.run("dd if=/dev/zero of=#{f} bs=1M count=#{file_size / meg(1)} oflag=direct")
             end
+
+            ProcessControl.run("sync")
 
             files.each do |f|
               ProcessControl.run("rm #{f}")
             end
           end
 
+          ProcessControl.run("sync")
+
+          $log.info "used data blocks before: #{PoolStatus.new(pool).used_data_blocks}"
           ProcessControl.run("fstrim -v #{dir}")
+          $log.info "used data blocks after: #{PoolStatus.new(pool).used_data_blocks}"
 
           s = PoolStatus.new(pool)
-          s.used_data_blocks.should < 1000
+          s.used_data_blocks.should < 5000
           s.options[:mode].should == :read_write
         end
       end
     end
   end
 
-  define_tests_across(:discard_with_fstrim_passdown, [true, false])
+  define_tests_across(:discard_with_fstrim_passdown, [true, false], [:xfs, :ext4])
 end
 
 #----------------------------------------------------------------
