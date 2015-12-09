@@ -127,7 +127,7 @@ EOF
 
   # This test repeatedly takes metadata snapshots whilst a thin volume
   # is repeatedly created, provisioned and deleted. See bz 1286500.
-  define_test :metadata_snap_stress_test do
+  define_test :metadata_snap_stress1 do
     with_standard_pool(@size) do |pool|
       thread1 = Thread.new(pool) do |pool|
         10.times do
@@ -140,13 +140,34 @@ EOF
       end
 
       while thread1.alive? do
-        sleep 1
+        sleep 0.2
 
         pool.message(0, "reserve_metadata_snap")
         pool.message(0, "release_metadata_snap")
       end
     end
   end
+
+  # A variant of the above that periodically takes the pool down to run thin_check
+  define_test :metadata_snap_stress2 do
+    10.times do |n|
+      with_standard_pool(@size, :format => (n == 0)) do |pool|
+
+        STDERR.puts "iteration #{n}"
+
+        if n > 0
+          pool.message(0, "release_metadata_snap")
+          pool.message(0, "delete 0")
+        end
+
+        pool.message(0, "reserve_metadata_snap")
+        with_new_thin(pool, @volume_size, 0) do |thin|
+          wipe_device(thin)
+        end
+      end
+    end
+  end
+
 end
 
 #----------------------------------------------------------------
