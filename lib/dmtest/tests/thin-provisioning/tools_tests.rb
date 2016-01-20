@@ -168,6 +168,89 @@ EOF
     end
   end
 
+  #--------------------------------
+
+  def read_metadata
+    dump_metadata(@metadata_dev) do |xml_path|
+      File.open(xml_path, 'r') do |io|
+        read_xml(io)            # this is the return value
+      end
+    end
+  end
+
+  def run_thin_ls(use_metadata_snap = false)
+    thin_ls = {}
+    input = `thin_ls #{use_metadata_snap ? "-m" : ""} -o DEV,EXCLUSIVE_BLOCKS #{@metadata_dev}`
+    input.lines.each do |line|
+      m = line.match(/\s*(\d+)\s+(\d+)/)
+      if m
+        thin_ls[m[1].to_i] = m[2].to_i
+      end
+    end
+
+    thin_ls
+  end
+
+  define_test :thin_ls do
+    @volume_size = meg(1400)
+
+    with_standard_pool(@size, :format => true) do |pool|
+      stomper = nil;
+
+      with_new_thin(pool, @volume_size, 0) do |thin|
+        stomper = PatternStomper.new(thin.path, @data_block_size, :needs_zero => true)
+        stomper.stamp(100)
+
+        with_new_snap(pool, @volume_size, 1, 0, thin) do |snap1|
+          stomper2 = stomper.fork(snap1.path)
+          stomper2.stamp(10)
+          stomper2.verify(0, 2)
+
+          with_new_snap(pool, @volume_size, 2, 1, snap1) do |snap2|
+            stomper3 = stomper2.fork(snap2.path)
+            stomper3.stamp(10)
+          end
+        end
+
+        stomper.verify(0, 1)
+      end
+    end
+
+    md = read_metadata
+    
+    ref_counts = Hash.new(0)
+    md.devices.each do |dev|
+      dev.mappings.each do |m|
+        m.length.times do |i|
+          ref_counts[m.data_begin + i] += 1
+        end
+      end
+    end
+
+    thin_ls = run_thin_ls
+
+    md.devices.each do |dev|
+      tot = 0
+      dev.mappings.each do |m|
+        m.length.times do |i|
+          if ref_counts[m.data_begin + i] == 1
+            tot += 1
+          end
+        end
+      end
+
+      assert_equal(tot, thin_ls[dev.dev_id])
+    end
+
+    with_standard_pool(@size, :format => false) do |pool|
+      pool.message(0, "reserve_metadata_snap")
+      thin_ls2 = run_thin_ls(true)
+      pool.message(0, "release_metadata_snap")
+
+      assert_equal(thin_ls, thin_ls2)
+    end
+
+  end
 end
 
 #----------------------------------------------------------------
