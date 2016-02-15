@@ -414,8 +414,10 @@ class Dispatcher
     Dir::glob("#{log_dir}/*.yaml") do |yaml_file|
       "found yaml file: #{yaml_file}"
       t = YAML::load_file(yaml_file)
-      generator.unit_detail(t)
-      all_tests << t
+      if t.respond_to?(:suite)
+        generator.unit_detail(t)
+        all_tests << t
+      end
     end
 
     generator.unit_summary(all_tests)
@@ -623,6 +625,7 @@ def top_level_handler(&block)
     block.call
   rescue => e
     STDERR.puts e.message
+    STDERR.puts e.backtrace
     exit 1
   end
 
