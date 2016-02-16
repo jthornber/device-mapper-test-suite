@@ -11,6 +11,7 @@ class ToolsTests < ThinpTestCase
   include Utils
   include BlkTrace
   include MetadataGenerator
+  include TinyVolumeManager
   extend TestUtils
 
   def setup
@@ -199,20 +200,18 @@ EOF
 
       with_new_thin(pool, @volume_size, 0) do |thin|
         stomper = PatternStomper.new(thin.path, @data_block_size, :needs_zero => true)
-        stomper.stamp(100)
+        stomper.stamp(20)
 
         with_new_snap(pool, @volume_size, 1, 0, thin) do |snap1|
           stomper2 = stomper.fork(snap1.path)
-          stomper2.stamp(10)
+          stomper2.stamp(20)
           stomper2.verify(0, 2)
 
           with_new_snap(pool, @volume_size, 2, 1, snap1) do |snap2|
             stomper3 = stomper2.fork(snap2.path)
-            stomper3.stamp(10)
+            stomper3.stamp(20)
           end
         end
-
-        stomper.verify(0, 1)
       end
     end
 
@@ -249,7 +248,54 @@ EOF
 
       assert_equal(thin_ls, thin_ls2)
     end
+  end
 
+  #--------------------------------
+
+  def corrupt_metadata(md)
+    ProcessControl::run("dd if=/dev/urandom of=#{md} count=512 seek=4096 bs=1")
+  end
+
+  def copy_metadata(md, tmp_file)
+    ProcessControl::run("dd if=#{md} of=#{tmp_file}")
+  end
+
+  def repair_metadata(md)
+    tmp_file = 'metadata.repair.tmp'
+    copy_metadata(md, tmp_file)
+    ProcessControl::run("thin_repair -i #{tmp_file} -o #{md}")
+  end
+
+  def check_metadata(md)
+    ProcessControl::run("thin_check #{md}")
+  end
+
+  define_test :thin_repair_repeatable do
+    # We want to use a little metadata dev for this since we copy it
+    # to a temp file.
+    tvm = VM.new
+    tvm.add_allocation_volume(@metadata_dev)
+    tvm.add_volume(linear_vol('metadata', meg(50)))
+
+    with_dev(tvm.table('metadata')) do |md|
+      stack = PoolStack.new(@dm, @data_dev, md,
+                            :data_size => @size, :format => true)
+      stack.activate do |pool|
+        with_new_thin(pool, @volume_size, 0) do |thin|
+          wipe_device(thin)
+        end
+      end
+
+      sleep 1
+
+      corrupt_metadata(md)
+      repair_metadata(md)
+      check_metadata(md)
+
+      corrupt_metadata(md)
+      repair_metadata(md)
+      check_metadata(md)
+    end
   end
 end
 
