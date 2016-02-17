@@ -1,21 +1,26 @@
 require 'dmtest/prelude'
 require 'dmtest/device_mapper'
+require 'dmtest/ensure_elapsed'
 
 module DM
   # This mixin assumes there is a dm_interface method returns a DMInterface
 
   # FIXME: the post_remove_check should be lifted from dev
   module LexicalOperators
+    include EnsureElapsed
+
     def with_dev(table = nil, &block)
       bracket(create(table),
-              lambda {|dev| dev.remove; dev.post_remove_check},
-              &block)
+              lambda {|dev| dev.remove; dev.post_remove_check}) do |dev|
+        ensure_elapsed_time(1, dev, &block)
+      end
     end
 
     def with_ro_dev(table = nil, &block)
       bracket(create(table, true),
-              lambda {|dev| dev.remove; dev.post_remove_check},
-              &block)
+              lambda {|dev| dev.remove; dev.post_remove_check}) do |dev|
+        ensure_elapsed_time(1, dev, &block)
+      end
     end
 
     def with_devs(*tables, &block)
@@ -34,7 +39,7 @@ module DM
           devs << create(table)
         end
 
-        block.call(*devs)
+        ensure_elapsed_time(1, devs, block)
       end
     end
 
