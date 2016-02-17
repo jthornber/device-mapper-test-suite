@@ -64,26 +64,23 @@ class ThinDeltaTests < ThinpTestCase
 
   #--------------------------------
 
-  def check_metadata(md, txt)
+  def check_command(cmd, txt)
     metadata = nil
     expected = StringIO.new(txt)
 
-    Utils::with_temp_file('metadata_xml') do |file|
-      ProcessControl::run("thin_dump #{md} > #{file.path}")
+    Utils::with_temp_file('check_tmp') do |file|
+      ProcessControl::run("#{cmd} > #{file.path}")
       file.rewind
       assert FileUtils.compare_stream(file, expected)
     end
   end
 
-  def check_delta(md, thin1, thin2, txt)
-    metadata = nil
-    expected = StringIO.new(txt)
+  def check_metadata(md, txt)
+    check_command("thin_dump #{md}", txt)
+  end
 
-    Utils::with_temp_file('metadata_xml') do |file|
-      ProcessControl::run("thin_delta --snap1 #{thin1} --snap2 #{thin2} #{md} > #{file.path}")
-      file.rewind
-      assert FileUtils.compare_stream(file, expected)
-    end
+  def check_delta(md, thin1, thin2, txt)
+    check_command("thin_delta --snap1 #{thin1} --snap2 #{thin2} #{md}", txt)
   end
 
   DUMP1 =<<EOF
