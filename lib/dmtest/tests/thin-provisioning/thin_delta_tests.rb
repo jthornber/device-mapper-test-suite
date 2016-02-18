@@ -75,72 +75,112 @@ class ThinDeltaTests < ThinpTestCase
     end
   end
 
-  def check_metadata(md, txt)
-    check_command("thin_dump #{md}", txt)
-  end
-
   def check_delta(md, thin1, thin2, txt)
     check_command("thin_delta --snap1 #{thin1} --snap2 #{thin2} #{md}", txt)
   end
 
-  DUMP1 =<<EOF
-<superblock uuid="" time="0" transaction="0" data_block_size="128" nr_data_blocks="163840">
-  <device dev_id="0" mapped_blocks="1600" transaction="0" creation_time="0" snap_time="0">
-    <range_mapping origin_begin="0" data_begin="0" length="1600" time="0"/>
-  </device>
-</superblock>
-EOF
+  DDRange = Struct.new(:begin_m, :end_m)
 
-  DUMP2 =<<EOF
-<superblock uuid="" time="1" transaction="0" data_block_size="128" nr_data_blocks="163840">
-  <device dev_id="0" mapped_blocks="1600" transaction="0" creation_time="0" snap_time="1">
-    <range_mapping origin_begin="0" data_begin="0" length="1600" time="0"/>
-  </device>
-  <device dev_id="1" mapped_blocks="1600" transaction="0" creation_time="1" snap_time="1">
-    <single_mapping origin_block="0" data_block="0" time="0"/>
-    <single_mapping origin_block="1" data_block="1600" time="1"/>
-    <range_mapping origin_begin="2" data_begin="2" length="1598" time="0"/>
-  </device>
-</superblock>
-EOF
+  def run_dd(dev, r)
+    ProcessControl::run("dd if=/dev/zero of=#{dev} bs=1M seek=#{r.begin_m} count=#{r.end_m - r.begin_m}")
+  end
 
-  DELTA =<<EOF
-<superblock uuid="" time="1" transaction="0" data_block_size="128" nr_data_blocks="163840">
-  <diff left="0" right="1">
-    <same begin="0" length="1"/>
-    <different begin="1" length="1"/>
-    <same begin="2" length="1598"/>
-  </diff>
-</superblock>
-EOF
-
-  # https://github.com/jthornber/thin-provisioning-tools/issues/39
-  define_test :snap_with_single_block_difference do
+  def delta_test(range1, range2, delta)
     thin_size = meg(100)
 
     # Provision a thin
     with_standard_pool(@size) do |pool|
       with_new_thin(pool, thin_size, 0) do |thin|
-        wipe_device(thin)
+        run_dd(thin, range1)
+      end
+
+      with_new_snap(pool, thin_size, 1, 0) do |snap|
+        run_dd(snap, range2)
       end
     end
 
-    check_metadata(@metadata_dev, DUMP1)
-
-    # Create a snap and break sharing in a single block
-    with_standard_pool(@size, :format => false) do |pool|
-      with_thin(pool, thin_size, 0) do |thin|
-        with_new_snap(pool, thin_size, 1, 0) do |snap|
-          ProcessControl::run("dd if=/dev/zero of=#{snap.path} bs=64K count=1 seek=1")
-        end
-      end
-    end
-
-    check_metadata(@metadata_dev, DUMP2)
-
-    # Run thin delta
-    check_delta(@metadata_dev, 0, 1, DELTA)
+    check_delta(@metadata_dev, 0, 1, delta)
   end
+
+  #--------------------------------
+
+  DELTA1 =<<EOF
+<superblock uuid="" time="1" transaction="0" data_block_size="128" nr_data_blocks="163840">
+  <diff left="0" right="1">
+    <same begin="0" length="16"/>
+    <different begin="16" length="16"/>
+    <same begin="32" length="1568"/>
+  </diff>
+</superblock>
+EOF
+
+  # https://github.com/jthornber/thin-provisioning-tools/issues/39
+  define_test :snap_with_single_block_difference1 do
+    delta_test(DDRange.new(0, 100), DDRange.new(1, 2), DELTA1)
+  end
+
+  #--------------------------------
+
+  DELTA2 =<<EOF
+<superblock uuid="" time="1" transaction="0" data_block_size="128" nr_data_blocks="163840">
+  <diff left="0" right="1">
+    <same begin="0" length="160"/>
+    <right_only begin="160" length="16"/>
+  </diff>
+</superblock>
+EOF
+
+  define_test :snap_with_single_block_difference2 do
+    delta_test(DDRange.new(0, 10), DDRange.new(10, 11), DELTA2)
+  end
+
+  #--------------------------------
+
+  DELTA3 =<<EOF
+<superblock uuid="" time="1" transaction="0" data_block_size="128" nr_data_blocks="163840">
+  <diff left="0" right="1">
+    <right_only begin="144" length="16"/>
+    <same begin="160" length="1440"/>
+  </diff>
+</superblock>
+EOF
+
+  define_test :snap_with_single_block_difference3 do
+    delta_test(DDRange.new(10, 100), DDRange.new(9, 10), DELTA3)
+  end
+
+  #--------------------------------
+
+  DELTA4 =<<EOF
+<superblock uuid="" time="1" transaction="0" data_block_size="128" nr_data_blocks="163840">
+  <diff left="0" right="1">
+    <right_only begin="80" length="80"/>
+    <different begin="160" length="80"/>
+    <same begin="240" length="80"/>
+  </diff>
+</superblock>
+EOF
+
+  define_test :snap_with_single_block_difference4 do
+    delta_test(DDRange.new(10, 20), DDRange.new(5, 15), DELTA4)
+  end
+
+  #--------------------------------
+
+  DELTA5 =<<EOF
+<superblock uuid="" time="1" transaction="0" data_block_size="128" nr_data_blocks="163840">
+  <diff left="0" right="1">
+    <same begin="160" length="80"/>
+    <different begin="240" length="80"/>
+    <right_only begin="320" length="80"/>
+  </diff>
+</superblock>
+EOF
+
+  define_test :snap_with_single_block_difference5 do
+    delta_test(DDRange.new(10, 20), DDRange.new(15, 25), DELTA5)
+  end
+
 end
 
 #----------------------------------------------------------------
