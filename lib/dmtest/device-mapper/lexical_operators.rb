@@ -39,7 +39,7 @@ module DM
           devs << create(table)
         end
 
-        ensure_elapsed_time(1, devs, block)
+        ensure_elapsed_time(1, devs, &block)
       end
     end
 
