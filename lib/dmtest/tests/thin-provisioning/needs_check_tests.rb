@@ -120,7 +120,7 @@ class NeedsCheckTests < ThinpTestCase
 
             wipe_device(thin, 256)
             # FIXME: sleeping here status will return "Fail", if not "Error"
-            sleep(1)
+            sleep(5)
             assert(read_only_or_fail_mode?(pool))
           ensure
             # Put the metadata dev back
