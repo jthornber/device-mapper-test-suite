@@ -286,8 +286,6 @@ EOF
         end
       end
 
-      sleep 1
-
       corrupt_metadata(md)
       repair_metadata(md)
       check_metadata(md)
