@@ -149,6 +149,51 @@ module ThinpTestMixin
     with_dev(fake_discard_table(opts), &block)
   end
 
+  def with_discardable_dev(size, &block)
+    # FIXME: we should check the data dev has a compatible granularity too
+    discards = DiscardLimits.new(@data_dev)
+    if discards.supported
+      STDERR.puts "dev supports discard"
+      block.call(@data_dev)
+    else
+      with_fake_discard(:granularity => @data_block_size,
+                        :max_discard_sectors => meg(4)) do |fd_dev|
+        block.call(fd_dev)
+      end
+    end    
+  end
+
+  def with_discardable_pool(size, opts = Hash.new, &block)
+    with_discardable_dev(size) do |fd_dev|
+      with_custom_data_pool(fd_dev, size, opts) do |pool|
+        block.call(pool, fd_dev)
+      end
+    end
+  end
+
+  def with_non_discardable_pool(size, opts = Hash.new, &block)
+    discards = DiscardLimits.new(@data_dev)
+    if discards.supported
+      # We need to use fake-discard to disable discards in the data
+      # dev
+      with_fake_discard(:granularity => @data_block_size,
+                        :max_discard_sectors => meg(128),
+                        :discard_support => false) do |fd_dev|
+
+        limits = DiscardLimits.new(fd_dev.to_s)
+        limits.supported.should be_false
+
+        with_custom_data_pool(fd_dev, size, opts) do |pool|
+          block.call(pool, fd_dev)
+        end
+      end
+    else
+      with_custom_data_pool(@data_dev, size, opts) do |pool|
+        block.call(pool, @data_dev)
+      end
+    end
+  end
+
   def with_new_snap(pool, size, id, origin, thin = nil, &block)
     if thin.nil?
         pool.message(0, "create_snap #{id} #{origin}")
