@@ -30,6 +30,14 @@ class ToolsTests < ThinpTestCase
     end
   end
 
+  def forbidden_on_live_data(cmd)
+    with_standard_linear(:data_size => gig(1)) do |linear|
+        assert_raises(ProcessControl::ExitError) do
+        ProcessControl.run(cmd)
+      end
+    end
+  end
+
   def allowed_on_live_metadata(cmd)
     with_standard_pool(@size) do |pool|
       pool.message(0, "reserve_metadata_snap")
@@ -294,6 +302,38 @@ EOF
       repair_metadata(md)
       check_metadata(md)
     end
+  end
+
+  #--------------------------------
+
+  define_test :you_cannot_run_thin_trim_on_live_metadata do
+    forbidden_on_live_metadata("thin_trim --metadata-dev #{@metadata_dev} --data-dev #{@data_dev}")
+  end
+
+  define_test :you_cannot_run_thin_trim_on_live_data do
+    forbidden_on_live_data("thin_trim --metadata-dev #{@metadata_dev} --data-dev #{@data_dev}")
+  end
+
+  define_test :thin_trim_discards_correct_area do
+    traces = nil
+    @volume_size = gig(4)
+
+    with_discardable_dev(@size) do |data_dev|
+      with_custom_data_pool(data_dev, @size) do |pool|
+        STDERR.puts "@size = #{@size}, @volume_size = #{@volume_size}"
+        with_new_thin(pool, @volume_size, 0) do |thin|
+          wipe_device(thin)
+        end
+      end
+
+      sleep 5
+
+      traces, _ = blktrace(@metadata_dev, data_dev) do
+        ProcessControl.run("thin_trim --metadata-dev #{@metadata_dev} --data-dev #{data_dev}")
+      end
+    end
+
+    pp traces
   end
 end
 
