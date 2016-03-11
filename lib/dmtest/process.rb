@@ -4,11 +4,12 @@ require 'dmtest/log'
 
 module ProcessControl
   class ExitError < RuntimeError
-    attr_accessor :error_code
+    attr_accessor :error_code, :stderr
 
-    def initialize(cmd, error_code)
+    def initialize(cmd, error_code, stderr)
       super(cmd)
       @error_code = error_code
+      @stderr = stderr
     end
   end
 
@@ -99,7 +100,8 @@ module ProcessControl
 
       if exit_status != 0
         debug "command failed with '#{exit_status}': #{@cmd_line}"
-        raise ExitError.new("command failed: #{@cmd_line}", exit_status.exitstatus)
+        raise ExitError.new("command failed: #{@cmd_line}", exit_status.exitstatus,
+                            @consumer.stderr_lines.join("\n"))
       end
 
       exit_status
