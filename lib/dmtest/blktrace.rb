@@ -67,13 +67,21 @@ module BlkTrace
     assert_equal(length, len)
   end
 
-  def blkparse(dev)
+  def parse_pattern(complete)
+    if complete
+      /C ([DRW]) (\d+) (\d+)/
+    else
+      /Q ([DRW]) (\d+) (\d+)/
+    end
+  end
+
+  def blkparse(dev, complete)
     # we need to work out what blktrace called this dev
     path = File.basename(follow_link(dev.to_s))
 
     events = Array.new
-    # we only match complete ios
-    pattern = /Q ([DRW]) (\d+) (\d+)/
+    pattern = parse_pattern(complete)
+
     `blkparse -f \"%a %d %S %N\n\" #{path}`.lines.each do |l|
       m = pattern.match(l)
       events.push(Event.new(to_event_type(m[1]), m[2].to_i, m[3].to_i / 512)) if m
@@ -82,7 +90,7 @@ module BlkTrace
     events
   end
 
-  def blktrace(*devs, &block)
+  def blktrace_(devs, complete, &block)
     path = 'trace'
 
     consumer = LogConsumer.new
@@ -98,7 +106,15 @@ module BlkTrace
     end
 
     # results is an Array of Event arrays (one per device)
-    results = devs.map {|d| blkparse(d)}
+    results = devs.map {|d| blkparse(d, complete)}
     [results, r]
+  end
+
+  def blktrace(*devs, &block)
+    blktrace_(devs, false, &block)
+  end
+
+  def blktrace_complete(*devs, &block)
+    blktrace_(devs, true, &block)
   end
 end
