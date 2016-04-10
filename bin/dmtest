@@ -19,6 +19,11 @@ require 'yaml'
 
 #----------------------------------------------------------------
 
+# Hacky global variable
+$failed = false
+
+#----------------------------------------------------------------
+
 Message = Struct.new(:level, :time, :txt)
 
 class File
@@ -118,6 +123,7 @@ module Test
           end
           
           fault_listener = result.add_listener(TestResult::FAULT) do |fault|
+            pp fault
             notify_listeners(TestResult::FAULT, fault)
           end
           
@@ -381,7 +387,7 @@ class Dispatcher
     generate({}, [])
 
     if runner.total_failed > 0
-      raise "Tests failed"
+      $failed = true
     end
   end
 
@@ -629,7 +635,7 @@ def top_level_handler(&block)
     exit 1
   end
 
-  exit 0
+  exit ($failed ? 1 : 0)
 end
 
 #----------------------------------------------------------------
