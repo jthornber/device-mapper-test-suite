@@ -277,6 +277,12 @@ EOF
   def check_metadata(md)
     ProcessControl::run("thin_check #{md}")
   end
+  
+  def repair_cycle(md)
+    corrupt_metadata(md)
+    repair_metadata(md)
+    check_metadata(md)
+  end
 
   define_test :thin_repair_repeatable do
     # We want to use a little metadata dev for this since we copy it
@@ -294,13 +300,8 @@ EOF
         end
       end
 
-      corrupt_metadata(md)
-      repair_metadata(md)
-      check_metadata(md)
-
-      corrupt_metadata(md)
-      repair_metadata(md)
-      check_metadata(md)
+      repair_cycle(md)
+      repair_cycle(md)
     end
   end
 
@@ -314,26 +315,100 @@ EOF
     forbidden_on_live_data("thin_trim --metadata-dev #{@metadata_dev} --data-dev #{@data_dev}")
   end
 
+  #--------------------------------
+
+  SectorRange = Struct.new(:begin, :end)
+  BlockRange = Struct.new(:begin, :end)
+
+  def to_block_range(sr)
+    BlockRange.new((sr.begin + (@data_block_size - 1)) / @data_block_size,
+                   sr.end / @data_block_size)
+  end
+
+  def extract_discard_ranges(trace)
+    ranges = []
+    filtered = trace.select {|item| item.code == [:discard]}.each do |item|
+      ranges << SectorRange.new(item.start_sector, item.start_sector + item.len_sector)
+    end
+
+    if ranges.length == 0
+      return ranges
+    end
+
+    ranges.sort! {|a, b| a.begin <=>  b.begin}
+
+    merged = []
+    current = ranges[0]
+
+    ranges[1..(ranges.length)].each do |e|
+      if current.end == e.begin
+        current.end = e.end
+      else
+        merged << to_block_range(current)
+        current = e
+      end
+    end
+
+    merged << to_block_range(current)
+
+    merged
+  end
+
+  # We allow slightly less to be discarded due to discard alignment
+  # rounding
+  def assert_similar_discards(actual_brs, expected_brs)
+    epsilon = 2 * @data_block_size
+
+    assert_equal(actual_brs.length, expected_brs.length)
+    actual_brs.length.times do |i|
+      a = actual_brs[i]
+      e = expected_brs[i]
+
+      assert(a.begin >= e.begin)
+      assert(a.begin <= e.end)
+      assert(a.end <= e.end)
+
+      assert(a.begin - e.begin < epsilon)
+      assert(e.end - a.end < epsilon)
+    end
+  end
+
   define_test :thin_trim_discards_correct_area do
     traces = nil
-    @volume_size = gig(4)
+    @volume_size = gig(1)
+
+    STDERR.puts "dbs = #{@data_block_size}, vs = #{@volume_size}"
 
     with_discardable_dev(@size) do |data_dev|
       with_custom_data_pool(data_dev, @size) do |pool|
         STDERR.puts "@size = #{@size}, @volume_size = #{@volume_size}"
-        with_new_thin(pool, @volume_size, 0) do |thin|
-          wipe_device(thin)
+        with_new_thins(pool, @volume_size, 0, 1, 2, 3) do |thin1, thin2, thin3, thin4|
+          wipe_device(thin1)
+          wipe_device(thin2)
+          wipe_device(thin3)
+          wipe_device(thin4)
         end
+
+        pool.message(0, "delete 0")
+        pool.message(0, "delete 2")
       end
 
       sleep 5
 
-      traces, _ = blktrace(@metadata_dev, data_dev) do
-        ProcessControl.run("thin_trim --metadata-dev #{@metadata_dev} --data-dev #{data_dev}")
+      traces, _ = blktrace_complete(@metadata_dev, data_dev) do
+        ProcessControl.run("thin_trim --metadata-dev #{@metadata_dev} --data-dev #{data_dev} --pool-inactive")
       end
-    end
 
-    pp traces
+      # Double check no discards went to the metadata device
+      md_ranges = extract_discard_ranges(traces[0])
+      assert_equal(md_ranges, [])
+
+      data_ranges = extract_discard_ranges(traces[1])
+      assert_similar_discards(data_ranges,
+                              [to_block_range(SectorRange.new(0, @volume_size)),
+                               to_block_range(SectorRange.new(2 * @volume_size, 3 * @volume_size)),
+                               to_block_range(SectorRange.new(4 * @volume_size, dev_size(data_dev)))])
+    end
   end
 end
 
