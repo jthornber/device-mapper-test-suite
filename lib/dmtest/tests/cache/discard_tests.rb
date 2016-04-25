@@ -1,3 +1,4 @@
+require 'dmtest/blktrace'
 require 'dmtest/cache-status'
 require 'dmtest/disk-units'
 require 'dmtest/git'
@@ -17,6 +18,7 @@ require 'thread'
 #----------------------------------------------------------------
 
 class DiscardTests < ThinpTestCase
+  include BlkTrace
   include GitExtract
   include Utils
   include DiskUnits
@@ -79,7 +81,6 @@ class DiscardTests < ThinpTestCase
   end
 
   define_test :discard_out_of_bounds do
-    
     origin_size = gig(4) + 8
     with_standard_cache(:cache_size => meg(256),
                         :format => true,
@@ -87,6 +88,34 @@ class DiscardTests < ThinpTestCase
                         :data_size => origin_size,
                         :policy => Policy.new('mq')) do |cache|
       cache.discard(12, origin_size + gig(1))
+    end
+  end
+
+  #--------------------------------
+
+  def discard(dev, b, len)
+    b_sectors = b * @data_block_size
+    len_sectors = len * @data_block_size
+
+    dev.discard(b_sectors, [len_sectors, @volume_size - b_sectors].min)
+  end
+
+  def stationary_cache(opts)
+    opts[:policy] = Policy.new('cleaner');
+    CacheStack.new(@dm, @metadata_dev, @data_dev, opts)
+  end
+
+  define_test :discard_passed_to_origin do
+    s = stationary_cache(:data_size => gig(4),
+                         :cache_size => gig(1),
+                         :block_size => 512)
+    s.activate do |s|
+      traces, _ = blktrace(s.cache, s.origin) do
+        discard(s.cache, 0, 1)
+      end
+
+      assert_discards(traces[0], 0, @data_block_size)
+      assert_discards(traces[1], 0, @data_block_size)
     end
   end
 end
