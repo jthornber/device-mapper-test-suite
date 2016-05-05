@@ -68,10 +68,11 @@ module BlkTrace
   end
 
   def parse_pattern(complete)
+    # The S (sleep requested) action can be present in addition to the ones we're interested in
     if complete
-      /C ([DRW]) (\d+) (\d+)/
+      /C ([DRW])S? (\d+) (\d+)/
     else
-      /Q ([DRW]) (\d+) (\d+)/
+      /Q ([DRW])S? (\d+) (\d+)/
     end
   end
 
