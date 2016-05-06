@@ -99,9 +99,9 @@ class SMQComparisonTests < ThinpTestCase
   tag :linear_target
   define_test :fio_linear do
     with_standard_linear do |linear|
-      do_fio(linear, :ext4,
-             :outfile => AP("fio_dm_linear.out"),
-             :cfgfile => LP("tests/cache/database-funtime.fio"))
+      do_fio_histogram(linear, :ext4,
+                       :outfile => AP("fio_dm_linear.out"),
+                       :cfgfile => LP("tests/cache/database-funtime.fio"))
     end
   end
 

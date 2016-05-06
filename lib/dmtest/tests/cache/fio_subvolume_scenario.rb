@@ -14,6 +14,21 @@ module FioSubVolumeScenario
     end
   end
 
+  def do_fio_histogram(dev, fs_type, opts = Hash.new)
+    outfile = opts.fetch(:outfile, AP("fio.out"))
+    cfgfile = opts.fetch(:cfgfile, LP("tests/cache/fio.config"))
+    fs = FS::file_system(fs_type, dev)
+    fs.format(:discard => false)
+
+    blktrace_histogram(dev) do
+      fs.with_mount('./fio_test', :discard => false) do
+        Dir.chdir('./fio_test') do
+          ProcessControl.run("fio #{cfgfile} --output=#{outfile}")
+        end
+      end
+    end
+  end
+
   def fio_sub_volume_scenario(dev, &wait)
     subvolume_count = 4
     subvolume_size = meg(256)
