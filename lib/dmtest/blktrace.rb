@@ -118,4 +118,51 @@ module BlkTrace
   def blktrace_complete(*devs, &block)
     blktrace_(devs, true, &block)
   end
+
+  #--------------------------------
+
+  class IOHistogram
+    def initialize(name, dev_size, nr_bins)
+      @name = name
+      @divisor = dev_size / nr_bins
+      @bins = Array.new(nr_bins) {0}
+    end
+
+    def record_io(start_sector, len)
+      return if len == 0
+
+      start_bin = to_bin(start_sector)
+      end_bin = to_bin(start_sector + len - 1)
+      for b in start_bin..end_bin
+        @bins[b] = @bins[b] + 1
+      end
+    end
+
+    def show_histogram
+      STDERR.puts "#{@name}: #{@bins.join(", ")}"
+    end
+
+    private
+    def to_bin(sector)
+      sector / @divisor
+    end
+  end
+
+  def blktrace_histogram(dev, &block)
+    traces, _ = blktrace_([dev], false, &block)
+
+    read_histogram = IOHistogram.new("read", dev_size(dev), 128)
+    write_histogram = IOHistogram.new("write", dev_size(dev), 128)
+
+    traces[0].each do |e|
+      if e.code.member?(:write)
+        write_histogram.record_io(e.start_sector, e.len_sector)
+      elsif e.code.member?(:read)
+        read_histogram.record_io(e.start_sector, e.len_sector)
+      end
+    end
+
+    read_histogram.show_histogram
+    write_histogram.show_histogram
+  end
 end
