@@ -121,6 +121,10 @@ class CacheStack
     end
   end
 
+  def reload_cache
+    @cache.load(cache_table)
+  end
+
   def origin_size
     @opts.fetch(:data_size, dev_size(@spindle_dev))
   end
@@ -139,6 +143,10 @@ class CacheStack
 
   def io_mode
     @opts[:io_mode] ? [ @opts[:io_mode] ] : []
+  end
+
+  def change_io_mode(m)
+    @opts[:io_mode] = m
   end
 
   def cache_table(mode = io_mode)
