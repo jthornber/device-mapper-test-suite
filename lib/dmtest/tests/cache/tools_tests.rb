@@ -1,4 +1,5 @@
 require 'dmtest/blktrace'
+require 'dmtest/git'
 require 'dmtest/log'
 require 'dmtest/utils'
 require 'dmtest/fs'
@@ -7,6 +8,7 @@ require 'dmtest/thinp-test'
 #----------------------------------------------------------------
 
 class ToolsTests < ThinpTestCase
+  include GitExtract
   include Utils
   include BlkTrace
   include TinyVolumeManager
@@ -75,7 +77,7 @@ class ToolsTests < ThinpTestCase
   def check_metadata(md)
     ProcessControl::run("cache_check #{md}")
   end
-  
+
   def repair_cycle(md)
     corrupt_metadata(md)
     repair_metadata(md)
@@ -102,6 +104,25 @@ class ToolsTests < ThinpTestCase
 
       repair_cycle(md)
       repair_cycle(md)
+    end
+  end
+
+  #--------------------------------
+
+  define_test :cache_offline_writeback do
+    s = CacheStack.new(@dm, @metadata_dev, @data_dev,
+                       :format => true,
+                       :block_size => k(32),
+                       :cache_size => meg(512),
+                       :data_size => gig(4),
+                       :policy => Policy.new('smq', :migration_threshold => 1024))
+    s.activate_support_devs do
+      s.prepare_populated_cache(:dirty_percentage => 50)
+
+      # FIXME: metadata update doesn't work yet.
+      cmd = "cache_writeback --metadata-device #{s.md} --fast-device #{s.ssd} --origin-device #{s.origin} --buffer-size-meg 16 --no-metadata-update"
+      STDERR.puts cmd
+      ProcessControl.run(cmd)
     end
   end
 end
