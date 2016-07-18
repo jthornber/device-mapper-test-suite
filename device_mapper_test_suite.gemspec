@@ -24,7 +24,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "colored"
   spec.add_dependency "rspec", "2.14"
   spec.add_dependency "webrick"
-  spec.add_dependency "json", "1.7.7"
+  spec.add_dependency "json"
   spec.add_dependency "activemodel", "4.1.5"
   spec.add_dependency "activesupport", "4.1.5"
   spec.add_dependency "activerecord", "4.1.5"
