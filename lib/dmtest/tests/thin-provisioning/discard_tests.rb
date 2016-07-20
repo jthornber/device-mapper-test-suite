@@ -403,7 +403,7 @@ class DiscardQuickTests < ThinpTestCase
 
         with_new_snap(pool, @volume_size, 1, 0, thin) do |snap|
           assert_used_blocks(pool, 1)
-          traces, _ = blktrace_complete(thin, snap, data_dev) do
+          traces, _ = blktrace(thin, snap, data_dev) do
             thin.discard(0, @data_block_size)
           end
 
@@ -432,7 +432,7 @@ class DiscardQuickTests < ThinpTestCase
 
         pool.message(0, "delete 1")
 
-        traces, _ = blktrace_complete(thin, data_dev) do
+        traces, _ = blktrace(thin, data_dev) do
           thin.discard(0, @data_block_size)
           sleep 1               # FIXME: shouldn't need this
         end
