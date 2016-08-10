@@ -224,7 +224,7 @@ EOF
     end
 
     md = read_metadata
-    
+
     ref_counts = Hash.new(0)
     md.devices.each do |dev|
       dev.mappings.each do |m|
@@ -261,7 +261,7 @@ EOF
   #--------------------------------
 
   def corrupt_metadata(md)
-    ProcessControl::run("dd if=/dev/urandom of=#{md} count=512 seek=4096 bs=1")
+    ProcessControl::run("dd if=/dev/urandom of=#{md} count=512 seek=40960 bs=1")
   end
 
   def copy_metadata(md, tmp_file)
@@ -274,13 +274,26 @@ EOF
     ProcessControl::run("thin_repair -i #{tmp_file} -o #{md}")
   end
 
+  def repair_metadata_via_dump(md)
+    tmp_file = 'metadata.repair.tmp'
+    ProcessControl::run("thin_dump --repair #{md} > #{tmp_file}")
+    ProcessControl::run("thin_restore -i #{tmp_file} -o #{md}")
+  end
+
+
   def check_metadata(md)
     ProcessControl::run("thin_check #{md}")
   end
-  
+
   def repair_cycle(md)
     corrupt_metadata(md)
     repair_metadata(md)
+    check_metadata(md)
+  end
+
+  def dump_restore_cycle(md)
+    corrupt_metadata(md)
+    repair_metadata_via_dump(md)
     check_metadata(md)
   end
 
@@ -293,6 +306,7 @@ EOF
 
     with_dev(tvm.table('metadata')) do |md|
       stack = PoolStack.new(@dm, @data_dev, md,
+                            :block_size => k(64),
                             :data_size => @size, :format => true)
       stack.activate do |pool|
         with_new_thin(pool, @volume_size, 0) do |thin|
@@ -302,6 +316,28 @@ EOF
 
       repair_cycle(md)
       repair_cycle(md)
+    end
+  end
+
+  define_test :thin_dump_restore_repeatable do
+    # We want to use a little metadata dev for this since we copy it
+    # to a temp file.
+    tvm = VM.new
+    tvm.add_allocation_volume(@metadata_dev)
+    tvm.add_volume(linear_vol('metadata', meg(50)))
+
+    with_dev(tvm.table('metadata')) do |md|
+      stack = PoolStack.new(@dm, @data_dev, md,
+                            :block_size => k(64),
+                            :data_size => @size, :format => true)
+      stack.activate do |pool|
+        with_new_thin(pool, @volume_size, 0) do |thin|
+          wipe_device(thin)
+        end
+      end
+
+      dump_restore_cycle(md)
+      dump_restore_cycle(md)
     end
   end
 
