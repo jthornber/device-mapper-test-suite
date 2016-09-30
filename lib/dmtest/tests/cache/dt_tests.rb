@@ -20,7 +20,7 @@ class DTTests < ThinpTestCase
   extend TestUtils
 
   POLICY_NAMES = %w(mq smq)
-
+  METADATA_VERSIONS = [1, 2]
   def setup
     super
     @data_block_size = meg(1)
@@ -28,22 +28,23 @@ class DTTests < ThinpTestCase
 
   #--------------------------------
 
-  def dt_cache(policy)
+  def dt_cache(policy, version)
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
                            :policy => Policy.new(policy, :migration_threshold => 1024),
                            :cache_size => meg(1024),
                            :block_size => k(32),
-                           :data_size => gig(16))
+                           :data_size => gig(16),
+                           :metadata_version => version)
     stack.activate do |stack|
       dt_device(stack.cache)
     end
   end
 
-  define_tests_across(:dt_cache, POLICY_NAMES)
+  define_tests_across(:dt_cache, POLICY_NAMES, METADATA_VERSIONS)
 
   #--------------------------------
 
-  def dt_thin_snap(policy)
+  def dt_thin_snap(policy, version)
     data_size = gig(64)
 
     stack = PoolCacheStack.new(@dm, @metadata_dev, @data_dev,
@@ -51,7 +52,8 @@ class DTTests < ThinpTestCase
                                  :cache_size => meg(3072),
                                  :block_size => k(32),
                                  :data_size => data_size,
-                                 :format => true
+                                 :format => true,
+                                 :metadata_version => version
                                },
                                {
                                  :data_size => data_size,
@@ -77,7 +79,7 @@ class DTTests < ThinpTestCase
     end
   end
 
-  define_tests_across(:dt_thin_snap, POLICY_NAMES)
+  define_tests_across(:dt_thin_snap, POLICY_NAMES, METADATA_VERSIONS)
 end
 
 #----------------------------------------------------------------

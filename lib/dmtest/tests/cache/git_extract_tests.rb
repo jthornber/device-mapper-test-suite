@@ -22,6 +22,7 @@ class GitExtractTests < ThinpTestCase
   extend TestUtils
 
   POLICY_NAMES = %w(mq smq)
+  METADATA_VERSIONS = [1, 2]
 
   def setup
     super
@@ -43,38 +44,41 @@ class GitExtractTests < ThinpTestCase
     end
   end
 
-  def git_extract_cache_quick(policy)
+  def git_extract_cache_quick(policy, version)
     do_git_extract_cache(:policy => Policy.new(policy, :migration_threshold => 1024),
                          :cache_size => meg(1024),
                          :block_size => k(32),
                          :data_size => gig(16),
-                         :nr_tags => 5)
+                         :nr_tags => 5,
+                         :metadata_version => version)
   end
 
-  define_tests_across(:git_extract_cache_quick, POLICY_NAMES)
+  define_tests_across(:git_extract_cache_quick, POLICY_NAMES, METADATA_VERSIONS)
 
-  def git_extract_cache_long(policy)
+  def git_extract_cache_long(policy, version)
     do_git_extract_cache(:policy => Policy.new(policy, :migration_threshold => 1024),
                          :cache_size => meg(1024),
                          :block_size => k(32),
                          :data_size => gig(16),
-                         :nr_tags => 20)
+                         :nr_tags => 20,
+                         :metadata_version => version)
   end
 
-  define_tests_across(:git_extract_cache_long, POLICY_NAMES)
+  define_tests_across(:git_extract_cache_long, POLICY_NAMES, METADATA_VERSIONS)
 
-  def git_extract_cache_across_cache_size(policy)
+  def git_extract_cache_across_cache_size(policy, version)
     [64, 256, 512, 1024, 1024 + 512, 2048, 2048 + 1024].each do |cache_size|
       report_time("cache size = #{cache_size}, policy = #{policy}", STDERR) do
         do_git_extract_cache(:policy => Policy.new(policy, :migration_threshold => 1024),
                              :cache_size => meg(cache_size),
                              :block_size => k(32),
-                             :data_size => gig(16))
+                             :data_size => gig(16),
+                             :metadata_version => version)
       end
     end
   end
 
-  define_tests_across(:git_extract_cache_across_cache_size, POLICY_NAMES)
+  define_tests_across(:git_extract_cache_across_cache_size, POLICY_NAMES, METADATA_VERSIONS)
 
   #--------------------------------
 
@@ -91,41 +95,44 @@ class GitExtractTests < ThinpTestCase
     end
   end
 
-  def git_extract_only_quick(policy)
+  def git_extract_only_quick(policy, version)
     git_extract_only(:policy => Policy.new(policy, :migration_threshold => 1024),
                      :cache_size => meg(512),
                      :block_size => k(32),
-                     :data_size => gig(16))
+                     :data_size => gig(16),
+                     :metadata_version => version)
   end
 
-  define_tests_across(:git_extract_only_quick, POLICY_NAMES)
+  define_tests_across(:git_extract_only_quick, POLICY_NAMES, METADATA_VERSIONS)
 
   #--------------------------------
 
-  def git_extract_only_long(policy)
+  def git_extract_only_long(policy, version)
     git_extract_only(:policy => Policy.new(policy, :migration_threshold => 1024),
                      :cache_size => meg(3072),
                      :block_size => k(32),
                      :data_size => gig(16),
-                     :nr_tags => 20)
+                     :nr_tags => 20,
+                     :metadata_version => version)
   end
 
-  define_tests_across(:git_extract_only_long, POLICY_NAMES)
+  define_tests_across(:git_extract_only_long, POLICY_NAMES, METADATA_VERSIONS)
 
   #--------------------------------
 
-  def git_extract_only_across_cache_size(policy_name)
+  def git_extract_only_across_cache_size(policy_name, version)
     [64, 256, 512, 1024, 1024 + 512, 2048, 2048 + 1024].each do |cache_size|
       report_time("cache size = #{cache_size}, policy = #{policy_name}", STDERR) do
         git_extract_only(:policy => Policy.new(policy_name, :migration_threshold => 1024),
                          :cache_size => meg(cache_size),
                          :block_size => 64,
-                         :data_size => gig(16))
+                         :data_size => gig(16),
+                         :metadata_version => version)
       end
     end
   end
 
-  define_tests_across(:git_extract_only_across_cache_size, POLICY_NAMES)
+  define_tests_across(:git_extract_only_across_cache_size, POLICY_NAMES, METADATA_VERSIONS)
 
   #--------------------------------
 
@@ -145,7 +152,7 @@ class GitExtractTests < ThinpTestCase
 
   #--------------------------------
 
-  def thin_on_cache(policy)
+  def thin_on_cache(policy, version)
     data_size = gig(64)
 
     stack = PoolCacheStack.new(@dm, @metadata_dev, @data_dev,
@@ -153,7 +160,8 @@ class GitExtractTests < ThinpTestCase
                                  :cache_size => meg(3072),
                                  :block_size => k(32),
                                  :data_size => data_size,
-                                 :format => true
+                                 :format => true,
+                                 :metadata_version => version
                                },
                                {
                                  :data_size => data_size,
@@ -175,11 +183,11 @@ class GitExtractTests < ThinpTestCase
     end
   end
 
-  define_tests_across(:thin_on_cache, POLICY_NAMES)
+  define_tests_across(:thin_on_cache, POLICY_NAMES, METADATA_VERSIONS)
 
   #--------------------------------
 
-  def cached_data_device_alternating_thins(policy_name)
+  def cached_data_device_alternating_thins(policy_name, version)
     data_size = gig(8)
 
     stack = PoolCacheStack.new(@dm, @metadata_dev, @data_dev,
@@ -187,7 +195,8 @@ class GitExtractTests < ThinpTestCase
                                  :cache_size => meg(1024),
                                  :block_size => k(32),
                                  :data_size => data_size,
-                                 :format => true
+                                 :format => true,
+                                 :metadata_version => version
                                },
                                {
                                  :data_size => data_size,
@@ -217,11 +226,11 @@ class GitExtractTests < ThinpTestCase
     end
   end
 
-  define_tests_across(:cached_data_device_alternating_thins, POLICY_NAMES)
+  define_tests_across(:cached_data_device_alternating_thins, POLICY_NAMES, METADATA_VERSIONS)
 
   #--------------------------------
 
-  define_test :cache_on_thin do
+  def cache_on_thin(version)
     cache_size = meg(1024)
 
     tvm = TinyVolumeManager::VM.new
@@ -238,7 +247,8 @@ class GitExtractTests < ThinpTestCase
                                   :policy => Policy.new('smq', :migration_threshold => 1024),
                                   :cache_size => cache_size,
                                   :block_size => k(32),
-                                  :format => true)
+                                  :format => true,
+                                  :metadata_version => version)
           cstack.activate do |cs|
             git_prepare(cs.cache, :ext4)
             git_extract(cs.cache, :ext4, TAGS[0..5])
@@ -248,14 +258,17 @@ class GitExtractTests < ThinpTestCase
     end
   end
 
+  define_tests_across(:cache_on_thin, METADATA_VERSIONS)
+
   #--------------------------------
 
-  define_test :alternate_between_mq_and_smq do
+  def alternate_between_mq_and_smq(version)
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
                            :policy => Policy.new('mq', :migration_threshold => 1024),
                            :cache_size => meg(1024),
                            :block_size => k(32),
-                           :data_size => gig(4))
+                           :data_size => gig(4),
+                           :metadata_version => version)
 
     stack.activate do |stack|
       git_prepare(stack.cache, :ext4)
@@ -274,13 +287,15 @@ class GitExtractTests < ThinpTestCase
             stack.change_policy(Policy.new('smq', :migration_threshold => 1024))
           end
 
-          stack.cache.load(stack.cache_table)
+          stack.reload_cache
         end
 
         smq = !smq
       end
     end
   end
+
+  define_tests_across(:alternate_between_mq_and_smq, METADATA_VERSIONS)
 end
 
 #----------------------------------------------------------------

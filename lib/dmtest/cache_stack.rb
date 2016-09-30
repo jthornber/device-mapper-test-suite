@@ -145,13 +145,29 @@ class CacheStack
     @opts[:io_mode] ? [ @opts[:io_mode] ] : []
   end
 
+  def metadata_version
+    if @opts.has_key? :metadata_version
+      case @opts[:metadata_version]
+      when 1
+        []
+      when 2
+        [:metadata2]
+      else
+        throw "bad metadata version"
+      end
+    else
+      # We default to version 1
+      []
+    end
+  end
+
   def change_io_mode(m)
     @opts[:io_mode] = m
   end
 
   def cache_table(mode = io_mode)
     Table.new(CacheTarget.new(dev_size(@origin), @md, @ssd, @origin,
-                              block_size, mode + migration_threshold,
+                              block_size, mode + migration_threshold + metadata_version,
                               policy.name, policy.opts))
   end
 

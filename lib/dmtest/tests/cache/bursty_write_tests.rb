@@ -19,6 +19,7 @@ class BurstyWriteTests < ThinpTestCase
   extend TestUtils
 
   POLICY_NAMES = %w(mq smq)
+  METADATA_VERSIONS = [1, 2]
   MOUNT_DIR = './smallfile-mount'
 
   def run_smallfile
@@ -43,10 +44,11 @@ class BurstyWriteTests < ThinpTestCase
     end
   end
 
-  def smallfile_cache(policy)
+  def smallfile_cache(policy, version)
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
                            :data_size => gig(4),
                            :cache_size => meg(1024),
+                           :metadata_version => version,
                            :policy => Policy.new(policy, :migration_threshold => 1024));
     stack.activate do |stack|
       do_smallfile(stack.cache)
@@ -54,7 +56,7 @@ class BurstyWriteTests < ThinpTestCase
     end
   end
 
-  define_tests_across(:smallfile_cache, POLICY_NAMES)
+  define_tests_across(:smallfile_cache, POLICY_NAMES, METADATA_VERSIONS)
 end
 
 #----------------------------------------------------------------

@@ -21,6 +21,8 @@ class CleanerTests < ThinpTestCase
   include CacheUtils
   extend TestUtils
 
+  METADATA_VERSIONS = [1, 2]
+
   def setup
     super
     @data_block_size = k(32)
@@ -50,8 +52,9 @@ class CleanerTests < ThinpTestCase
 
   #--------------------------------
 
-  define_test :a_fresh_cache_is_trivial_to_clean do
-    s = std_stack(:policy => Policy.new('cleaner'))
+  def a_fresh_cache_is_trivial_to_clean(version)
+    s = std_stack(:metadata_version => version,
+                  :policy => Policy.new('cleaner'))
     s.activate do
       wait_for_all_clean(s.cache)
     end
@@ -59,14 +62,20 @@ class CleanerTests < ThinpTestCase
     confirm_clean
   end
 
-  define_test :a_dirtied_cache_can_be_cleaned_recreate do
-    s = std_stack
+  define_tests_across(:a_fresh_cache_is_trivial_to_clean,
+                      METADATA_VERSIONS)
+
+  #--------------------------------
+
+  def a_dirtied_cache_can_be_cleaned_recreate(version)
+    s = std_stack(:metadata_version => version)
     s.activate do
       git_prepare(s.cache, :ext4)
       git_extract(s.cache, :ext4, TAGS[0..5])
     end
 
     s = std_stack(:format => false,
+                  :metadata_version => version,
                   :policy => Policy.new('cleaner'))
     s.activate do
       # FIXME: are blocks marked clean when their writeback comences rather than completes?
@@ -76,10 +85,15 @@ class CleanerTests < ThinpTestCase
     confirm_clean
   end
 
+  define_tests_across(:a_dirtied_cache_can_be_cleaned_recreate,
+                      METADATA_VERSIONS)
+
+  #--------------------------------
+
   # bz 1337588 suggests quickly reloading to passthrough mode leaves
   # dirty blocks
-  define_test :a_dirtied_cache_can_be_cleaned_reload do
-    s = std_stack
+  def a_dirtied_cache_can_be_cleaned_reload(version)
+    s = std_stack(:metadata_version => version)
     s.activate do
       git_prepare(s.cache, :ext4)
       git_extract(s.cache, :ext4, TAGS[0..5])
@@ -97,6 +111,9 @@ class CleanerTests < ThinpTestCase
       end
     end
   end
+
+  define_tests_across(:a_dirtied_cache_can_be_cleaned_reload,
+                      METADATA_VERSIONS)
 end
 
 #----------------------------------------------------------------

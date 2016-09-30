@@ -29,6 +29,7 @@ class MetadataVersionTests < ThinpTestCase
 
     # bring up the metadata device
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
+                           :block_size => k(64),
                            :format => true, :data_size => gig(1))
     stack.activate_support_devs do |stack|
       # restore from xml
