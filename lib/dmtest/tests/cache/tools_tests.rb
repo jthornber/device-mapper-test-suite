@@ -125,6 +125,25 @@ class ToolsTests < ThinpTestCase
       ProcessControl.run(cmd)
     end
   end
+
+  #--------------------------------
+
+  define_test :cache_dump_works do
+    s = CacheStack.new(@dm, @metadata_dev, @data_dev,
+                       :format => true,
+                       :block_size => k(32),
+                       :cache_size => meg(512),
+                       :data_size => gig(4),
+                       :policy => Policy.new('smq', :migration_threshold => 1024))
+    s.activate_support_devs do
+      s.prepare_populated_cache(:dirty_percentage => 50)
+
+      # FIXME: metadata update doesn't work yet.
+      cmd = "cache_dump #{s.md}"
+      STDERR.puts cmd
+      ProcessControl.run(cmd)
+    end    
+  end
 end
 
 #----------------------------------------------------------------
