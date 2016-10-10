@@ -124,6 +124,63 @@ class FSBench < ThinpTestCase
     end
   end
 
+  define_test :fio_thin_unallocated do
+    # We're interested in the iops with fast devices, so carve up the
+    # metadata dev.
+    size = gig(10)
+
+    tvm = TinyVolumeManager::VM.new
+    tvm.add_allocation_volume(@metadata_dev)
+    tvm.add_volume(linear_vol('metadata', gig(1)))
+    tvm.add_volume(linear_vol('data', size))
+
+    with_devs(tvm.table('metadata'),
+              tvm.table('data')) do |md, data|
+
+      wipe_device(md, 8)
+
+      stack = PoolStack.new(@dm, data, md, :zero => false, :block_size => 2048)
+      stack.activate do |pool|
+        with_new_thin(pool, size, 0) do |thin|
+          with_fs(thin, :ext4) do
+            outfile = AP("fio.out")
+            cfgfile = LP("tests/thin-provisioning/fio.config")
+            ProcessControl.run("fio #{cfgfile} --output=#{outfile}")
+          end
+        end
+      end
+    end
+  end
+
+  define_test :fio_thin_preallocated do
+    # We're interested in the iops with fast devices, so carve up the
+    # metadata dev.
+    size = gig(10)
+
+    tvm = TinyVolumeManager::VM.new
+    tvm.add_allocation_volume(@metadata_dev)
+    tvm.add_volume(linear_vol('metadata', gig(1)))
+    tvm.add_volume(linear_vol('data', size))
+
+    with_devs(tvm.table('metadata'),
+              tvm.table('data')) do |md, data|
+
+      wipe_device(md, 8)
+
+      stack = PoolStack.new(@dm, data, md, :zero => false, :block_size => 2048)
+      stack.activate do |pool|
+        with_new_thin(pool, size, 0) do |thin|
+          wipe_device(thin)
+          with_fs(thin, :ext4) do
+            outfile = AP("fio.out")
+            cfgfile = LP("tests/thin-provisioning/fio.config")
+            ProcessControl.run("fio #{cfgfile} --output=#{outfile}")
+          end
+        end
+      end
+    end
+  end
+  
   def _test_git_extract_rolling_snap
     dir = Dir.pwd
     n = 0
