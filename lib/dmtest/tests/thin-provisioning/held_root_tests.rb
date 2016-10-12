@@ -151,4 +151,36 @@ class HeldRootTests < ThinpTestCase
       # Tearing down the pool triggers a thin_check automatically
     end
   end
+
+  # bz 1382654
+  define_test :metadata_snap_cycle do
+    50.times do
+      with_standard_pool(@size, :format => true) do |pool|
+        with_new_thin(pool, @volume_size, 0) do |thin|
+
+          stop_sem = Mutex.new
+          stop_sem.lock
+
+          tid = Thread::new(thin, stop_sem) do |t, sem|
+            while !sem.try_lock do
+              wipe_device(t)
+            end
+          end
+
+          100.times do
+            pool.message(0, "reserve_metadata_snap")
+            assert_root_set(pool)
+
+            pool.message(0, "release_metadata_snap")
+            assert_root_unset(pool)
+          end
+
+          stop_sem.unlock
+          STDERR.puts "waiting for background io thread"
+          tid.join
+          STDERR.puts "joined"
+        end
+      end
+    end
+  end
 end
