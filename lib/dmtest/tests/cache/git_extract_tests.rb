@@ -23,6 +23,7 @@ class GitExtractTests < ThinpTestCase
 
   POLICY_NAMES = %w(mq smq)
   METADATA_VERSIONS = [1, 2]
+  IO_MODES = [:writeback, :writethrough]
 
   def setup
     super
@@ -44,16 +45,18 @@ class GitExtractTests < ThinpTestCase
     end
   end
 
-  def git_extract_cache_quick(policy, version)
+  def git_extract_cache_quick(policy, version, io_mode)
     do_git_extract_cache(:policy => Policy.new(policy, :migration_threshold => 1024),
                          :cache_size => meg(1024),
                          :block_size => k(32),
                          :data_size => gig(16),
                          :nr_tags => 5,
+			 :io_mode => io_mode,
                          :metadata_version => version)
   end
 
-  define_tests_across(:git_extract_cache_quick, POLICY_NAMES, METADATA_VERSIONS)
+  define_tests_across(:git_extract_cache_quick,
+		      POLICY_NAMES, METADATA_VERSIONS, IO_MODES)
 
   def git_extract_cache_long(policy, version)
     do_git_extract_cache(:policy => Policy.new(policy, :migration_threshold => 1024),
