@@ -48,6 +48,21 @@ class MetadataVersionTests < ThinpTestCase
       assert(caught)
     end
   end
+
+  define_test :can_reactivate_unused_cache do
+    stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
+			   :io_mode => :writethrough,
+			   :block_size => k(64),
+			   :format => true,
+			   :metadata_version => 2,
+			   :data_size => gig(4),
+			   :cache_size => gig(1),
+			   :policy => Policy.new('smq', :migration_threshold => 10240))
+    stack.activate_support_devs do |stack|
+      stack.activate_top_level {|stack|}
+      stack.activate_top_level {|stack|}
+    end
+  end
 end
 
 #----------------------------------------------------------------
