@@ -114,6 +114,56 @@ class CleanerTests < ThinpTestCase
 
   define_tests_across(:a_dirtied_cache_can_be_cleaned_reload,
                       METADATA_VERSIONS)
+
+  #---------------------------------
+
+  # bz1437251
+  # Assumes a VG created and named 'cache_sanity'
+  # lvcreate --yes -L 4G -n corigin cache_sanity /dev/sdb1
+  # lvcreate --yes -L 4G -n resize cache_sanity /dev/sda1
+  # lvcreate --yes -L 12M -n resize_meta cache_sanity /dev/sda1
+  # lvconvert --cachemetadataformat 1 --yes --type cache-pool --cachepolicy smq --cachemode writeback -c 64 --poolmetadata cache_sanity/resize_meta cache_sanity/resize
+  # lvconvert --yes --type cache --cachepool cache_sanity/resize cache_sanity/corigin
+  #
+  # mkfs[.xfs|.ext4] /dev/cache_sanity/corigin
+  # mount /dev/cache_sanity/corigin /mnt/corigin
+  #
+  # dd if=/dev/urandom of=/mnt/corigin/ddfile bs=512 count=100  && dd if=/mnt/corigin/ddfile of=/tmp/ddfile bs=512 count=100
+  #
+  #
+  # lvconvert --uncache /dev/cache_sanity/corigin && umount /mnt/corigin
+  define_test :uncache do
+    s = std_stack(:metadata_version => 1)
+    s.activate do
+      fs = FS::file_system(:ext4, s.cache)
+      fs.format()
+
+      tid = Thread.new(s) do |s|
+	fs.with_mount('./kernel_builds', :discard => false) do
+	  STDERR.puts "starting io"
+	  ProcessControl.run("dd if=/dev/urandom of=./kernel_builds/ddfile bs=512 count=100000")
+	  STDERR.puts "io complete"
+        end
+      end
+
+      sleep 1  # let the io get rolling
+
+      s.cache.pause do
+	s.change_policy(Policy.new('cleaner'))
+	s.change_io_mode(:writethrough)
+	s.reload_cache
+      end
+
+      STDERR.puts "waiting for clean"
+      wait_for_all_clean(s.cache)
+
+      STDERR.puts "uncaching"
+      s.uncache
+      STDERR.puts "uncached"
+
+      tid.join
+    end
+  end
 end
 
 #----------------------------------------------------------------

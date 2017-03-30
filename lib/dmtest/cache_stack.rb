@@ -100,6 +100,18 @@ class CacheStack
     end
   end
 
+  # load the origin into the cache dev, and load empty error targets into the
+  # origin and ssd
+  def uncache
+    error_table = Table.new(ErrorTarget.new(1024))
+
+    @cache.pause do
+      @cache.load(@data_tvm.table('origin'))
+      @origin.pause {@origin.load(error_table)}
+      @ssd.pause {@ssd.load(error_table)}
+    end
+  end
+
   def resize_ssd(new_size)
     @cache.pause do        # must suspend cache so resize is detected
       @ssd.pause do
