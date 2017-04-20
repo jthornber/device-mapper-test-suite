@@ -70,8 +70,8 @@ class PoolStatus
     opts
   end
 
-  def initialize(pool)
-    status = pool.status
+  def initialize(pool, opts = {})
+    status = pool.status(opts)
 
     m = status.match(/(\d+)\s(\d+)\/(\d+)\s(\d+)\/(\d+)\s(\S+)(\s.*)\s(\S+)/)
     if m.nil?

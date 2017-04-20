@@ -57,8 +57,12 @@ module DM
       @interface.message(path, sector, '--', *args)
     end
 
-    def status
-      @interface.status(path)
+    def status(opts = {})
+      if opts.fetch(:noflush, false)
+	@interface.status(path, "--noflush")
+      else
+	@interface.status(path)
+      end
     end
 
     def table

@@ -76,14 +76,16 @@ module DiscardMixin
     end
   end
 
-  def used_data_blocks(pool)
-    s = PoolStatus.new(pool)
+  def used_data_blocks(pool, opts = {})
+    s = PoolStatus.new(pool, opts)
+    pp s
+    pp opts
     STDERR.puts "pool status metadata(#{s.used_metadata_blocks}/#{s.total_metadata_blocks}) data(#{s.used_data_blocks}/#{s.total_data_blocks})"
     s.used_data_blocks
   end
 
-  def assert_used_blocks(pool, count)
-    assert_equal(count, used_data_blocks(pool))
+  def assert_used_blocks(pool, count, opts = {})
+    assert_equal(count, used_data_blocks(pool, opts))
   end
 
   def discard(thin, b, len)
@@ -566,6 +568,25 @@ class DiscardQuickTests < ThinpTestCase
 
         assert(failed)
       end
+    end
+  end
+
+  #----------------
+
+  # bz 1415232
+  # LVM is waiting for a second then getting the status with the NOFLUSH flag
+  # set.  They're relying on the periodic commit.
+  define_test :discard_triggers_commit do
+    with_standard_pool(@size) do |pool|
+      with_new_thin(pool, @volume_size, 0) do |thin|
+        wipe_device(thin)
+        assert_used_blocks(pool, @blocks_per_dev)
+
+	sleep 1
+        thin.discard(0, @volume_size)
+        assert_used_blocks(pool, 0, :noflush => true)
+      end
+      assert_used_blocks(pool, 0)
     end
   end
 end
