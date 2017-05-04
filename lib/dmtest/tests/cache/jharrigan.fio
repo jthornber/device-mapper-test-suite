@@ -1,0 +1,14 @@
+[randrw]
+blocksize=64k
+norandommap
+random_distribution=random
+rw=randrw
+iodepth=16
+overwrite=0
+rwmixread=50
+size=1g
+fsync_on_close=1
+direct=1
+runtime=60
+ioengine=libaio
+time_based
