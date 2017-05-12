@@ -9,6 +9,7 @@ require 'dmtest/tvm.rb'
 require 'dmtest/cache_stack'
 require 'dmtest/cache_policy'
 require 'dmtest/tests/cache/fio_subvolume_scenario'
+require 'tempfile'
 
 #----------------------------------------------------------------
 
@@ -64,28 +65,55 @@ class FIOTests < ThinpTestCase
 
   #---------------------------------
 
-  def run_fio(dev, name)
+  JOB_FILE=<<EOF
+[randrw]
+blocksize=64k
+norandommap
+random_distribution=random
+rw=randrw
+iodepth=16
+overwrite=0
+rwmixread=50
+fsync_on_close=1
+direct=1
+runtime=60
+ioengine=libaio
+time_based
+
+EOF
+
+  def run_fio(dev, name, file_size)
     outfile = AP("fio-#{name}.out")
-    cfgfile = LP("tests/cache/jharrigan.fio")
+    size_in_meg = file_size / meg(1)
 
     fs = FS::file_system(:ext4, dev)
     fs.format(:discard => false)
     fs.with_mount('./fio_test', :discard => false) do
       Dir.chdir('./fio_test') do
-	ProcessControl.run("fio #{cfgfile} --output=#{outfile}")
+	cfgfile = Tempfile.new('fio-job')
+	begin
+	  cfgfile.write(JOB_FILE)
+	  cfgfile.write("size=#{size_in_meg}m")  # FIXME: finish
+	ensure
+	  cfgfile.close
+	end
+	ProcessControl.run("fio #{cfgfile.path} --output=#{outfile}")
+	STDERR.puts ProcessControl.run("grep iops #{outfile}")
+	#cfgfile.unlink
       end
     end
   end
 
-  define_test :fio_on_regions do
+  def region_test(fio_file_size)
     nr_sub_vols = 4
-    sub_vol_size = meg(1024 + 128)
-
+    # add a bit extra for the fs overhead
+    fio_file_size = fio_file_size + 5 * (fio_file_size / 100);
+    sub_vol_size = fio_file_size + meg(512)
 
     stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
-			   :policy => Policy.new('smq', :migration_threshold => 10240),
+			   :policy => Policy.new('smq', :migration_threshold => 1024),
 			   :metadata_size => meg(128),
-			   :cache_size => sub_vol_size,
+			   :cache_size => fio_file_size,
 			   :block_size => k(32),
 			   :data_size => sub_vol_size * nr_sub_vols)
     stack.activate do |stack|
@@ -97,13 +125,19 @@ class FIOTests < ThinpTestCase
 
       nr_sub_vols.times do |n|
 	with_dev(sub_vg.table("vol#{n}")) do |vol|
-	  8.times do |iter|
-	    run_fio(vol, "vol#{n}-run#{iter}")
-	    pp CacheStatus.new(stack.cache)
+	  2.times do |iter|
+	    run_fio(vol, "vol#{n}-run#{iter}", fio_file_size)
+	    status = CacheStatus.new(stack.cache)
+	    #STDERR.puts "#{status.promotions} promotions, #{status.demotions} demotions, #{status.writebacks} writebacks"
 	  end
 	end
       end
     end
+
+  end
+
+  define_test :fio_on_regions do
+    region_test(gig(1))
   end
 
   def baseline(dev, name)
