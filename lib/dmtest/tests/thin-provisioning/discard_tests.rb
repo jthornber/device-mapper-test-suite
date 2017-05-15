@@ -581,9 +581,9 @@ class DiscardQuickTests < ThinpTestCase
       with_new_thin(pool, @volume_size, 0) do |thin|
         wipe_device(thin)
         assert_used_blocks(pool, @blocks_per_dev)
-
 	sleep 1
         thin.discard(0, @volume_size)
+	sleep 2 # we must sleep to allow the periodic commit to update nr_free
         assert_used_blocks(pool, 0, :noflush => true)
       end
       assert_used_blocks(pool, 0)
