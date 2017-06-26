@@ -1,3 +1,4 @@
+require 'dmtest/fio'
 require 'dmtest/git'
 require 'dmtest/log'
 require 'dmtest/utils'
@@ -9,12 +10,14 @@ require 'dmtest/tvm.rb'
 require 'dmtest/cache_stack'
 require 'dmtest/cache_utils'
 require 'dmtest/cache_policy'
+require 'dmtest/tests/cache/fio_subvolume_scenario'
 
 require 'rspec/expectations'
 
 #----------------------------------------------------------------
 
 class CleanerTests < ThinpTestCase
+  include FioSubVolumeScenario
   include GitExtract
   include Utils
   include DiskUnits
@@ -162,6 +165,66 @@ class CleanerTests < ThinpTestCase
       STDERR.puts "uncached"
 
       tid.join
+    end
+  end
+
+  #----------------
+
+  def checksum_dev(dev)
+    sum = ProcessControl::system(:fail, "md5sum #{dev.path}")
+    if sum == :fail
+      raise "checksum failed"
+    end
+
+    sum.split(' ')[0]
+  end
+
+  define_test :decommission_with_checksums do
+    opts = {
+      :policy => Policy.new('smq', :migration_threshold => 1024),
+      :metadata_size => gig(1),
+      :cache_size => gig(16),
+      :block_size => k(64),
+      :data_size => gig(20)
+    }
+
+    stack = CacheStack.new(@dm, @metadata_dev, @data_dev, opts)
+    stack.activate_support_devs do
+      sum_cache = ''
+      sum_cache2 = ''
+
+      stack.activate_top_level do
+	do_fio(stack.cache, :ext4,
+	       :outfile => AP("fio_dm_cache.out"),
+	       :cfgfile => LP("tests/cache/database-funtime.fio"))
+
+	sum_cache = checksum_dev(stack.cache)
+      end
+
+      # Check the origin and cache are indeed different
+      sum_origin = checksum_dev(stack.origin)
+      assert(sum_cache != sum_origin)
+
+      # writeback
+      stack.activate_top_level do
+	# Switch to the cleaner policy.  Not strictly neccessary, smq would
+	# also clean now there's no io to the device.
+	stack.cache.pause do
+	  stack.change_policy(Policy.new('cleaner'))
+	  stack.change_io_mode(:writethrough)
+	  stack.reload_cache
+	end
+
+	wait_for_all_clean(stack.cache)
+	sum_cache2 = checksum_dev(stack.cache)
+      end
+
+      # check the cache hasn't changed
+      assert_equal(sum_cache, sum_cache2)
+
+      # but the origin should now reflect the cache
+      sum_origin = checksum_dev(stack.origin)
+      assert_equal(sum_cache, sum_origin)
     end
   end
 end
