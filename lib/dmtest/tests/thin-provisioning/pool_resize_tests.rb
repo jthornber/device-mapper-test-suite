@@ -288,7 +288,8 @@ class PoolResizeWhenOutOfSpaceTests < ThinpTestCase
 
   def in_out_of_data_mode(pool)
       status = PoolStatus.new(pool)
-      status.options[:mode] == :out_of_data_space
+			(status.options[:mode] == :out_of_data_space) ||
+			(status.used_data_blocks == status.total_data_blocks)
   end
 
   def wait_until_out_of_data(pool)
