@@ -61,7 +61,8 @@ think this list is complete):
 [thin-provisioning-tools](https://github.com/jthornber/thin-provisioning-tools),
 dd, git,
 [dt](http://www.scsifaq.org/RMiller_Tools/dt.html),
-blktrace, bonnie++
+[iozone] (http://www.iozone.org/),
+blktrace, bonnie++, fio
 
 # Configuration
 
