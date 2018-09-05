@@ -211,8 +211,6 @@ class MetadataResizeTests < ThinpTestCase
         assert(read_only_mode?(pool))
       end
     end
-
-
   end
 
   # It's hard to predict how much metadata will be used by a
@@ -289,6 +287,55 @@ class MetadataResizeTests < ThinpTestCase
 
         # ... which then led to the second delete failing
         pool.message(0, "delete 1")
+      end
+    end
+  end
+
+  #--------------------------------
+
+  # I'm trying to track down the metadata exhaustion/curruption bug
+
+  # Given a set of devices, this function runs it's block on each of them in parallel
+  def p_work(devs, &block)
+    tids = []
+    devs.each do |dev|
+      tids << Thread.new(dev, block) do |d, b|
+        block.call(d)
+      end
+    end
+
+    tids.each {|t| t.join}
+  end
+  
+  define_test :thin_exhaust_metadata_big do
+    md_size = meg(16)
+    thin_count = 4
+    thin_size = gig(10)
+
+    metadata_vg = VM.new
+    metadata_vg.add_allocation_volume(@metadata_dev)
+    metadata_vg.add_volume(linear_vol('metadata', md_size))
+    metadata_vg.add_volume(linear_vol('data', thin_count * thin_size))
+
+    # data_vg = VM.new
+    # data_vg.add_allocation_volume(@data_dev)
+    # data_vg.add_volume(linear_vol('data', thin_count * thin_size))
+
+    with_devs(metadata_vg.table('metadata'), metadata_vg.table('data')) do |md, data|
+      stack = PoolStack.new(@dm, data, md,
+                            :zero => false,
+                            :error_if_no_space => true)
+      stack.activate do |pool|
+  	with_new_thins(pool, thin_size, *(0..(thin_count - 1))) do |thins|
+      	  p_work(thins) do |thin|
+            iotype = 'random'
+            pattern = "iot"
+            size = dev_size(thin.path)
+
+            _1, _2, err = ProcessControl.capture("dd if=/dev/zero of=#{thin.path} bs=4M")
+          # _1, _2, err = ProcessControl.run("dt of=#{thin} capacity=#{size*512} pattern=#{pattern} passes=1 iotype=#{iotype} bs=4M rseed=1234")
+          end
+      	end
       end
     end
   end
