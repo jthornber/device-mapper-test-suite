@@ -151,6 +151,31 @@ module DM
       super('raid', params.size, *params, dev_pairs.size, devs);
     end
   end
+
+  #--------------------------------
+
+  class SnapshotTarget < Target
+    def initialize(sector_count, origin, cow_dev, persistent, chunk_size)
+      super('snapshot', sector_count, origin, cow_dev, persistent, chunk_size)
+    end
+  end
+
+  #--------------------------------
+
+  class SnapshotOriginTarget < Target
+    def initialize(sector_count, origin)
+      super('snapshot-origin', sector_count, origin)
+    end
+  end
+
+  #--------------------------------
+
+  class SnapshotMergeTarget < Target
+    def initialize(sector_count, origin, cow_dev, persistent, chunk_size)
+      super('snapshot-merge', sector_count, origin, cow_dev, persistent,
+            chunk_size)
+    end
+  end
 end
 
 #----------------------------------------------------------------
