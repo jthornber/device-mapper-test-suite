@@ -10,14 +10,14 @@ module DM
     include EnsureElapsed
 
     def with_dev(table = nil, &block)
-      bracket(create(table),
+      bracket(create_dev(table),
               lambda {|dev| dev.remove; dev.post_remove_check}) do |dev|
         ensure_elapsed_time(1, dev, &block)
       end
     end
 
     def with_ro_dev(table = nil, &block)
-      bracket(create(table, true),
+      bracket(create_dev(table, true),
               lambda {|dev| dev.remove; dev.post_remove_check}) do |dev|
         ensure_elapsed_time(1, dev, &block)
       end
@@ -36,15 +36,14 @@ module DM
 
       bracket(Array.new, release) do |devs|
         tables.each do |table|
-          devs << create(table)
+          devs << create_dev(table)
         end
 
         ensure_elapsed_time(1, devs, &block)
       end
     end
 
-    private
-    def create(table = nil, read_only = false)
+    def create_dev(table = nil, read_only = false)
       path = create_path
       tidy = lambda {dm_interface.remove(path)}
 
@@ -63,6 +62,7 @@ module DM
       end
     end
 
+    private
     def create_path
       # fixme: check this device doesn't already exist
       "/dev/mapper/test-dev-#{rand(1000000)}"
