@@ -49,7 +49,7 @@ module TinyVolumeManager
           s = n
         end
       end
-      merged << s
+      merged << s unless s.nil?
       @free_segments = merged
     end
 
