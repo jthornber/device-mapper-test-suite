@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require 'pp'
 require 'erb'
 require 'dmtest/command_line'
 require 'dmtest/log'
