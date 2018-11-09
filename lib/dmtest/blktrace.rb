@@ -1,10 +1,13 @@
 require 'dmtest/log'
 require 'dmtest/process'
+require 'concurrent'
+require 'filesize'
+require 'pretty_table'
 
 module BlkTrace
   include ProcessControl
 
-  Event = Struct.new(:code, :start_sector, :len_sector)
+  Event = Struct.new(:code, :start_sector, :len_sector, :cpu)
 
   def follow_link(path)
     File.symlink?(path) ? File.readlink(path) : path
@@ -45,7 +48,18 @@ module BlkTrace
   end
 
   def assert_discard(traces, start_sector, length)
-    assert(traces[0].member?(Event.new([:discard], start_sector, length)))
+    member = false
+
+    assert_block do
+      traces[0].each do |e|
+        if (e.code == [:discard] and e.start_sector == start_sector and
+            e.len_sector == length)
+          member = true
+          break
+        end
+      end
+      member
+    end
   end
 
   def assert_discards(traces, start_sector, length)
@@ -70,9 +84,9 @@ module BlkTrace
   def parse_pattern(complete)
     # The S (sleep requested) action can be present in addition to the ones we're interested in
     if complete
-      /C ([DRW])S? (\d+) (\d+)/
+      /C ([DRW])S? (\d+) (\d+) (\d+)/
     else
-      /Q ([DRW])S? (\d+) (\d+)/
+      /Q ([DRW])S? (\d+) (\d+) (\d+)/
     end
   end
 
@@ -82,10 +96,10 @@ module BlkTrace
 
     pattern = parse_pattern(complete)
 
-    IO.popen("blkparse -f \"%a %d %S %N\n\" #{path}") do |f|
+    IO.popen("blkparse -f \"%a %d %S %N %c\n\" #{path}") do |f|
       f.each_line do |l|
         m = pattern.match(l)
-        yield Event.new(to_event_type(m[1]), m[2].to_i, m[3].to_i / 512) if m
+        yield Event.new(to_event_type(m[1]), m[2].to_i, m[3].to_i / 512, m[4].to_i) if m
       end
     end
   end
@@ -178,5 +192,54 @@ module BlkTrace
 
     read_histogram.show_histogram
     write_histogram.show_histogram
+  end
+
+  #--------------------------------
+
+  class CPUIODistribution
+    def initialize(name)
+      @name = name
+      @nr_cpus = Concurrent.processor_count
+      @cpu_iod = Array.new(@nr_cpus) {0}
+    end
+
+    def record_io(cpu, len)
+      @cpu_iod[cpu] += len
+    end
+
+    def show_distribution
+      total = @cpu_iod.reduce(:+) * 512
+
+      headers = 0.upto(@nr_cpus - 1)
+      iod = @cpu_iod.map do |s|
+        s *= 512
+        size = Filesize.from("#{s} B").pretty
+        percent = sprintf("%.2f%", total > 0 ? (s * 100.0 / total) : 0)
+
+        "#{size} (#{percent})"
+      end
+      ptable = PrettyTable.new([iod], headers)
+
+      total = Filesize.from("#{total} B").pretty
+      info("#{@name}:\n\n#{ptable.to_s}\n\nTotal: #{total}")
+    end
+  end
+
+  def blktrace_cpu_io_distribution(dev, &block)
+    run_blktrace([dev], false, &block)
+
+    read_iod = CPUIODistribution.new("Per CPU IO Distribution (read)")
+    write_iod = CPUIODistribution.new("Per CPU IO Distribution (write)")
+
+    blkparse_(dev, false) do |e|
+      if e.code.member?(:write)
+        write_iod.record_io(e.cpu, e.len_sector)
+      elsif e.code.member?(:read)
+        read_iod.record_io(e.cpu, e.len_sector)
+      end
+    end
+
+    read_iod.show_distribution
+    write_iod.show_distribution
   end
 end
