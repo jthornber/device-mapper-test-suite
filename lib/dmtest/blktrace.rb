@@ -105,6 +105,7 @@ module BlkTrace
 
     flags = '-b 8192 '
     devs.each_index {|i| flags += "-d #{devs[i]} "}
+    flags += complete ? "-a complete " : "-a queue "
     child = ProcessControl::Child.new(consumer, "blktrace #{flags}")
     begin
       sleep 0.1                     # FIXME: how can we avoid this race?
