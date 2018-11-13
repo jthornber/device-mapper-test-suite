@@ -76,24 +76,29 @@ module BlkTrace
     end
   end
 
-  def blkparse(dev, complete)
+  def blkparse_(dev, complete)
     # we need to work out what blktrace called this dev
     path = File.basename(follow_link(dev.to_s))
 
-    events = Array.new
     pattern = parse_pattern(complete)
 
     IO.popen("blkparse -f \"%a %d %S %N\n\" #{path}") do |f|
       f.each_line do |l|
         m = pattern.match(l)
-        events.push(Event.new(to_event_type(m[1]), m[2].to_i, m[3].to_i / 512)) if m
+        yield Event.new(to_event_type(m[1]), m[2].to_i, m[3].to_i / 512) if m
       end
     end
+  end
+
+  def blkparse(dev, complete)
+    events = Array.new
+
+    blkparse_(dev, complete) { |e| events << e }
 
     events
   end
 
-  def blktrace_(devs, complete, &block)
+  def run_blktrace(devs, complete, &block)
     path = 'trace'
 
     consumer = LogConsumer.new
@@ -107,6 +112,12 @@ module BlkTrace
     ensure
       child.interrupt
     end
+
+    r
+  end
+
+  def blktrace_(devs, complete, &block)
+    r = run_blktrace(devs, complete, &block)
 
     # results is an Array of Event arrays (one per device)
     results = devs.map {|d| blkparse(d, complete)}
@@ -151,12 +162,12 @@ module BlkTrace
   end
 
   def blktrace_histogram(dev, &block)
-    traces, _ = blktrace_([dev], false, &block)
+    run_blktrace([dev], false, &block)
 
     read_histogram = IOHistogram.new("read", dev_size(dev), 128)
     write_histogram = IOHistogram.new("write", dev_size(dev), 128)
 
-    traces[0].each do |e|
+    blkparse_(dev, false) do |e|
       if e.code.member?(:write)
         write_histogram.record_io(e.start_sector, e.len_sector)
       elsif e.code.member?(:read)
