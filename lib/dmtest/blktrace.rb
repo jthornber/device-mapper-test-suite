@@ -83,9 +83,11 @@ module BlkTrace
     events = Array.new
     pattern = parse_pattern(complete)
 
-    `blkparse -f \"%a %d %S %N\n\" #{path}`.lines.each do |l|
-      m = pattern.match(l)
-      events.push(Event.new(to_event_type(m[1]), m[2].to_i, m[3].to_i / 512)) if m
+    IO.popen("blkparse -f \"%a %d %S %N\n\" #{path}") do |f|
+      f.each_line do |l|
+        m = pattern.match(l)
+        events.push(Event.new(to_event_type(m[1]), m[2].to_i, m[3].to_i / 512)) if m
+      end
     end
 
     events
