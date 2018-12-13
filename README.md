@@ -23,9 +23,9 @@ The above link gives more details, but here's a quickstart:
 **Make sure you follow the instructions at the end of the script
 regarding setting your shell's environment.**
 
-Now we need to install Ruby 2.3.1
+Now we need to install Ruby 2.5.3
 
-    rvm install 2.3.1
+    rvm install 2.5.3
 
 ### Ruby Index (_ri_)
 
@@ -66,8 +66,8 @@ blktrace, bonnie++, fio
 
 # Configuration
 
-Now run *dmtest*.  The first time it's run it will set up a ~/.dmtest/
-directory for you, and write an example config file (~/.dmtest/config).
+Now run *dmtest*.  The first time it's run it will set up a \~/.dmtest/
+directory for you, and write an example config file (\~/.dmtest/config).
 
     profile :ssd do
       metadata_dev '/dev/vdb'
