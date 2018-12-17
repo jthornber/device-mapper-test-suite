@@ -1,0 +1,18 @@
+[global]
+randrepeat=1
+ioengine=libaio
+bs=<%= bs %>
+size=<%= size %>
+offset_increment=<%= offset_increment %>
+numjobs=<%= numjobs %>
+direct=1
+iodepth=32
+group_reporting
+cpus_allowed=<%= cpus_allowed %>
+cpus_allowed_policy=split
+
+[test]
+rw=<%= rw %>
+filename=<%= filename %>
+stonewall
+timeout=120
