@@ -129,6 +129,33 @@ class BackgroundWritebackTests < ThinpTestCase
   def filter_writes(events)
     events.select {|e| e.code.member?(:write)}
   end
+
+  #--------------------------------
+
+  define_test :clean_a_cache_with_large_blocks do
+    cache_size = gig(1)
+    block_size = meg(2)
+
+    s = CacheStack.new(@dm, @metadata_dev, @data_dev,
+                       :policy => Policy.new("smq", :migration_threshold => 1024),
+                       :format => false,
+                       :cache_size => cache_size,
+                       :block_size => block_size,
+                       :metadata_version => 2)
+    s.activate_support_devs do
+      s.prepare_populated_cache(:dirty_percentage => 100)
+      traces, _ = blktrace(s.origin) do
+        s.activate_top_level do
+          # Writeback needs to be done in a timely manner
+          Timeout::timeout(180) do
+            wait_for_all_clean(s.cache)
+          end
+        end
+      end
+
+      assert_equal(cache_size / block_size, filter_writes(traces[0]).size)
+    end
+  end
 end
 
 #----------------------------------------------------------------
