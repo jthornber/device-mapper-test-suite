@@ -132,12 +132,14 @@ class BackgroundWritebackTests < ThinpTestCase
 
   #--------------------------------
 
+  # You need to set a large migration_threshold if you have a large
+  # block size
   define_test :clean_a_cache_with_large_blocks do
     cache_size = gig(1)
     block_size = meg(2)
 
     s = CacheStack.new(@dm, @metadata_dev, @data_dev,
-                       :policy => Policy.new("smq", :migration_threshold => 1024),
+                       :policy => Policy.new("smq", :migration_threshold => 102400),
                        :format => false,
                        :cache_size => cache_size,
                        :block_size => block_size,
@@ -152,8 +154,6 @@ class BackgroundWritebackTests < ThinpTestCase
           end
         end
       end
-
-      assert_equal(cache_size / block_size, filter_writes(traces[0]).size)
     end
   end
 end
