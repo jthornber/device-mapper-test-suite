@@ -194,7 +194,8 @@ class SnapshotTests < ThinpTestCase
     end
   end
 
-  define_test :pattern_stomp do
+  # Break sharing by writing to a snapshot
+  define_test :pattern_stomp_snap do
     with_standard_pool(@size) do |pool|
       with_new_thin(pool, @volume_size, 0) do |thin|
         origin_stomper = PatternStomper.new(thin.path, @data_block_size, :needs_zero => false)
@@ -208,6 +209,27 @@ class SnapshotTests < ThinpTestCase
           snap_stomper.verify(0, 2)
 
           origin_stomper.verify(0, 1)
+        end
+      end
+    end
+  end
+
+  # Break sharing by writing to the origin
+  define_test :pattern_stomp_origin do
+    with_standard_pool(@size) do |pool|
+      with_new_thin(pool, @volume_size, 0) do |thin|
+        origin_stomper = PatternStomper.new(thin.path, @data_block_size, :needs_zero => false)
+        origin_stomper.stamp(20)
+
+        with_new_snap(pool, @volume_size, 1, 0, thin) do |snap|
+          snap_stomper = origin_stomper.fork(snap.path)
+          
+          origin_stomper.verify(0, 1)
+
+          origin_stomper.stamp(10)
+          origin_stomper.verify(0, 2)
+
+          snap_stomper.verify(0, 1)
         end
       end
     end
