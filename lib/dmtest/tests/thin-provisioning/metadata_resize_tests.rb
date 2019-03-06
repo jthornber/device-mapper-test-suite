@@ -24,6 +24,9 @@ class MetadataResizeTests < ThinpTestCase
 
     @tvm = VM.new
     @tvm.add_allocation_volume(@data_dev)
+    
+    @thin_count = 10
+    @thin_size = gig(10)
   end
 
   tag :thinp_target
@@ -295,48 +298,149 @@ class MetadataResizeTests < ThinpTestCase
 
   # I'm trying to track down the metadata exhaustion/curruption bug
 
-  # Given a set of devices, this function runs it's block on each of them in parallel
-  def p_work(devs, &block)
-    tids = []
-    devs.each do |dev|
-      tids << Thread.new(dev, block) do |d, b|
-        block.call(d)
+  def turn_on_bm_journal
+    File.open('/sys/module/dm_thin_pool/parameters/block_manager_journal', 'w') do |f|
+      f.write('/dev/sdd')
+    end
+  end
+
+  def monitor_metadata(pool)
+    tid = Thread.new(pool) do |pool|
+      loop do
+        status = PoolStatus.new(pool)
+        break if status.total_metadata_blocks == status.used_metadata_blocks
+        STDERR.puts "metadata #{status.used_metadata_blocks}/#{status.total_metadata_blocks}"
+        sleep 10
       end
+
+      STDERR.puts "*** Crash the machine now ***"
+      sleep 12345
     end
 
-    tids.each {|t| t.join}
+    tid
   end
   
-  define_test :thin_exhaust_metadata_big do
-    md_size = meg(16)
-    thin_count = 4
-    thin_size = gig(10)
+  def with_stack(thin_count, thin_size, opts = {}, &block)
+    md_size = meg(12)
 
     metadata_vg = VM.new
     metadata_vg.add_allocation_volume(@metadata_dev)
     metadata_vg.add_volume(linear_vol('metadata', md_size))
-    metadata_vg.add_volume(linear_vol('data', thin_count * thin_size))
 
-    # data_vg = VM.new
-    # data_vg.add_allocation_volume(@data_dev)
-    # data_vg.add_volume(linear_vol('data', thin_count * thin_size))
+    data_vg = VM.new
+    data_vg.add_allocation_volume(@data_dev)
+    data_vg.add_volume(linear_vol('data', thin_count * thin_size))
 
-    with_devs(metadata_vg.table('metadata'), metadata_vg.table('data')) do |md, data|
-      stack = PoolStack.new(@dm, data, md,
-                            :zero => false,
-                            :error_if_no_space => true)
-      stack.activate do |pool|
-  	with_new_thins(pool, thin_size, *(0..(thin_count - 1))) do |thins|
-      	  p_work(thins) do |thin|
-            iotype = 'random'
-            pattern = "iot"
-            size = dev_size(thin.path)
+    with_devs(metadata_vg.table('metadata'), data_vg.table('data')) do |md, data|
+      stack = PoolStack.new(@dm, data, md, opts)
+      block.call(stack)
+    end
+  end
 
-            _1, _2, err = ProcessControl.capture("dd if=/dev/zero of=#{thin.path} bs=4M")
-          # _1, _2, err = ProcessControl.run("dt of=#{thin} capacity=#{size*512} pattern=#{pattern} passes=1 iotype=#{iotype} bs=4M rseed=1234")
-          end
-      	end
+  def new_stack(thin_count, thin_size, &block)
+    with_stack(thin_count, thin_size, :zero => false, :error_if_no_space => true, &block)
+  end
+
+  def reopen_stack(thin_count, thin_size, &block)
+    with_stack(thin_count, thin_size, :zero => false, :error_if_no_space => true, :format => false, &block)
+  end
+
+  # We kick off each thread at 1 minute intervals to slowly ramp up usage
+  def p_work(pool, thin_size, thin_ids, &block)
+    tids = []
+    thin_ids.each do |thin_id|
+      tids << Thread.new(pool, thin_size, thin_id) do |pool, thin_size, thin_id|
+        block.call(pool, thin_size, thin_id)
       end
+      sleep 5
+    end
+
+    tids.each {|t| t.join}
+  end
+
+  FS_TYPE = :xfs
+  
+  def work_load(pool, thin_size, thin_id)
+    STDERR.puts "in work_load"
+    10.times do
+      with_new_thin(pool, thin_size, thin_id) do |thin|
+        fs = FS::file_system(FS_TYPE, thin)
+        report_time("formatting #{thin_id}", STDERR) do
+          fs.format()
+        end
+
+	dir = "./test-mountpoint-#{thin_id}"
+	
+        fs.with_mount(dir, :discard => false) do
+          report_time("cloning #{thin_id}", STDERR) do
+            repo = Git.clone('/root/linux-github', "#{dir}/linux")
+          end
+
+          report_time("delete dir #{thin_id}", STDERR) do
+            ProcessControl.run("rm -rf #{dir}/linux")
+          end
+
+          report_time("fstrim #{thin_id}", STDERR) do
+            ProcessControl.run("fstrim #{dir}")
+          end
+        end
+      end
+
+      report_time("delete dev #{thin_id}", STDERR) do
+        pool.message(0, "delete #{thin_id}")
+      end
+    end
+
+    STDERR.puts "#{thin_id} finished"
+  end
+
+  def work_load_bad(pool, thin_size, thin_id)
+    STDERR.puts "in work_load"
+    10.times do
+      with_new_thin(pool, thin_size, thin_id) do |thin|
+        report_time("wipe device #{thin_id}", STDERR) do
+          wipe_device(thin)
+        end
+      end
+      
+      report_time("delete dev #{thin_id}", STDERR) do
+        pool.message(0, "delete #{thin_id}")
+      end
+    end
+
+    STDERR.puts "#{thin_id} finished"
+  end
+
+  define_test :thin_exhaust_metadata_big do
+    turn_on_bm_journal
+    
+    new_stack(@thin_count, @thin_size) do |stack|
+      stack.activate do |pool|
+      	monitor = monitor_metadata(pool)
+      	
+        thin_ids = Array (0..(@thin_count - 1))
+        begin
+          p_work(pool, @thin_size, thin_ids) do |p, s, t|
+            work_load(p, s, t)
+          end
+        ensure
+    	  monitor.join
+    	end
+        STDERR.puts "all mutators finished"
+      end
+    end
+
+    # Just double checking that with_stack is deterministic
+    reopen_stack(@thin_count, @thin_size) do |stack|
+      stack.activate do |pool|
+      end
+    end
+  end
+
+  define_test :recover_after_crash do
+    reopen_stack(@thin_count, @thin_size) do |stack|
+      ProcessControl.run("thin_check #{stack.metadata_dev}")
+      ProcessControl.run("thin_dump #{stack.metadata_dev}")
     end
   end
 end
