@@ -6,6 +6,8 @@ require 'dmtest/status'
 require 'dmtest/thinp-test'
 require 'dmtest/disk-units'
 require 'rspec/expectations'
+require 'thread'
+require 'tmpdir'
 
 require 'pp'
 
@@ -293,14 +295,146 @@ class MetadataResizeTests < ThinpTestCase
       end
     end
   end
+end
 
-  #--------------------------------
+#------------------------------
 
-  # I'm trying to track down the metadata exhaustion/curruption bug
+class ThinAllocator
+  def initialize()
+    @lock = Mutex.new
+    @available = Set.new
+    @borrowed = Set.new
+    @next_thin_id = 0
+  end
 
-  def turn_on_bm_journal
-    File.open('/sys/module/dm_thin_pool/parameters/block_manager_journal', 'w') do |f|
-      f.write('/dev/sdd')
+  def thin_count
+    @lock.synchronize do
+      @available.size + @borrowed.size
+    end
+  end
+
+  def _new_tid
+    @lock.synchronize do
+      r = @next_thin_id
+      @next_thin_id = @next_thin_id + 1
+      @borrowed.add(r)
+      r
+    end
+  end
+
+  def _get_tid
+    @lock.synchronize do
+      if @available.size == 0
+        raise "no free thins"
+      end
+      
+      index = rand(@available.size)
+      @available.each do |t|
+        if index == 0
+          @available.delete(t)
+          @borrowed.add(t)
+          return t
+        else
+          index = index - 1
+        end         
+      end
+    end
+  end
+
+  def _put_tid(t)
+    @lock.synchronize do
+      @available.add(t)
+      @borrowed.delete(t)
+    end
+  end
+
+  def borrow_existing(&block)
+    t = _get_tid
+    begin
+      block.call(t)
+    ensure
+      _put_tid(t)
+    end
+  end
+
+  def borrow_new(&block)
+    t = _new_tid
+    begin
+      block.call(t)
+    ensure
+      _put_tid(t)
+    end
+  end
+
+  def delete_thin
+    t = _get_tid
+    @lock.synchronize do
+      @borrowed.delete(t)
+    end
+    t
+  end
+end
+
+class MountPointAllocator
+  def initialize(mps)
+    @lock = Mutex.new
+    @mps = mps
+  end
+
+  def _borrow
+    @lock.synchronize do
+      if @mps.empty?
+        raise "no mor mount points"
+      end
+
+      @mps.shift
+    end
+  end
+
+  def _return(mp)
+    @lock.synchronize do
+      @mps << mp
+    end
+  end
+
+  def with_mount_point(&block)
+    mp = _borrow
+    begin 
+      block.call(mp)
+    ensure
+      _return(mp)
+    end
+  end
+end
+
+#------------------------------------
+
+class MetadataExhaustionTests < ThinpTestCase
+  include DiskUnits
+  include Utils
+  include TinyVolumeManager
+  extend TestUtils
+
+  NR_THREADS = 8
+  
+  def setup
+    super
+    @low_water_mark = 0 if @low_water_mark.nil?
+    @data_block_size = 128
+
+    @thin_count = 10
+    @thin_size = gig(10)
+    @allocator = ThinAllocator.new
+
+    mps = (0..9).map {|n| "test-mount-point-#{n}"}
+    @mp_allocator = MountPointAllocator.new(mps)
+  end
+
+  def percent(a, b)
+    if b == 0
+      0
+    else
+      (a * 100) / b
     end
   end
 
@@ -309,7 +443,10 @@ class MetadataResizeTests < ThinpTestCase
       loop do
         status = PoolStatus.new(pool)
         break if status.total_metadata_blocks == status.used_metadata_blocks
-        STDERR.puts "metadata #{status.used_metadata_blocks}/#{status.total_metadata_blocks}"
+        
+        md = percent(status.used_metadata_blocks, status.total_metadata_blocks)
+        d = percent(status.used_data_blocks, status.total_data_blocks)
+        STDERR.puts "metadata #{md}%, data #{d}%"
         sleep 10
       end
 
@@ -321,17 +458,19 @@ class MetadataResizeTests < ThinpTestCase
   end
   
   def with_stack(thin_count, thin_size, opts = {}, &block)
-    md_size = meg(12)
+    md_size = meg(24)
 
-    metadata_vg = VM.new
-    metadata_vg.add_allocation_volume(@metadata_dev)
-    metadata_vg.add_volume(linear_vol('metadata', md_size))
+    #metadata_vg = VM.new
+    #metadata_vg.add_allocation_volume(@metadata_dev)
+    #metadata_vg.add_volume(linear_vol('metadata', md_size))
 
+    # Let's try having both the metadata and data on the same device
     data_vg = VM.new
     data_vg.add_allocation_volume(@data_dev)
-    data_vg.add_volume(linear_vol('data', thin_count * thin_size))
+    data_vg.add_volume(linear_vol('metadata', md_size))
+    data_vg.add_volume(linear_vol('data', (thin_count * thin_size) - md_size))
 
-    with_devs(metadata_vg.table('metadata'), data_vg.table('data')) do |md, data|
+    with_devs(data_vg.table('metadata'), data_vg.table('data')) do |md, data|
       stack = PoolStack.new(@dm, data, md, opts)
       block.call(stack)
     end
@@ -345,94 +484,137 @@ class MetadataResizeTests < ThinpTestCase
     with_stack(thin_count, thin_size, :zero => false, :error_if_no_space => true, :format => false, &block)
   end
 
-  # We kick off each thread at 1 minute intervals to slowly ramp up usage
-  def p_work(pool, thin_size, thin_ids, &block)
-    tids = []
-    thin_ids.each do |thin_id|
-      tids << Thread.new(pool, thin_size, thin_id) do |pool, thin_size, thin_id|
-        block.call(pool, thin_size, thin_id)
-      end
-      sleep 5
-    end
-
-    tids.each {|t| t.join}
-  end
-
   FS_TYPE = :xfs
+
+  def format_thin(thin_dev)
+    fs = FS::file_system(FS_TYPE, thin_dev)
+    fs.format()
+  end
+
+  def with_mount(thin_dev, &block)
+    @mp_allocator.with_mount_point do |dir|
+      fs = FS::file_system(FS_TYPE, thin_dev)
+      fs.with_mount(dir, :discard => false) do
+        block.call(dir)
+      end
+    end
+  end
+
+  def with_git(thin_dev, &block)
+    with_mount(thin_dev) do |dir|
+      git = Git.new("#{dir}/linux")
+      block.call(git)
+    end
+  end
   
-  def work_load(pool, thin_size, thin_id)
-    STDERR.puts "in work_load"
-    10.times do
-      with_new_thin(pool, thin_size, thin_id) do |thin|
-        fs = FS::file_system(FS_TYPE, thin)
-        report_time("formatting #{thin_id}", STDERR) do
-          fs.format()
-        end
 
-	dir = "./test-mountpoint-#{thin_id}"
-	
-        fs.with_mount(dir, :discard => false) do
-          report_time("cloning #{thin_id}", STDERR) do
-            repo = Git.clone('/root/linux-github', "#{dir}/linux")
-          end
+  def setup_initial_thin(thin_dev)
+    format_thin(thin_dev)
 
-          report_time("delete dir #{thin_id}", STDERR) do
-            ProcessControl.run("rm -rf #{dir}/linux")
-          end
-
-          report_time("fstrim #{thin_id}", STDERR) do
-            ProcessControl.run("fstrim #{dir}")
-          end
-        end
-      end
-
-      report_time("delete dev #{thin_id}", STDERR) do
-        pool.message(0, "delete #{thin_id}")
-      end
+    with_mount(thin_dev) do |dir|
+      Git.clone('/root/linux-github', "#{dir}/linux")
     end
-
-    STDERR.puts "#{thin_id} finished"
   end
 
-  def work_load_bad(pool, thin_size, thin_id)
-    STDERR.puts "in work_load"
-    10.times do
-      with_new_thin(pool, thin_size, thin_id) do |thin|
-        report_time("wipe device #{thin_id}", STDERR) do
-          wipe_device(thin)
-        end
-      end
-      
-      report_time("delete dev #{thin_id}", STDERR) do
-        pool.message(0, "delete #{thin_id}")
+  TAGS = %w(v2.6.12 v2.6.13 v2.6.14 v2.6.15 v2.6.16 v2.6.17 v2.6.18 v2.6.19
+            v2.6.20 v2.6.21 v2.6.22 v2.6.23 v2.6.24 v2.6.25 v2.6.26 v2.6.27 v2.6.28
+            v2.6.29 v2.6.30 v2.6.31 v2.6.32 v2.6.33 v2.6.34 v2.6.35 v2.6.36 v2.6.37
+            v2.6.38 v2.6.39 v3.0 v3.1 v3.2)
+
+  def action_new_snap(pool)
+    # we borrow the origin, so we know it's not active
+    @allocator.borrow_existing do |origin|
+      @allocator.borrow_new do |t|
+        STDERR.puts "creating snap #{origin} -> #{t}"
+        pool.message(0, "create_snap #{t} #{origin}")
       end
     end
-
-    STDERR.puts "#{thin_id} finished"
   end
 
+  def action_del_snap(pool)
+    t = @allocator.delete_thin
+    STDERR.puts "deleting #{t}"
+    pool.message(0, "delete #{t}")
+  end
+
+  def action_io(pool)
+    @allocator.borrow_existing do |t|
+      with_thin(pool, @thin_size, t) do |thin_dev|
+        with_git(thin_dev) do |git|
+          1.times do
+            tag = TAGS.sample
+            STDERR.puts "thin #{t}: mutating"
+            git.checkout(tag)
+          end
+        end
+      end
+    end
+  end
+
+  def above_threshold(val, total, percent_threshold)
+    if total == 0
+      true
+    else
+      ((val * 100.0) / total) >= percent_threshold
+    end
+  end
+  
+  def low_on_space(pool)
+    s = PoolStatus.new(pool)
+    above_threshold(s.used_metadata_blocks, s.total_metadata_blocks, 75) ||
+      above_threshold(s.used_data_blocks, s.total_data_blocks, 80)
+  end
+
+  def choose_option(pool)
+    if @allocator.thin_count < NR_THREADS
+      action_new_snap(pool)
+    elsif rand(10) == 0
+      action_del_snap(pool)
+    elsif rand(3) == 0
+      action_new_snap(pool)
+    else
+      action_io(pool)
+    end
+  end
+
+  def trace(n)
+    STDERR.puts n.to_s
+  end
+
+  def mutate(pool)
+    40.times do |n|
+      choose_option(pool)
+    end
+  end
+  
   define_test :thin_exhaust_metadata_big do
-    turn_on_bm_journal
-    
     new_stack(@thin_count, @thin_size) do |stack|
       stack.activate do |pool|
       	monitor = monitor_metadata(pool)
-      	
-        thin_ids = Array (0..(@thin_count - 1))
-        begin
-          p_work(pool, @thin_size, thin_ids) do |p, s, t|
-            work_load(p, s, t)
-          end
-        ensure
-    	  monitor.join
-    	end
-        STDERR.puts "all mutators finished"
-      end
-    end
 
-    # Just double checking that with_stack is deterministic
-    reopen_stack(@thin_count, @thin_size) do |stack|
-      stack.activate do |pool|
+        @allocator.borrow_new do |t|
+    	with_new_thin(pool, @thin_size, t) do |thin_dev|
+            setup_initial_thin(thin_dev)
+          end
+        end
+
+        NR_THREADS.times do
+          action_new_snap(pool)
+        end
+
+        begin
+          threads = []
+          (0..(NR_THREADS - 1)).each do |n|
+            threads << Thread.new(pool) {|pool| mutate(pool)}
+          end
+
+	  threads.each {|tid| tid.join}
+      	rescue => e
+  	  STDERR.puts "caught exception #{e}"
+          monitor.join
+        end
+        	
+        STDERR.puts "all mutators finished"
       end
     end
   end
@@ -441,8 +623,24 @@ class MetadataResizeTests < ThinpTestCase
     reopen_stack(@thin_count, @thin_size) do |stack|
       ProcessControl.run("thin_check #{stack.metadata_dev}")
       ProcessControl.run("thin_dump #{stack.metadata_dev}")
+
+      # We can bring up the pool, but it will have immediately fallen
+      # back to read_only mode.
+      stack.activate do |pool|
+        pp PoolStatus.new(pool)
+        assert(read_only_mode?(pool))
+        status = PoolStatus.new(pool)
+        status.needs_check.should be_true
+      end
+
+      # use tools to clear needs_check mode
+      ProcessControl.run("thin_check --clear-needs-check-flag #{metadata}")
+
+      # Now we should be able to run in write mode
+      with_dev(table) do |pool|
+        assert(write_mode?(pool))
+      end
     end
   end
 end
 
-#----------------------------------------------------------------

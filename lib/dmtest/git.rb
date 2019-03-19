@@ -21,7 +21,7 @@ class Git
   end
 
   def checkout(tag)
-    ProcessControl.run("git checkout #{tag}")
+    ProcessControl.run("cd #{@origin} && git checkout #{tag}")
   end
 
   def delete
