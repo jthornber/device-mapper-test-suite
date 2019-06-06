@@ -21,7 +21,7 @@ class Git
   end
 
   def checkout(tag)
-    ProcessControl.run("cd #{@origin} && git checkout #{tag}")
+    ProcessControl.run("git -C #{@origin} checkout #{tag}")
   end
 
   def delete
@@ -68,15 +68,13 @@ module GitExtract
       Dir.chdir('./kernel_builds') do
         repo = Git.new('linux')
 
-        repo.in_repo do
-          report_time("extract all versions", STDERR) do
-            tags.each do |tag|
-              STDERR.puts "Checking out #{tag} ..."
-              report_time("checking out #{tag}") do
-                repo.checkout(tag)
-                ProcessControl.run('sync')
-                drop_caches
-              end
+        report_time("extract all versions", STDERR) do
+          tags.each do |tag|
+            STDERR.puts "Checking out #{tag} ..."
+            report_time("checking out #{tag}") do
+              repo.checkout(tag)
+              ProcessControl.run('sync')
+              drop_caches
             end
           end
         end
@@ -90,18 +88,16 @@ module GitExtract
       Dir.chdir('./kernel_builds') do
         repo = Git.new('linux')
 
-        repo.in_repo do
-          report_time("extract all versions", STDERR) do
-            tags.each do |tag|
-              STDERR.puts "Checking out #{tag} ..."
-              report_time("checking out #{tag}") do
-                repo.checkout(tag)
-                ProcessControl.run('sync')
-                if block
-                  block.call
-                end
-                drop_caches
+        report_time("extract all versions", STDERR) do
+          tags.each do |tag|
+            STDERR.puts "Checking out #{tag} ..."
+            report_time("checking out #{tag}") do
+              repo.checkout(tag)
+              ProcessControl.run('sync')
+              if block
+                repo.in_repo(&block)
               end
+              drop_caches
             end
           end
         end
