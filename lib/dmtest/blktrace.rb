@@ -7,7 +7,16 @@ require 'pretty_table'
 module BlkTrace
   include ProcessControl
 
-  Event = Struct.new(:code, :start_sector, :len_sector, :cpu)
+  Event = Struct.new(:code, :start_sector, :len_sector, :cpu) do
+    def ==(other)
+      return false if code != other.code
+      return false if start_sector != other.start_sector
+      return false if len_sector != other.len_sector
+      return false if (not cpu.nil?) && (not other.cpu.nil?) && (cpu != other.cpu)
+
+      return true
+    end
+  end
 
   def follow_link(path)
     File.symlink?(path) ? File.readlink(path) : path
@@ -48,18 +57,7 @@ module BlkTrace
   end
 
   def assert_discard(traces, start_sector, length)
-    member = false
-
-    assert_block do
-      traces[0].each do |e|
-        if (e.code == [:discard] and e.start_sector == start_sector and
-            e.len_sector == length)
-          member = true
-          break
-        end
-      end
-      member
-    end
+    assert(traces[0].member?(Event.new([:discard], start_sector, length)))
   end
 
   def assert_discards(traces, start_sector, length)
