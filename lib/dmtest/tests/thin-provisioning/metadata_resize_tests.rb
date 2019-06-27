@@ -587,37 +587,37 @@ class MetadataExhaustionTests < ThinpTestCase
     end
   end
   
-  define_test :thin_exhaust_metadata_big do
-    new_stack(@thin_count, @thin_size) do |stack|
-      stack.activate do |pool|
-      	monitor = monitor_metadata(pool)
-
-        @allocator.borrow_new do |t|
-    	with_new_thin(pool, @thin_size, t) do |thin_dev|
-            setup_initial_thin(thin_dev)
-          end
-        end
-
-        NR_THREADS.times do
-          action_new_snap(pool)
-        end
-
-        begin
-          threads = []
-          (0..(NR_THREADS - 1)).each do |n|
-            threads << Thread.new(pool) {|pool| mutate(pool)}
-          end
-
-	  threads.each {|tid| tid.join}
-      	rescue => e
-  	  STDERR.puts "caught exception #{e}"
-          monitor.join
-        end
-        	
-        STDERR.puts "all mutators finished"
-      end
-    end
-  end
+  #define_test :thin_exhaust_metadata_big do
+    #new_stack(@thin_count, @thin_size) do |stack|
+      #stack.activate do |pool|
+      	#monitor = monitor_metadata(pool)
+#
+        #@allocator.borrow_new do |t|
+    	#with_new_thin(pool, @thin_size, t) do |thin_dev|
+            #setup_initial_thin(thin_dev)
+          #end
+        #end
+#
+        #NR_THREADS.times do
+          #action_new_snap(pool)
+        #end
+#
+        #begin
+          #threads = []
+          #(0..(NR_THREADS - 1)).each do |n|
+            #threads << Thread.new(pool) {|pool| mutate(pool)}
+          #end
+#
+	  #threads.each {|tid| tid.join}
+      	#rescue => e
+  	  #STDERR.puts "caught exception #{e}"
+          #monitor.join
+        #end
+#        	
+        #STDERR.puts "all mutators finished"
+      #end
+    #end
+  #end
 
   define_test :recover_after_crash do
     reopen_stack(@thin_count, @thin_size) do |stack|
