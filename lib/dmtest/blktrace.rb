@@ -131,7 +131,7 @@ module BlkTrace
     flags += complete ? "-a complete " : "-a queue "
     child = ProcessControl::Child.new(consumer, "blktrace #{flags}")
     begin
-      sleep 0.1                     # FIXME: how can we avoid this race?
+      sleep 1                     # FIXME: how can we avoid this race?
       r = block.call
     ensure
       child.interrupt
