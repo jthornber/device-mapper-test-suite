@@ -90,7 +90,13 @@ class MultiplePoolTests < ThinpTestCase
       # zero the metadata so we get a fresh pool
       wipe_device(md, 8)
 
-      with_devs(Table.new(ThinPoolTarget.new(data_size, md, data, @block_size, 1))) do |pool|
+      stack = PoolStack.new(@dm, data, md,
+                            :data_size => data_size,
+                            :zero => false,
+                            :block_size => @block_size,
+                            :low_water_mark => 1)
+
+      stack.activate do |pool|                          
         with_new_thin(pool, data_size, 0) {|thin| yield(thin)}
       end
     end
