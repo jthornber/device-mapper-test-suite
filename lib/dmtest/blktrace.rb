@@ -7,7 +7,16 @@ require 'pretty_table'
 module BlkTrace
   include ProcessControl
 
-  Event = Struct.new(:code, :start_sector, :len_sector, :cpu)
+  Event = Struct.new(:code, :start_sector, :len_sector, :cpu) do
+    # Adding the cpu field to Event broke any tests that were checking
+    # for specific events using the == operator.  So we now override with
+    # this approximate method.
+    def ==(rhs)
+      (self.code == rhs.code) &&
+      (self.start_sector == rhs.start_sector) &&
+      (self.len_sector == rhs.len_sector)
+    end
+  end
 
   def follow_link(path)
     File.symlink?(path) ? File.readlink(path) : path
