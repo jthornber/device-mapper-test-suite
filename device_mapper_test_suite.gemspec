@@ -33,6 +33,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "pretty_table"
   spec.add_dependency "concurrent-ruby"
 
-  spec.add_development_dependency "bundler", "~> 2.0.1"
   spec.add_development_dependency "rake"
 end
