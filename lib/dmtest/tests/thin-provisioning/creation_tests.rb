@@ -16,6 +16,7 @@ class CreationTests < ThinpTestCase
   def setup
     super
     @max=1000
+    wipe_device(@metadata_dev, 8)
   end
 
   tag :thinp_target, :create_lots
