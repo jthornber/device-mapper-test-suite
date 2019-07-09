@@ -158,6 +158,14 @@ EOF
   define_test :fio_on_slow do
     baseline(@data_dev, "slow")
   end
+
+  define_test :fio_with_writethrough do
+    do_fio__(:policy => Policy.new('smq', :migration_threshold => 10240),
+             :cache_size => meg(128),
+             :block_size => k(32),
+             :data_size => gig(16),
+             :io_mode => :writethrough)
+  end
 end
 
 #----------------------------------------------------------------
