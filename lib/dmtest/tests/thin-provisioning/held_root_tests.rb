@@ -131,24 +131,23 @@ class HeldRootTests < ThinpTestCase
     assert_equal(nr_blocks, right[0].length)
   end
 
-  define_test :nr_data_blocks_is_set do
-    held_metadata = nil
-
-    with_standard_pool(@size) do |pool|
-      with_new_thin(pool, @volume_size, 0) do |thin|
-        wipe_device(thin)
-        pool.message(0, "create_snap 1 0")
-        pool.message(0, "reserve_metadata_snap")
-        wipe_device(thin)          # forcing the held root and live metadata to diverge
-
-        held_metadata = read_held_root(pool, @metadata_dev)
-        pool.message(0, "release_metadata_snap")
-      end
-    end
-
-    assert_equal(@size / held_metadata.superblock.data_block_size,
-                 held_metadata.superblock.nr_data_blocks)
-  end
+  # The number of data blocks is held within the space map, which is not
+  # cloned when we take a metadata snapshot.  So this test will never work.
+  # define_test :nr_data_blocks_is_set do
+    # held_metadata = nil
+    # with_standard_pool(@size) do |pool|
+      # with_new_thin(pool, @volume_size, 0) do |thin|
+        # wipe_device(thin)
+        # pool.message(0, "create_snap 1 0")
+        # pool.message(0, "reserve_metadata_snap")
+        # wipe_device(thin)          # forcing the held root and live metadata to diverge
+        # held_metadata = read_held_root(pool, @metadata_dev)
+        # pool.message(0, "release_metadata_snap")
+      # end
+    # end
+    # assert_equal(@size / held_metadata.superblock.data_block_size,
+                 # held_metadata.superblock.nr_data_blocks)
+  # end
 
   define_test :thin_check_passes_with_a_held_root do
     with_standard_pool(@size) do |pool|
