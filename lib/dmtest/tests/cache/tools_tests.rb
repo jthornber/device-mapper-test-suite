@@ -109,6 +109,23 @@ class ToolsTests < ThinpTestCase
 
   #--------------------------------
 
+  define_test :cache_offline_writeback_no_update_metadata do
+    s = CacheStack.new(@dm, @metadata_dev, @data_dev,
+                       :format => true,
+                       :block_size => k(32),
+                       :cache_size => meg(512),
+                       :data_size => gig(4),
+                       :policy => Policy.new('smq', :migration_threshold => 1024))
+    s.activate_support_devs do
+      s.prepare_populated_cache(:dirty_percentage => 50)
+
+      cmd = "cache_writeback --metadata-device #{s.md} --fast-device #{s.ssd} --origin-device #{s.origin} --buffer-size-meg 16 --no-metadata-update"
+      ProcessControl.run(cmd)
+    end
+  end
+
+  #--------------------------------
+
   define_test :cache_offline_writeback do
     s = CacheStack.new(@dm, @metadata_dev, @data_dev,
                        :format => true,
@@ -119,9 +136,7 @@ class ToolsTests < ThinpTestCase
     s.activate_support_devs do
       s.prepare_populated_cache(:dirty_percentage => 50)
 
-      # FIXME: metadata update doesn't work yet.
-      cmd = "cache_writeback --metadata-device #{s.md} --fast-device #{s.ssd} --origin-device #{s.origin} --buffer-size-meg 16 --no-metadata-update"
-      STDERR.puts cmd
+      cmd = "cache_writeback --metadata-device #{s.md} --fast-device #{s.ssd} --origin-device #{s.origin} --buffer-size-meg 16"
       ProcessControl.run(cmd)
     end
   end
