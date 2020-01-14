@@ -108,6 +108,14 @@ module DM
 
   #--------------------------------
 
+  class WriteCacheTarget < Target
+    def initialize(sector_count, cache_dev, origin_dev, block_size)
+      super('writecache', sector_count, 's', origin_dev, cache_dev, block_size, 0)
+    end
+  end
+
+  #--------------------------------
+
   class EraTarget < Target
     def initialize(sector_count, metadata_dev, origin_dev, block_size)
       super('era', sector_count, metadata_dev, origin_dev, block_size)
