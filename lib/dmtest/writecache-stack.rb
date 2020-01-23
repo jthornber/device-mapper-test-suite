@@ -29,13 +29,14 @@ class WriteCacheStack
     @cache = nil
     @opts = opts
 
-    @tvm = TinyVolumeManager::VM.new
-    @tvm.add_allocation_volume(ssd_dev)
-    @tvm.add_volume(linear_vol('ssd', cache_size == :all ? @tvm.free_space : cache_size))
+    #@tvm = TinyVolumeManager::VM.new
+    #@tvm.add_allocation_volume(ssd_dev)
+    #@tvm.add_volume(linear_vol('ssd', cache_size == :all ? @tvm.free_space : cache_size))
 
     @data_tvm = TinyVolumeManager::VM.new
     @data_tvm.add_allocation_volume(spindle_dev)
 
+    @data_tvm.add_volume(linear_vol('ssd', cache_size == :all ? @tvm.free_space : cache_size))
     @data_tvm.add_volume(linear_vol('origin', origin_size == :all ? @data_tvm.free_space : origin_size))
   end
 
@@ -52,7 +53,7 @@ class WriteCacheStack
   end
 
   def activate_support_devs(&block)
-    with_devs(@tvm.table('ssd'),
+    with_devs(@data_tvm.table('ssd'),
               @data_tvm.table('origin')) do |ssd, origin|
       @ssd = ssd
       @origin = origin
@@ -70,7 +71,7 @@ class WriteCacheStack
   end
 
   def activate(&block)
-    with_devs(@tvm.table('ssd'),
+    with_devs(@data_tvm.table('ssd'),
               @data_tvm.table('origin')) do |ssd, origin|
       @ssd = ssd
       @origin = origin

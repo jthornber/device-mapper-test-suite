@@ -45,13 +45,36 @@ class SMQComparisonTests < ThinpTestCase
   define_test :fio_cache do
     with_standard_cache(:cache_size => meg(512),
                         :format => true,
-                        :block_size => 512,
-                        :data_size => gig(2),
-                        :policy => Policy.new('mq')) do |cache|
+                        :block_size => k(32),
+                        :metadata_size => meg(64),
+                        :data_size => gig(16),
+                        :policy => Policy.new('smq')) do |cache|
       do_fio(cache, :ext4)
     end
   end
 
+  #--------------------------------
+
+  def do_mkfs(fs_type)
+    with_standard_cache(:cache_size => meg(256),
+                        :format => true,
+                        :block_size => k(32),
+                        :metadata_size => meg(256),
+                        :data_size => gig(16)) do |cache|
+      report_time("mkfs + mount/umount", STDERR) do
+        fs = FS::file_system(fs_type, cache)
+        fs.format(:discard => false)
+        
+        fs.with_mount('./fio_test', :discard => false) do
+        end
+      end
+    end
+  end
+
+  define_test :mkfs_ext4 do
+    do_mkfs(:ext4)
+  end
+  
   #--------------------------------
 
   def do_fio_database(opts)
@@ -63,8 +86,20 @@ class SMQComparisonTests < ThinpTestCase
     end
   end
 
+  define_test :fio_database_cache do
+    cache_size = 256
+    migration_threshold = 1024
+    report_time("cache_size = #{cache_size}, migration_threshold = #{migration_threshold}", STDERR) do
+      do_fio_database(:policy => Policy.new('smq', :migration_threshold => migration_threshold),
+                      :cache_size => meg(cache_size),
+                      :block_size => k(32),
+                      :metadata_size => meg(512),
+                      :data_size => gig(16))
+    end
+  end
+
   def do_fio_database_across_cache_size(policy_name)
-    [512, 1024, 2048, 4096, 8192, 8192 + 1024].each do |cache_size|
+    [128, 256, 512, 1024, 2048, 4096, 8192, 8192 + 1024].each do |cache_size|
       report_time("cache size = #{cache_size}, policy = #{policy_name}", STDERR) do
         do_fio_database(:policy => Policy.new(policy_name, :migration_threshold => 1024),
                         :cache_size => meg(cache_size),
@@ -107,6 +142,14 @@ class SMQComparisonTests < ThinpTestCase
     end
   end
 
+  define_test :dd_linear do
+    with_standard_linear(:data_size => gig(1)) do |linear|
+      report_time("dd linear", STDERR) do
+        wipe_device(linear);
+      end
+    end
+  end
+
   #--------------------------------
 
   def do_git_extract_cache(opts)
@@ -138,11 +181,12 @@ class SMQComparisonTests < ThinpTestCase
   end
 
   def do_git_extract_cache_quick_across_cache_size(policy_name)
-    [64, 256, 512, 1024, 1024 + 512, 2048, 2048 + 1024].each do |cache_size|
+    [64, 256, 512, 1024, 1024 + 512, 2048, 4096].each do |cache_size|
       report_time("cache size = #{cache_size}, policy = #{policy_name}", STDERR) do
         do_git_extract_cache(:policy => Policy.new(policy_name, :migration_threshold => 1024),
                              :cache_size => meg(cache_size),
                              :block_size => k(32),
+                             :nr_tags => 20,
                              :data_size => gig(16))
       end
     end
@@ -171,7 +215,7 @@ class SMQComparisonTests < ThinpTestCase
         end
 
         # cache should be hot now
-        #git_extract(stack.cache, :ext4, TAGS[0..i])
+        git_extract(stack.cache, :ext4, TAGS[0..i])
         #pp CacheStatus.new(stack.cache)
       end
     end
@@ -193,12 +237,14 @@ class SMQComparisonTests < ThinpTestCase
   end
 
   def do_git_extract_only_across_cache_size(policy_name)
-    [64, 256, 512, 1024, 1024 + 512, 2048, 2048 + 1024].each do |cache_size|
+    [256, 512, 1024, 1024 + 512, 2048, 4096].each do |cache_size|
       report_time("cache size = #{cache_size}, policy = #{policy_name}", STDERR) do
-        do_git_extract_only(:policy => Policy.new(policy_name, :migration_threshold => 1024),
+        do_git_extract_only(:policy => Policy.new(policy_name,
+        					  :migration_threshold => 1024),
                             :cache_size => meg(cache_size),
                             :block_size => 64,
-                            :data_size => gig(16))
+                            :data_size => gig(16),
+                            :nr_tags => 20)
       end
     end
   end

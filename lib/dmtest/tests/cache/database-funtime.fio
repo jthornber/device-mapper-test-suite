@@ -2,13 +2,11 @@
 norandommap
 random_distribution=zipf:0.8
 rw=randrw
-rwmixread=80
-size=1g
+rwmixread=100
+size=256m
 fadvise_hint=0
 blocksize=8k
 direct=1
-numjobs=8
+numjobs=4
 nrfiles=1
-runtime=30
 ioengine=libaio
-time_based

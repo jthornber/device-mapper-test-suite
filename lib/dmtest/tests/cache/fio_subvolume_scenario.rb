@@ -7,7 +7,7 @@ module FioSubVolumeScenario
     fs = FS::file_system(fs_type, dev)
     fs.format(:discard => false)
 
-    fs.with_mount('./fio_test', :discard => false) do
+    fs.with_mount('./fio_test', :discard => true) do
       Dir.chdir('./fio_test') do
         ProcessControl.run("fio #{cfgfile} --output=#{outfile}")
       end
