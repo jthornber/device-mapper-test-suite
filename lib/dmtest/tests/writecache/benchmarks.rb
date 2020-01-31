@@ -123,20 +123,20 @@ class WriteCacheBenchmarks < ThinpTestCase
   def do_git_extract_only(opts)
     i = opts.fetch(:nr_tags, 5)
 
-    with_standard_linear(:data_size => opts[:data_size]) do |origin|
-      git_prepare(origin, :ext4)
+    stack = WriteCacheStack.new(@dm, @metadata_dev, @data_dev, opts)
 
-      stack = WriteCacheStack.new(@dm, @metadata_dev, origin, opts)
-      stack.activate do |stack|
-        git_extract_each(stack.cache, :ext4, TAGS[0..i]) do
-        end
+    stack.activate_support_devs do |stack|
+      git_prepare(stack.origin, :ext4)
+      stack.activate_top_level do |stack|
+        git_extract_each(stack.cache, :ext4, TAGS[0..i]) {}
+        git_extract_each(stack.cache, :ext4, TAGS[0..i]) {}
       end
     end
   end
 
   define_test :git_extract_only_across_cache_size do
      [256, 512, 1024, 1024 + 512, 2048, 4096].each do |cache_size|
-      report_time("cache size = #{cache_size}", STDERR) do
+       report_time("cache size = #{cache_size}", STDERR) do
         do_git_extract_only(:cache_size => meg(cache_size),
                             :data_size => gig(16),
                             :nr_tags => 20)
