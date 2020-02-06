@@ -1,3 +1,4 @@
+require 'dmtest/benchmarking'
 require 'dmtest/log'
 require 'dmtest/utils'
 require 'dmtest/fs'
@@ -8,6 +9,7 @@ require 'pp'
 #----------------------------------------------------------------
 
 class FioBenchmark
+  include Benchmarking
   include Utils
 
   def initialize(cache_stack, opts = Hash.new)
@@ -19,13 +21,18 @@ class FioBenchmark
     @fs_type = :ext4
   end
 
-  public
   def run
     @stack.activate_support_devs do
       prepare_test_files(@stack.origin)
 
       @stack.activate_top_level do
-        fio_exec(@stack.cache)
+        report_time("FIO pass 1", STDERR) do
+          fio_exec(@stack.cache)
+        end
+
+        report_time("FIO pass 2", STDERR) do
+          fio_exec(@stack.cache)
+        end
       end
     end
   end
@@ -46,7 +53,7 @@ class FioBenchmark
 	  Dir.chdir(@mount_name) do
 	    @nr_jobs.times do |job_nr|
 	      filename = "testfile.#{job_nr}"
-	      create_zeroed_file(filename, @size_m)
+	      create_zeroed_file(filename, @size_m * 4)
       	    end
       	  end
       	end
@@ -79,6 +86,7 @@ class FioBenchmark
     fs.with_mount(@mount_name, :discard => true) do
       Dir.chdir(@mount_name) do
         write_job_file(cfgfile)
+        
         ProcessControl.run("fio #{cfgfile} --output=#{outfile}")
         ProcessControl.run('ls -l')
       end
