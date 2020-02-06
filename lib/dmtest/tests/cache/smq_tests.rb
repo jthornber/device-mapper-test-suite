@@ -79,7 +79,7 @@ class SMQComparisonTests < ThinpTestCase
   #--------------------------------
 
   def do_fio_database_across_cache_size(policy_name, read_percent)
-    [128, 256, 512, 1024, 2048, 4096, 8192, 8192 + 1024].each do |cache_size|
+    [128, 256, 512, 1024, 2048, 4096, 8192].each do |cache_size|
       report_time("cache size = #{cache_size}, policy = #{policy_name}", STDERR) do
         stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
                                :format => true,

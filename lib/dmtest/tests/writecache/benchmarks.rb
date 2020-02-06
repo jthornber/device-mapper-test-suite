@@ -60,8 +60,7 @@ class WriteCacheBenchmarks < ThinpTestCase
   #--------------------------------
 
   def do_fio_database_across_cache_size(read_percent)
-    #[128, 256, 512, 1024, 2048, 4096, 8192, 8192 + 1024].each do |cache_size|
-    [8192].each do |cache_size|
+    [128, 256, 512, 1024, 2048, 4096, 8192].each do |cache_size|
       report_time("cache size = #{cache_size}", STDERR) do
         stack = WriteCacheStack.new(@dm, @metadata_dev, @data_dev,
                                     :cache_size => meg(cache_size),
