@@ -29,14 +29,12 @@ class WriteCacheStack
     @cache = nil
     @opts = opts
 
-    #@tvm = TinyVolumeManager::VM.new
-    #@tvm.add_allocation_volume(ssd_dev)
-    #@tvm.add_volume(linear_vol('ssd', cache_size == :all ? @tvm.free_space : cache_size))
+    @tvm = TinyVolumeManager::VM.new
+    @tvm.add_allocation_volume(ssd_dev)
+    @tvm.add_volume(linear_vol('ssd', cache_size == :all ? @tvm.free_space : cache_size))
 
     @data_tvm = TinyVolumeManager::VM.new
     @data_tvm.add_allocation_volume(spindle_dev)
-
-    @data_tvm.add_volume(linear_vol('ssd', cache_size == :all ? @tvm.free_space : cache_size))
     @data_tvm.add_volume(linear_vol('origin', origin_size == :all ? @data_tvm.free_space : origin_size))
   end
 
@@ -52,13 +50,17 @@ class WriteCacheStack
     cache_size / block_size
   end
 
+  def format_cache
+    wipe_device(@ssd, 8)
+  end
+
   def activate_support_devs(&block)
-    with_devs(@data_tvm.table('ssd'),
+    with_devs(@tvm.table('ssd'),
               @data_tvm.table('origin')) do |ssd, origin|
       @ssd = ssd
       @origin = origin
 
-      wipe_device(ssd, 8) if @opts.fetch(:format, true)
+      format_cache if @opts.fetch(:format, true)
       ensure_elapsed_time(1, self, &block)
     end
   end
@@ -71,7 +73,7 @@ class WriteCacheStack
   end
 
   def activate(&block)
-    with_devs(@data_tvm.table('ssd'),
+    with_devs(@tvm.table('ssd'),
               @data_tvm.table('origin')) do |ssd, origin|
       @ssd = ssd
       @origin = origin

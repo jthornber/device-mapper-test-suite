@@ -7,19 +7,16 @@ require 'dmtest/disk-units'
 require 'dmtest/test-utils'
 require 'dmtest/tvm.rb'
 require 'dmtest/writecache-stack'
-require 'dmtest/tests/cache/fio_subvolume_scenario'
+require 'dmtest/fio-benchmark'
 require 'dmtest/pattern_stomper'
 require 'pp'
 
 #----------------------------------------------------------------
 
-# Tests for comparing mq against smq.  This will probably become
-# obsolete at some point since I'm intending smq to replace mq.
 class WriteCacheBenchmarks < ThinpTestCase
   include GitExtract
   include Utils
   include DiskUnits
-  include FioSubVolumeScenario
   extend TestUtils
 
   def setup
@@ -62,35 +59,20 @@ class WriteCacheBenchmarks < ThinpTestCase
 
   #--------------------------------
 
-  define_test :fio_cache do
-    with_standard_cache(:cache_size => meg(512),
-                        :format => true,
-                        :data_size => gig(2)) do |cache|
-      do_fio(cache, :ext4)
-    end
-  end
-
-  #--------------------------------
-
-  def do_fio_database(opts)
-    with_standard_cache(opts) do |cache|
-      do_fio(cache, :ext4,
-             :outfile => AP("fio_dm_writecache.out"),
-             :cfgfile => LP("tests/cache/database-funtime.fio"))
-    end
-  end
-
-  def do_fio_database_across_cache_size()
-    [128, 256, 512, 1024, 2048, 4096, 8192, 8192 + 1024].each do |cache_size|
+  define_test :fio_database_across_cache_size do
+    #[128, 256, 512, 1024, 2048, 4096, 8192, 8192 + 1024].each do |cache_size|
+    [8192].each do |cache_size|
       report_time("cache size = #{cache_size}", STDERR) do
-        do_fio_database(:cache_size => meg(cache_size),
-                        :data_size => gig(16))
+        stack = WriteCacheStack.new(@dm, @metadata_dev, @data_dev,
+                                    :cache_size => meg(cache_size),
+                                    :data_size => gig(16))
+        fio = FioBenchmark::new(stack,
+                                :nr_jobs => 4,
+                                :size_m => 256,
+                                :read_percent => 50)
+        fio.run
       end
     end
-  end
-
-  define_test :fio_database_across_cache_size do
-    do_fio_database_across_cache_size()
   end
 
   #--------------------------------
