@@ -10,6 +10,7 @@ require 'dmtest/tvm.rb'
 require 'dmtest/cache_stack'
 require 'dmtest/cache_policy'
 require 'dmtest/tests/cache/fio_subvolume_scenario'
+require 'dmtest/fio-benchmark'
 require 'dmtest/tests/cache/pool_cache_stack'
 require 'pp'
 
@@ -77,44 +78,42 @@ class SMQComparisonTests < ThinpTestCase
   
   #--------------------------------
 
-  def do_fio_database(opts)
-    with_standard_cache(opts) do |cache|
-      do_fio(cache, :ext4,
-             :outfile => AP("fio_dm_cache.out"),
-             :cfgfile => LP("tests/cache/database-funtime.fio"))
-      pp CacheStatus.new(cache)
-    end
-  end
-
-  define_test :fio_database_cache do
-    cache_size = 256
-    migration_threshold = 1024
-    report_time("cache_size = #{cache_size}, migration_threshold = #{migration_threshold}", STDERR) do
-      do_fio_database(:policy => Policy.new('smq', :migration_threshold => migration_threshold),
-                      :cache_size => meg(cache_size),
-                      :block_size => k(32),
-                      :metadata_size => meg(512),
-                      :data_size => gig(16))
-    end
-  end
-
-  def do_fio_database_across_cache_size(policy_name)
+  def do_fio_database_across_cache_size(policy_name, read_percent)
     [128, 256, 512, 1024, 2048, 4096, 8192, 8192 + 1024].each do |cache_size|
       report_time("cache size = #{cache_size}, policy = #{policy_name}", STDERR) do
-        do_fio_database(:policy => Policy.new(policy_name, :migration_threshold => 1024),
-                        :cache_size => meg(cache_size),
-                        :block_size => k(32),
-                        :data_size => gig(16))
+        stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
+                               :format => true,
+                               :block_size => k(32),
+                               :policy => Policy.new(policy_name, :migration_threshold => 1024),
+                               :cache_size => meg(cache_size),
+                               :data_size => gig(16))
+        fio = FioBenchmark::new(stack,
+                                :nr_jobs => 4,
+                                :size_m => 256,
+                                :read_percent => read_percent)
+        fio.run
       end
     end
   end
 
-  define_test :fio_database_across_cache_size_smq do
-    do_fio_database_across_cache_size('smq')
+  define_test :fio_database_across_cache_size_r100 do
+    do_fio_database_across_cache_size('smq', 100)
   end
 
-  define_test :fio_database_across_cache_size_mq do
-    do_fio_database_across_cache_size('mq')
+  define_test :fio_database_across_cache_size_r75 do
+    do_fio_database_across_cache_size('smq', 75)
+  end
+
+  define_test :fio_database_across_cache_size_r50 do
+    do_fio_database_across_cache_size('smq', 50)
+  end
+
+  define_test :fio_database_across_cache_size_r25 do
+    do_fio_database_across_cache_size('smq', 25)
+  end
+
+  define_test :fio_database_across_cache_size_r0 do
+    do_fio_database_across_cache_size('smq', 0)
   end
 
   #--------------------------------

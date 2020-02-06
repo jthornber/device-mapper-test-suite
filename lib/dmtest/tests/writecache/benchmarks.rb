@@ -59,7 +59,7 @@ class WriteCacheBenchmarks < ThinpTestCase
 
   #--------------------------------
 
-  define_test :fio_database_across_cache_size do
+  def do_fio_database_across_cache_size(read_percent)
     #[128, 256, 512, 1024, 2048, 4096, 8192, 8192 + 1024].each do |cache_size|
     [8192].each do |cache_size|
       report_time("cache size = #{cache_size}", STDERR) do
@@ -69,10 +69,30 @@ class WriteCacheBenchmarks < ThinpTestCase
         fio = FioBenchmark::new(stack,
                                 :nr_jobs => 4,
                                 :size_m => 256,
-                                :read_percent => 50)
+                                :read_percent => read_percent)
         fio.run
       end
     end
+  end
+  
+  define_test :fio_database_across_cache_size_r100 do
+    do_fio_database_across_cache_size(100)
+  end
+
+  define_test :fio_database_across_cache_size_r75 do
+    do_fio_database_across_cache_size(75)
+  end
+
+  define_test :fio_database_across_cache_size_r50 do
+    do_fio_database_across_cache_size(50)
+  end
+
+  define_test :fio_database_across_cache_size_r25 do
+    do_fio_database_across_cache_size(25)
+  end
+
+  define_test :fio_database_across_cache_size_r0 do
+    do_fio_database_across_cache_size(0)
   end
 
   #--------------------------------
