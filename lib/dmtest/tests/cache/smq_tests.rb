@@ -100,16 +100,8 @@ class SMQComparisonTests < ThinpTestCase
     do_fio_database_across_cache_size('smq', 100)
   end
 
-  define_test :fio_database_across_cache_size_r75 do
-    do_fio_database_across_cache_size('smq', 75)
-  end
-
   define_test :fio_database_across_cache_size_r50 do
     do_fio_database_across_cache_size('smq', 50)
-  end
-
-  define_test :fio_database_across_cache_size_r25 do
-    do_fio_database_across_cache_size('smq', 25)
   end
 
   define_test :fio_database_across_cache_size_r0 do
