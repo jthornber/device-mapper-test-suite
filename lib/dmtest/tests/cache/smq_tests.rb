@@ -385,6 +385,32 @@ class SMQComparisonTests < ThinpTestCase
       end
     end
   end
+  
+  #--------------------------------
+
+  define_test :dd_hotspot do
+    stack = CacheStack.new(@dm, @metadata_dev, @data_dev,
+                           :policy => Policy.new('smq', :migration_threshold => 1024),
+                           :cache_size => gig(8),
+                           :data_size => gig(16))
+    stack.activate do
+      64.times do |n|
+        report_time("dd pass #{n}", STDERR) do
+          wipe_device(stack.cache, gig(1))
+        end
+      end
+    end
+  end
+  
+  define_test :dd_hotspot_linear do
+    with_standard_linear(:data_size => gig(16)) do |origin|
+      4.times do |n|
+        report_time("dd pass #{n}", STDERR) do
+          wipe_device(origin, gig(1))
+        end
+      end
+    end
+  end
 end
 
 #----------------------------------------------------------------

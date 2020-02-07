@@ -120,7 +120,6 @@ class WriteCacheBenchmarks < ThinpTestCase
 
   #--------------------------------
 
-  # FIXME: broken
   def do_git_extract_only(opts)
     i = opts.fetch(:nr_tags, 5)
 
@@ -143,5 +142,20 @@ class WriteCacheBenchmarks < ThinpTestCase
                             :nr_tags => 20)
       end
     end 
+  end
+
+  #--------------------------------
+
+  define_test :dd_hotspot do
+    stack = WriteCacheStack.new(@dm, @metadata_dev, @data_dev,
+                                :cache_size => gig(8),
+                                :data_size => gig(16))
+    stack.activate do
+      32.times do |n|
+        report_time("dd pass #{n}", STDERR) do
+          wipe_device(stack.cache, gig(1))
+        end
+      end
+    end
   end
 end
