@@ -147,7 +147,7 @@ EOF
     vg.add_allocation_volume(dev)
     vg.add_volume(linear_vol("vol", sub_vol_size))
     with_dev(vg.table("vol")) do |vol|
-      run_fio(vol, name)
+      run_fio(vol, name, gig(1))
     end
   end
 
