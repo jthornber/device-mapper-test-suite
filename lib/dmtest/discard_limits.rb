@@ -13,8 +13,13 @@ class DiscardLimits
   private
 
   def read_param(p)
+    disk = dev.to_s
+    type = `lsblk -n /dev/#{disk} | grep -w #{disk} | sed 's/[ \t]*$//; s/.*[ \t]//'`.strip
+    if type == "part"
+      disk = `basename $(dirname $(find /sys -type d -name #{disk}))`.strip
+    end
     line = ''
-    File.open("/sys/block/#{dev.to_s}/queue/discard_#{p}", 'r') do |file|
+    File.open("/sys/block/#{disk}/queue/discard_#{p}", 'r') do |file|
       line = file.gets
     end
 
