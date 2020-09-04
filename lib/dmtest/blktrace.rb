@@ -212,7 +212,7 @@ module BlkTrace
       iod = @cpu_iod.map do |s|
         s *= 512
         size = Filesize.from("#{s} B").pretty
-        percent = sprintf("%.2f%", total > 0 ? (s * 100.0 / total) : 0)
+        percent = sprintf("%.2f%%", total > 0 ? (s * 100.0 / total) : 0)
 
         "#{size} (#{percent})"
       end
