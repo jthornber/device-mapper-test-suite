@@ -2,13 +2,11 @@ require 'dmtest/blktrace'
 require 'dmtest/log'
 require 'dmtest/utils'
 require 'dmtest/fs'
-require 'dmtest/tags'
 require 'dmtest/thinp-test'
 
 #----------------------------------------------------------------
 
 class ToolsTests < ThinpTestCase
-  include Tags
   include Utils
   include BlkTrace
 

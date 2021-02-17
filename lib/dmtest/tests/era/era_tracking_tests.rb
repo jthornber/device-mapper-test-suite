@@ -115,7 +115,7 @@ EOF
   define_test :repeated_dumps_are_identical do
     s = make_stack(:format => true)
     s.activate_support_devs do
-       s.activate_top_level do
+      s.activate_top_level do
         block_size = k(64) * 1024
         nr_blocks = dev_size(s.era) / block_size
 
@@ -126,20 +126,17 @@ EOF
           STDERR.puts "current_era #{c}, metadata #{status.md_used}/#{status.md_total}"
 
           ProcessControl.run("dd if=/dev/zero of=#{s.era.path} oflag=direct bs=#{block_size * 512} seek=#{block} count=1")
-
-          s.era.pause do
-            output1 = s.dump_metadata(:logical => true)
-            output2 = s.dump_metadata(:logical => true)
-
-            output2.should == output1
-          end
         end
       end
-    end
 
+      output1 = File.read(s.dump_metadata(:logical => true))
+      output2 = File.read(s.dump_metadata(:logical => true))
+
+      output2.should == output1
+    end
   end
 
-  definie_test :dumps_do_not_change_without_io do
+  define_test :dumps_do_not_change_without_io do
     s = make_stack(:format => true)
     s.activate_support_devs do
        s.activate_top_level do
