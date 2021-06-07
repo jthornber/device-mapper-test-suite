@@ -89,25 +89,33 @@ class WriteCacheBenchmarks < ThinpTestCase
   #--------------------------------
   
   def do_git_extract_cache(opts)
-    i = opts.fetch(:nr_tags, 5)
+    i = opts.fetch(:nr_tags, 0)
     with_standard_cache(opts) do |cache|
       git_prepare(cache, :ext4)
-      git_extract(cache, :ext4, TAGS[0..i])
+      git_extract(cache, :ext4, TAGS[0..i]) if i > 0
     end
   end
 
-  def do_git_extract_cache_quick_across_cache_size()
-    [64, 256, 512, 1024, 1024 + 512, 2048, 4096].each do |cache_size|
+  def do_git_extract_cache_quick(cache_size, nr_tags)
       report_time("cache size = #{cache_size}", STDERR) do
         do_git_extract_cache(:cache_size => meg(cache_size),
                              :data_size => gig(16),
-                             :nr_tags => 20)
+                             :nr_tags => nr_tags)
       end
-    end
   end
 
   define_test :git_extract_cache_quick_across_cache_size do
-    do_git_extract_cache_quick_across_cache_size()
+    [64, 256, 512, 1024, 1024 + 512, 2048, 4096, 8192].each do |cache_size|
+      do_git_extract_cache_quick(cache_size, 20)
+    end
+  end
+
+  define_test :git_extract_cache_quick_64M do
+    do_git_extract_cache_quick(64, 20)
+  end
+
+  define_test :git_prepare_cache_quick_64M do
+    do_git_extract_cache_quick(64, 0)
   end
 
   #--------------------------------
