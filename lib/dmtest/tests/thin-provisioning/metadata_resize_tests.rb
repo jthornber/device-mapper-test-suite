@@ -203,7 +203,7 @@ class MetadataResizeTests < ThinpTestCase
       stack.activate do |pool|
         with_new_thin(pool, @volume_size, 0) do |thin|
           # We use capture because this doesn't raise ExitErrors
-          _1, _2, err = ProcessControl.capture("dd if=/dev/zero of=#{thin.path} bs=4M")
+          _one, _two, err = ProcessControl.capture("dd if=/dev/zero of=#{thin.path} bs=4M")
           assert(err)
         end
 
