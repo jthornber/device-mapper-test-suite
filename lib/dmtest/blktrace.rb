@@ -115,7 +115,7 @@ module BlkTrace
 
     consumer = LogConsumer.new
 
-    flags = '-b 8192 '
+    flags = ''
     devs.each_index {|i| flags += "-d #{devs[i]} "}
     flags += complete ? "-a complete " : "-a queue "
     child = ProcessControl::Child.new(consumer, "blktrace #{flags}")
