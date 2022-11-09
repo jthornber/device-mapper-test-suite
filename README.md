@@ -23,9 +23,9 @@ The above link gives more details, but here's a quickstart:
 **Make sure you follow the instructions at the end of the script
 regarding setting your shell's environment.**
 
-Now we need to install Ruby 2.7.5
+Now we need to install Ruby 3.1
 
-    rvm install 2.7.5
+    rvm install 3.1
 
 ### Ruby Index (_ri_)
 
