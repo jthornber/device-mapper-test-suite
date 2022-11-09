@@ -413,14 +413,21 @@ class Dispatcher
 
     server.start
   end
+  
+  def self.load_file filename
+    File.open(filename, 'r:bom|utf-8') {|f|
+      input = f.read
+      Psych.safe_load(input, :permitted_classes => [TestOutcome, Time])
+    }
+  end
 
   def generate(opts, args)
     generator = DMTest::ReportGenerator.new(report_dir)
     all_tests = Array.new
-
+    
     Dir::glob("#{log_dir}/*.yaml") do |yaml_file|
       "found yaml file: #{yaml_file}"
-      t = YAML::load_file(yaml_file)
+      t = Dispatcher::load_file(yaml_file)
       if t.respond_to?(:suite)
         generator.unit_detail(t)
         all_tests << t

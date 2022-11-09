@@ -32,7 +32,7 @@ class FSBench < ThinpTestCase
   def with_fs(dev, fs_type)
     puts "formatting ..."
     fs = FS::file_system(fs_type, dev)
-    fs.format
+    fs.format(:disard => false)
 
     fs.with_mount('./bench_mnt') do
       Dir.chdir('./bench_mnt') do
@@ -155,7 +155,7 @@ class FSBench < ThinpTestCase
   define_test :fio_thin_preallocated do
     # We're interested in the iops with fast devices, so carve up the
     # metadata dev.
-    size = gig(10)
+    size = gig(90)
 
     tvm = TinyVolumeManager::VM.new
     tvm.add_allocation_volume(@metadata_dev)
@@ -175,8 +175,28 @@ class FSBench < ThinpTestCase
             outfile = AP("fio.out")
             cfgfile = LP("tests/thin-provisioning/fio.config")
             ProcessControl.run("fio #{cfgfile} --output=#{outfile}")
+            # `perf record --call-graph dwarf -o /tmp/perf.data -F 99 -- fio #{cfgfile} --output=#{outfile}`
           end
         end
+      end
+    end
+  end
+  
+  define_test :fio_thick do
+    # We're interested in the iops with fast devices, so carve up the
+    # metadata dev.
+    size = gig(90)
+
+    tvm = TinyVolumeManager::VM.new
+    tvm.add_allocation_volume(@metadata_dev)
+    tvm.add_volume(linear_vol('data', size))
+
+    with_dev(tvm.table('data')) do |vol|
+      sleep(1)
+      with_fs(vol, :ext4) do
+        outfile = AP("fio.out")
+        cfgfile = LP("tests/thin-provisioning/fio.config")
+        ProcessControl.run("fio #{cfgfile} --output=#{outfile}")
       end
     end
   end

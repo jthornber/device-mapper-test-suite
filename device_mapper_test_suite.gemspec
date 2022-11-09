@@ -28,10 +28,11 @@ Gem::Specification.new do |spec|
   spec.add_dependency "activemodel", "4.1.5"
   spec.add_dependency "activesupport", "4.1.5"
   spec.add_dependency "activerecord", "4.1.5"
-  spec.add_dependency "ruby-terminfo"
+#  spec.add_dependency "ruby-terminfo"
   spec.add_dependency "filesize"
   spec.add_dependency "pretty_table"
   spec.add_dependency "concurrent-ruby"
+  spec.add_dependency "rexml"
 
   spec.add_development_dependency "rake"
 end
