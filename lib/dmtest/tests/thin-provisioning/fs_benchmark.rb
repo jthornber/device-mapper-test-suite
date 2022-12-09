@@ -44,7 +44,7 @@ class FSBench < ThinpTestCase
   def dump_metadata(pool, dev, path)
     pool.message(0, "reserve_metadata_snap")
     status = PoolStatus.new(pool)
-    ProcessControl::run("thin_dump -m #{status.held_root} #{dev} > #{path}")
+    ProcessControl::run("thin_dump #{dev} -m #{status.held_root} > #{path}")
     pool.message(0, "release_metadata_snap")
   end
 
