@@ -85,7 +85,10 @@ class OutcomeCache
   def load(specifier)
     path = "#{@log_dir}/#{specifier.suite}_#{specifier.name}.yaml"
     if File::exist?(path)
-      @outcomes[specifier] = YAML::load_file(path)
+      @outcomes[specifier] = File.open(path, 'r:bom|utf-8') {|f|
+        input = f.read
+        Psych.safe_load(input, :permitted_classes => [TestOutcome, Time])
+      }
     else
       nil
     end
