@@ -43,9 +43,7 @@ class ResizeTests < ThinpTestCase
   end
 
   def activate_kernel(nr_blocks)
-    s = make_stack(:format => false,
-                   :cache_blocks => nr_blocks,
-                   :policy => Policy.new(:mq, :migration_threshold => 0))
+    s = mk_stack('mq', nr_blocks)
     s.activate_support_devs do
       s.activate_top_level {}
       dump_metadata(s.md)
