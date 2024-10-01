@@ -9,6 +9,7 @@ require 'dmtest/test-utils'
 require 'dmtest/tvm.rb'
 require 'dmtest/cache_stack'
 require 'dmtest/cache_policy'
+require 'dmtest/cache_utils'
 require 'dmtest/tests/cache/fio_subvolume_scenario'
 require 'dmtest/fio-benchmark'
 require 'dmtest/tests/cache/pool_cache_stack'
@@ -22,6 +23,7 @@ class SMQComparisonTests < ThinpTestCase
   include GitExtract
   include Utils
   include DiskUnits
+  include CacheUtils
   include FioSubVolumeScenario
   extend TestUtils
 

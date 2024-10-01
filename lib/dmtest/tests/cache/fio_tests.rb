@@ -141,13 +141,14 @@ EOF
   end
 
   def baseline(dev, name)
-    sub_vol_size = meg(1024 + 128)
+    file_size = meg(1024)
+    sub_vol_size = file_size + meg(128)
 
     vg = TinyVolumeManager::VM.new
     vg.add_allocation_volume(dev)
     vg.add_volume(linear_vol("vol", sub_vol_size))
     with_dev(vg.table("vol")) do |vol|
-      run_fio(vol, name)
+      run_fio(vol, name, file_size)
     end
   end
 
