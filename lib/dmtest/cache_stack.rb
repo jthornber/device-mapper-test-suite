@@ -211,7 +211,7 @@ class CacheStack
 
     clean_shutdown = overrides.fetch(:clean_shutdown, true)
     omit_shutdown_flag = clean_shutdown ? '' : "--omit-clean-shutdown"
-    metadata_version_flag = (metadata_version == [:metadata2]) ? "--metadata-version 2" : ''
+    metadata_version_flag = (metadata_version == [:metadata2]) ? "--metadata-version 2" : '--metadata-version 1'
 
     xml_file = 'metadata.xml'
     ProcessControl.run("cache_xml create --block-size #{block_size} --nr-cache-blocks #{cache_blocks} --nr-mappings #{cache_blocks} #{dirty_flag} > #{xml_file}")
