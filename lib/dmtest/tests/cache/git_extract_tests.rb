@@ -191,7 +191,7 @@ class GitExtractTests < ThinpTestCase
   #--------------------------------
 
   def cached_data_device_alternating_thins(policy_name, version)
-    data_size = gig(8)
+    data_size = gig(32)
 
     stack = PoolCacheStack.new(@dm, @metadata_dev, @data_dev,
                                { :policy => Policy.new(policy_name, :migration_threshold => 1024),
@@ -270,7 +270,7 @@ class GitExtractTests < ThinpTestCase
                            :policy => Policy.new('mq', :migration_threshold => 1024),
                            :cache_size => meg(1024),
                            :block_size => k(32),
-                           :data_size => gig(4),
+                           :data_size => gig(16),
                            :metadata_version => version)
 
     stack.activate do |stack|
