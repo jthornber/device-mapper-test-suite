@@ -299,7 +299,7 @@ class SMQComparisonTests < ThinpTestCase
   end
 
   def do_thin_on_cache_alternating_thins(policy_name)
-    data_size = gig(8)
+    data_size = gig(32)
 
     stack = PoolCacheStack.new(@dm, @metadata_dev, @data_dev,
                                { :policy => Policy.new(policy_name, :migration_threshold => 1024),

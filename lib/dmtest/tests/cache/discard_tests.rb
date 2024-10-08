@@ -56,27 +56,23 @@ class DiscardTests < ThinpTestCase
                         :block_size => 512,
                         :data_size => origin_size,
                         :policy => Policy.new('mq')) do |cache|
-      tids = []
-      lock = Mutex.new
+      stopped = Concurrent::AtomicBoolean::new
 
       # Discard thread
-      tids << Thread.new do
+      tid = Thread.new do
         loop do
-          if lock.try_lock
-            random_discard(cache, origin_size)
-          else
+          if stopped.true?
             break
           end
+          random_discard(cache, origin_size)
         end
       end
 
-      # DT thread
-      tids << Thread.new do
-        dt_device(cache)
-      end
+      # Wait for DT to complete
+      dt_device(cache)
 
-      lock.lock
-      tids.each {|t| t.join}
+      stopped.make_true()
+      tid.join
     end
   end
 
@@ -87,7 +83,9 @@ class DiscardTests < ThinpTestCase
                         :block_size => 512,
                         :data_size => origin_size,
                         :policy => Policy.new('mq')) do |cache|
-      cache.discard(12, origin_size + gig(1))
+      expect {
+        cache.discard(12, origin_size + gig(1))
+      }.to raise_error(Errno::EINVAL)
     end
   end
 
@@ -110,6 +108,10 @@ class DiscardTests < ThinpTestCase
                          :cache_size => gig(1),
                          :block_size => 512)
     s.activate do |s|
+      status = CacheStatus.new(s.cache)
+      assert(status.features.include?('discard_passdown'),
+             'cache origin discard unsupported')
+
       traces, _ = blktrace(s.cache, s.origin) do
         discard(s.cache, 0, 1)
       end
