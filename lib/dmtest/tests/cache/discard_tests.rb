@@ -83,7 +83,9 @@ class DiscardTests < ThinpTestCase
                         :block_size => 512,
                         :data_size => origin_size,
                         :policy => Policy.new('mq')) do |cache|
-      cache.discard(12, origin_size + gig(1))
+      expect {
+        cache.discard(12, origin_size + gig(1))
+      }.to raise_error(Errno::EINVAL)
     end
   end
 
