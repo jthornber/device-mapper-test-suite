@@ -54,7 +54,7 @@ class LargeConfigTests < ThinpTestCase
                                            :format => true, :block_size => k(32))
               cache_stack.activate_support_devs do
                 cache_stack.prepare_populated_cache
-                cache_stack.activate do
+                cache_stack.activate_top_level do
                   block.call(cache_stack)
                 end
               end
