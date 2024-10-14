@@ -60,10 +60,7 @@ class DiscardTests < ThinpTestCase
 
       # Discard thread
       tid = Thread.new do
-        loop do
-          if stopped.true?
-            break
-          end
+        while !stopped.true?
           random_discard(cache, origin_size)
         end
       end

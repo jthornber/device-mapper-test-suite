@@ -49,7 +49,7 @@ class PassthroughTests < ThinpTestCase
     s.activate_support_devs do
       s.prepare_populated_cache()
 
-      s.activate do
+      s.activate_top_level do
         wipe_device(s.cache)
 
         status = CacheStatus.new(s.cache)
@@ -64,7 +64,7 @@ class PassthroughTests < ThinpTestCase
                    :block_size => k(64))
     s.activate_support_devs do
       s.prepare_populated_cache()
-      s.activate do
+      s.activate_top_level do
         read_device_to_null(s.cache)
 
         status = CacheStatus.new(s.cache)
@@ -80,7 +80,7 @@ class PassthroughTests < ThinpTestCase
     s.activate_support_devs do
       s.prepare_populated_cache(:dirty_percentage => 100)
       expect do
-        s.activate
+        s.activate_top_level
       end.to raise_error
     end
   end
