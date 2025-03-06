@@ -65,11 +65,13 @@ class DiscardTests < ThinpTestCase
         end
       end
 
-      # Wait for DT to complete
-      dt_device(cache)
-
-      stopped.make_true()
-      tid.join
+      begin
+        # Wait for DT to complete
+        dt_device(cache)
+      ensure
+        stopped.make_true()
+        tid.join
+      end
     end
   end
 
