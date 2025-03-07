@@ -108,7 +108,7 @@ class DiscardTests < ThinpTestCase
                          :block_size => 512)
     s.activate do |s|
       status = CacheStatus.new(s.cache)
-      assert(status.features.include?('discard_passdown'),
+      assert(!status.features.include?('no_discard_passdown'),
              'cache origin discard unsupported')
 
       traces, _ = blktrace(s.cache, s.origin) do
