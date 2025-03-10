@@ -179,7 +179,7 @@ class CacheStack
 
   def cache_table(mode = io_mode)
     Table.new(CacheTarget.new(dev_size(@origin), @md, @ssd, @origin,
-                              block_size, mode + metadata_version,
+                              block_size, mode + metadata_version + no_discard_passdown,
                               policy.name, policy.opts))
   end
 
@@ -216,6 +216,15 @@ class CacheStack
     xml_file = 'metadata.xml'
     ProcessControl.run("cache_xml create --block-size #{block_size} --nr-cache-blocks #{cache_blocks} --nr-mappings #{cache_blocks} #{dirty_flag} > #{xml_file}")
     ProcessControl.run("cache_restore #{omit_shutdown_flag} #{metadata_version_flag} -i #{xml_file} -o #{@md}")
+  end
+
+  private
+  def no_discard_passdown
+    if @opts.has_key? :discard_passdown and !@opts[:discard_passdown]
+      [:no_discard_passdown]
+    else
+      []
+    end
   end
 end
 
