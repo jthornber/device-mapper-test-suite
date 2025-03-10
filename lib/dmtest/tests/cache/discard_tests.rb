@@ -55,6 +55,7 @@ class DiscardTests < ThinpTestCase
                         :format => true,
                         :block_size => 512,
                         :data_size => origin_size,
+                        :discard_passdown => false,
                         :policy => Policy.new('mq')) do |cache|
       stopped = Concurrent::AtomicBoolean::new
 
