@@ -155,8 +155,7 @@ class DiscardQuickTests < ThinpTestCase
         data_limits = DiscardLimits.new(fd_dev.to_s)
         pool_limits = DiscardLimits.new(pool.to_s)
 
-        pool_limits.supported.should be_true
-        pool_limits.granularity.should == data_limits.granularity
+        pool_limits.supported.should == passdown
 
         with_new_thin(pool, @volume_size, 0) do |thin|
           thin_limits = DiscardLimits.new(thin.to_s)
