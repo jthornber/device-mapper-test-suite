@@ -99,12 +99,16 @@ module Utils
     end
   end
 
-  def Utils.retry_if_fails(duration)
+  def Utils.retry_with_backoff(timeout: 60.0, initial_delay: 1.0, max_backoff: 10.0)
+    start = Time.now
+    delay = initial_delay
     begin
       yield
-    rescue Exception
-      ProcessControl.sleep(duration)
-      yield
+    rescue StandardError
+      raise if Time.now - start >= timeout
+      ProcessControl.sleep(delay)
+      delay = [delay * 2, max_backoff].min
+      retry
     end
   end
 
