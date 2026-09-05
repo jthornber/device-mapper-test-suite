@@ -148,6 +148,10 @@ class MetadataResizeTests < ThinpTestCase
       table = Table.new(ThinPoolTarget.new(data_size, md, data, @data_block_size, @low_water_mark,
                                            true, true, true, false, true))
       with_dev(table) do |pool|
+        pool.define_singleton_method(:post_remove_check) do
+          ProcessControl.run("thin_check --ignore-non-fatal-errors #{md}")
+        end
+
         with_new_thin(pool, thin_size, 0) do |thin|
           # There isn't enough metadata to provision the whole
           # device, so this will fail
@@ -167,6 +171,10 @@ class MetadataResizeTests < ThinpTestCase
       # Prove that we can bring up the pool at this point.  ie. before
       # we resize the metadata dev.
       with_dev(table) do |pool|
+        pool.define_singleton_method(:post_remove_check) do
+          ProcessControl.run("thin_check --ignore-non-fatal-errors #{md}")
+        end
+
         # Then we resize the metadata dev
         metadata_size = metadata_size + meg(30)
         @tvm.resize('metadata', metadata_size)
@@ -201,6 +209,10 @@ class MetadataResizeTests < ThinpTestCase
       stack = PoolStack.new(@dm, data, md, :data_size => data_size, :block_size => @data_block_size,
                             :low_water_mark => @low_water_mark, :error_if_no_space => true)
       stack.activate do |pool|
+        pool.define_singleton_method(:post_remove_check) do
+          ProcessControl.run("thin_check --ignore-non-fatal-errors #{md}")
+        end
+
         with_new_thin(pool, @volume_size, 0) do |thin|
           # We use capture because this doesn't raise ExitErrors
           _one, _two, err = ProcessControl.capture("dd if=/dev/zero of=#{thin.path} bs=4M")
@@ -211,6 +223,10 @@ class MetadataResizeTests < ThinpTestCase
       end
 
       stack.activate do |pool|
+        pool.define_singleton_method(:post_remove_check) do
+          ProcessControl.run("thin_check --ignore-non-fatal-errors #{md}")
+        end
+
         # We should still be in read-only mode because of the
         # needs_check flag being set
         assert(read_only_mode?(pool))
