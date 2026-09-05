@@ -835,7 +835,9 @@ class DiscardSlowTests < ThinpTestCase
           ProcessControl.run("fstrim -v #{dir}")
           $log.info "used data blocks after: #{PoolStatus.new(pool).used_data_blocks}"
 
+          thin.suspend
           s = PoolStatus.new(pool)
+          thin.resume
           s.used_data_blocks.should < 5000
           s.options[:mode].should == :read_write
         end
