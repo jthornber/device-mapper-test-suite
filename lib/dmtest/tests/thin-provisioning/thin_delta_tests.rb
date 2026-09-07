@@ -54,9 +54,6 @@ class ThinDeltaTests < ThinpTestCase
 
         pool.message(0, "reserve_metadata_snap")
         ProcessControl.run("thin_delta --snap1 0 --snap2 1 -m #{@metadata_dev}")
-
-        status = PoolStatus.new(pool)
-        ProcessControl.run("thin_delta --snap1 0 --snap2 1 -m#{status.held_root} #{@metadata_dev}")
         pool.message(0, "release_metadata_snap")
       end
     end
