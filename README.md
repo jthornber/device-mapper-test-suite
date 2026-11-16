@@ -25,7 +25,22 @@ regarding setting your shell's environment.**
 
 Now we need to install Ruby 3.1
 
-    rvm install 3.1
+    rvm install 3.1 --binary
+
+Many modern distros have no Ruby 3.1 binary, so the command fails.
+Build from source with the steps below.
+
+### Building Ruby 3.1 from source on modern distros
+
+GCC 15 or later defaults to the C23 standard. Ruby 3.1 does not compile
+under C23. Build with the older gnu17 standard instead:
+
+    rvm install 3.1 -C cflags="-std=gnu17"
+
+RVM usually installs the needed C packages. If that step fails, install the
+dependencies manually (Fedora/RHEL package names shown):
+
+    dnf install libyaml-devel openssl-devel zlib-devel
 
 ### Ruby Index (_ri_)
 
